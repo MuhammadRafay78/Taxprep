@@ -246,6 +246,35 @@ def test_uncurated_schedule_d_is_surfaced_as_uncertain():
     assert 500 in values.values()
 
 
+DOTTED_SCHEDULE2_VALUE_ON_NEXT_ROW_PAGE = [
+    "SCHEDULE 2  Additional Taxes  OMB No. 1545-0074",
+    "(Form 1040)  2023",
+    "1  Alternative minimum tax. Attach Form 6251 . . . . . . . . . . . . . . . . . . . . . . . . . . 1",
+    "                                                                               0",
+    "2  Excess advance premium tax credit repayment. Attach Form 8962 . . . . . . . . . . 2",
+    "3  Add lines 1 and 2. Enter here and on Form 1040, line 17 . . . . . . . . . . . . . . . . 3",
+    "                                                                               0",
+]
+
+
+def test_value_printed_alone_on_the_row_after_the_echoed_number():
+    # A third real-world layout: the label row *always* ends in the line's
+    # own echoed number (filled or not), and an entered value - even an
+    # explicit "0" - is printed by itself on the very next row rather than
+    # sharing the label row. Line 2 here has no such follow-up row at all
+    # (genuinely blank), and line 3's label row is what follows line 2's
+    # echo - neither should be mistaken for line 1's value, and line 3
+    # should still correctly find its own "0" one row further down.
+    pdf_bytes = make_raw_pdf([DOTTED_SCHEDULE2_VALUE_ON_NEXT_ROW_PAGE])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+    assert by_id["s2_1"].value == 0
+    assert by_id["s2_1"].confidence == "matched"
+    assert by_id["s2_2"].confidence == "not_found"
+    assert by_id["s2_3"].value == 0
+    assert by_id["s2_3"].confidence == "matched"
+
+
 def test_scanned_image_only_page_is_reported():
     # A page with literally no extractable text (e.g. a scanned Form 1040
     # summary) should be flagged so the UI can explain why its lines are

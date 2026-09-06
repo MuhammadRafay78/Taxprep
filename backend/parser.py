@@ -69,13 +69,17 @@ def _scan_from_anchor(lines: list[str], idx: int, reject_number: str | None, loo
       - not amount-shaped at all (e.g. ends in "Attach") -> the label is
         still wrapping onto the next row, so keep looking ahead.
       - a bare integer equal to `reject_number` (e.g. "...taxes . . . 1"
-        when the anchor row itself was line 1's own label, printed with
-        nothing else after it) -> an unfilled line reprints its own number
-        with nothing after it; this row IS the answer, and the answer is
-        "nothing was entered" - stop here, don't peek at a later, unrelated
-        line's row. `reject_number` is derived from the anchor row's own
-        leading number, not assumed from our line definitions, since a
-        schedule's line numbering can shift between tax years.
+        when the anchor row itself was line 1's own label) -> ambiguous.
+        Most PDFs print this only when the line was left blank, with
+        nothing else following. But some print the line number's own echo
+        *unconditionally*, with the actual value (when there is one)
+        printed alone on the very next row instead of the same row — so we
+        peek once more: if the immediate next non-blank row is nothing but
+        a single amount token, that's this line's real value; anything
+        else (a different line's label, more prose, ...) means this line
+        really was left blank. `reject_number` is derived from the anchor
+        row's own leading number, not assumed from our line definitions,
+        since a schedule's line numbering can shift between tax years.
       - anything else amount-shaped -> a real value; return it.
     """
     for offset in range(lookahead + 1):
@@ -89,6 +93,13 @@ def _scan_from_anchor(lines: list[str], idx: int, reject_number: str | None, loo
         if not AMOUNT_RE.fullmatch(last):
             continue
         if reject_number is not None and _is_bare_integer(last) and last.strip("()$") == reject_number:
+            for k in range(j + 1, min(j + 1 + lookahead, len(lines))):
+                next_tokens = lines[k].split()
+                if not next_tokens:
+                    continue
+                if len(next_tokens) == 1 and AMOUNT_RE.fullmatch(next_tokens[0]):
+                    return _parse_amount(next_tokens[0])
+                break
             return None
         return _parse_amount(last)
     return None

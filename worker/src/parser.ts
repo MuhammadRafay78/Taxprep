@@ -43,13 +43,17 @@ function isBareInteger(token: string): boolean {
  *   - not amount-shaped at all (e.g. ends in "Attach") -> the label is
  *     still wrapping onto the next row, so keep looking ahead.
  *   - a bare integer equal to `rejectNumber` (e.g. "...taxes . . . 1" when
- *     the anchor row itself was line 1's own label, printed with nothing
- *     else after it) -> an unfilled line reprints its own number with
- *     nothing after it; this row IS the answer, and the answer is "nothing
- *     was entered" - stop here, don't peek at a later, unrelated line's
- *     row. `rejectNumber` is derived from the anchor row's own leading
- *     number, not assumed from our line definitions, since a schedule's
- *     line numbering can shift between tax years.
+ *     the anchor row itself was line 1's own label) -> ambiguous. Most PDFs
+ *     print this only when the line was left blank, with nothing else
+ *     following. But some print the line number's own echo
+ *     *unconditionally*, with the actual value (when there is one) printed
+ *     alone on the very next row instead of the same row — so we peek once
+ *     more: if the immediate next non-blank row is nothing but a single
+ *     amount token, that's this line's real value; anything else (a
+ *     different line's label, more prose, ...) means this line really was
+ *     left blank. `rejectNumber` is derived from the anchor row's own
+ *     leading number, not assumed from our line definitions, since a
+ *     schedule's line numbering can shift between tax years.
  *   - anything else amount-shaped -> a real value; return it.
  */
 function scanFromAnchor(lines: string[], idx: number, rejectNumber: string | null, lookahead = 2): number | null {
@@ -61,6 +65,14 @@ function scanFromAnchor(lines: string[], idx: number, rejectNumber: string | nul
     const last = tokens[tokens.length - 1];
     if (!AMOUNT_RE.test(last)) continue;
     if (rejectNumber !== null && isBareInteger(last) && last.replace(/[()$]/g, "") === rejectNumber) {
+      for (let k = j + 1; k < Math.min(j + 1 + lookahead, lines.length); k++) {
+        const nextTokens = lines[k].split(/\s+/).filter(Boolean);
+        if (nextTokens.length === 0) continue;
+        if (nextTokens.length === 1 && AMOUNT_RE.test(nextTokens[0])) {
+          return parseAmount(nextTokens[0]);
+        }
+        break;
+      }
       return null;
     }
     return parseAmount(last);
