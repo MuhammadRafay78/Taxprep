@@ -179,7 +179,7 @@ const categoriesEl = document.getElementById('categories');
 // when that category is expanded.
 const CATEGORIES = [
   { key: 'income', title: 'Income', headline: '9',
-    ids: ['1z', '2b', '3b', '4b', '5b', '6b', '7', '8', 's1_1', 's1_3', 's1_7', 's1_9', 's1_10'] },
+    ids: ['1z', '2b', '3a', '3b', '4b', '5b', '6b', '7', '8', 's1_1', 's1_3', 's1_7', 's1_9', 's1_10'] },
   { key: 'agi', title: 'Adjustments & AGI', headline: '11',
     ids: ['10', 's1_11', 's1_13', 's1_15', 's1_20', 's1_21', 's1_25'] },
   { key: 'deductions', title: 'Deductions', headline: '14', ids: ['12', '13'] },
@@ -335,7 +335,14 @@ const CATEGORY_NARRATIVES = {
     const taxable = val('15');
     const tax = val('16');
     if (taxable === null || tax === null) return "Taxable income and tax weren't both found — check the numbers below.";
-    return `Tax was calculated on ${fmtMoney(taxable)} of taxable income (income after deductions), coming to ${fmtMoney(tax)} before any credits.`;
+    const capGains = val('7');
+    const qualDiv = val('3a');
+    const preferential = Math.max(0, capGains || 0) + Math.max(0, qualDiv || 0);
+    let s = `Tax was calculated on ${fmtMoney(taxable)} of taxable income (income after deductions), coming to ${fmtMoney(tax)} before any credits.`;
+    if (preferential > 0) {
+      s += ` ${fmtMoney(preferential)} of that was long-term capital gains and/or qualified dividends, which get taxed at lower rates (0%/15%/20% depending on income) than the rest of the taxable income — that's why the total tax comes out lower than a plain bracket calculation would suggest.`;
+    }
+    return s;
   },
   credits() {
     const total = val('21');

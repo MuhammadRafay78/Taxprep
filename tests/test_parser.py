@@ -7,7 +7,7 @@ from reportlab.lib.pagesizes import letter
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from backend.parser import parse_1040  # noqa: E402
+from backend.parser import parse_1040, detect_filing_status, detect_tax_year  # noqa: E402
 
 
 def make_pdf(pages: list[list[tuple[str, str]]]) -> bytes:
@@ -330,3 +330,54 @@ def test_scanned_image_only_page_is_reported():
     c.save()
     result = parse_1040(buf.getvalue())
     assert result.scanned_pages == [1]
+
+
+def test_filing_status_not_naively_single_when_spouse_field_is_filled():
+    # Form 1040's filing status checkbox row always prints all five status
+    # labels ("Single Married filing jointly Married filing separately ...")
+    # regardless of which is actually checked, so a naive substring search
+    # for "single" anywhere in the document would always match — the real
+    # tell is whether the joint-return spouse name field further down is
+    # actually filled in, which only ever happens on a joint return.
+    text = (
+        "Filing Status Single Married filing jointly Married filing separately (MFS) "
+        "Head of household (HOH) Qualifying surviving spouse (QSS)\n"
+        "Your first name and middle initial Last name Your social security number\n"
+        "Christopher A Johnson\n"
+        "If joint return, spouse's first name and middle initial Last name Spouse's social security number\n"
+        "Kimberly R Johnson\n"
+    )
+    assert detect_filing_status(text) == "mfj"
+
+
+def test_filing_status_falls_back_to_checkbox_labels_when_spouse_field_is_blank():
+    text = (
+        "Filing Status Single Married filing jointly Married filing separately (MFS) "
+        "Head of household (HOH) Qualifying surviving spouse (QSS)\n"
+        "Your first name and middle initial Last name Your social security number\n"
+        "Christopher A Johnson\n"
+        "If joint return, spouse's first name and middle initial Last name Spouse's social security number\n"
+        "Home address (number and street).\n"
+    )
+    assert detect_filing_status(text) == "single"
+
+
+def test_tax_year_found_past_blank_cover_pages():
+    # Some tax-software exports put several blank/cover pages before the
+    # actual Form 1040 — scanning only the first 600 characters of the
+    # whole document would miss the year entirely in that case.
+    text = "\n".join([" " * 40] * 30) + "\nU.S. Individual Income Tax Return 2022\nOMB No. 1545-0074\n"
+    assert detect_tax_year(text) == 2022
+
+
+def test_tax_year_not_confused_by_preparer_cover_letter_date():
+    # A preparer's cover letter ahead of the actual Form 1040 can mention
+    # an unrelated year (e.g. a payment due date the following spring) —
+    # the real tax year should still come from right next to Form 1040's
+    # own OMB number, not whichever year appears first in the document.
+    text = (
+        "Your payment was due on April 15, 2024. Thank you for the opportunity "
+        "to be of service.\n\n"
+        "1040 U.S. Individual Income Tax Return | 2023\nOMB No. 1545-0074\n"
+    )
+    assert detect_tax_year(text) == 2023

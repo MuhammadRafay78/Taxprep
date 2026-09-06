@@ -185,6 +185,7 @@ LINE_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
     ("1z", "Total wages (Form W-2 box 1)",
      ["add lines 1a through 1h", "wages, salaries, tips", "total is your total wages"], "1z"),
     ("2b", "Taxable interest", ["taxable interest"], "2b"),
+    ("3a", "Qualified dividends", ["qualified dividends"], "3a"),
     ("3b", "Ordinary dividends", ["ordinary dividends"], "3b"),
     ("4b", "Taxable IRA distributions", ["ira distributions", "taxable amount"], "4b"),
     ("5b", "Taxable pensions and annuities", ["pensions and annuities"], "5b"),
@@ -317,24 +318,66 @@ def extract_text(pdf_bytes: bytes) -> str:
     return "\n".join(_page_texts(pdf_bytes))
 
 
+_SPOUSE_NAME_RE = re.compile(
+    r"if joint return,?\s*spouse.s first name.{0,40}?social security number\s*"
+    r"\n?\s*([A-Za-z][^\n|]{2,60}?)\s*(?:\n|$)",
+    re.I | re.DOTALL,
+)
+
+
 def detect_filing_status(text: str) -> str | None:
     lowered = text.lower()
-    # The filing status section is near the top of page 1; scanning the
-    # whole document risks false positives from later mentions, so this is
-    # only a suggestion — the UI lets the user confirm or override it.
+
+    # All five status labels are always printed on Form 1040's checkbox
+    # row regardless of which one is actually checked, so the mere presence
+    # of e.g. "single" anywhere in the document (true of nearly every 1040,
+    # OCR'd or not) can't tell us which box was marked — a naive substring
+    # search over the whole document effectively always finds "single"
+    # first and reports that, which is wrong far more often than not.
+    #
+    # A genuinely filled-in "joint return" spouse name field is a far more
+    # reliable signal than the checkbox row itself: it's only ever
+    # populated on a return that's actually married filing jointly.
+    spouse_match = _SPOUSE_NAME_RE.search(text)
+    if spouse_match:
+        captured = spouse_match.group(1).strip(" .|_")
+        # An empty field is immediately followed by the next printed label
+        # ("Home address...") rather than an actual name — don't mistake
+        # that label text itself for a filled-in spouse name.
+        if captured and not captured.lower().startswith("home address"):
+            return "mfj"
+
+    # Beyond that, this is still a best-effort suggestion — the UI lets the
+    # user confirm or override it — since distinguishing single / HOH / QSS
+    # / MFS from text alone (with no reliable spouse-field signal) requires
+    # knowing which checkbox glyph was actually marked, which a text-layer
+    # or OCR pass doesn't preserve.
     for status_id, pattern in FILING_STATUS_PATTERNS:
         if re.search(pattern, lowered):
             return status_id
     return None
 
 
+_FORM_1040_OMB_RE = re.compile(r"1545-0074")
+
+
 def detect_tax_year(text: str) -> int | None:
-    """Look for the tax year near the top of the document (e.g. "Form 1040
-    (2023)" or "...Tax Return  2023"). Scanning only the first ~600
-    characters avoids picking up an unrelated year mentioned deeper in the
-    form (a birthdate, a prior-year comparison, etc.)."""
-    header = text[:600]
-    match = TAX_YEAR_RE.search(header)
+    """Look for the tax year printed right next to Form 1040's own title
+    (e.g. "Form 1040 (2023)" or "U.S. Individual Income Tax Return | 2023"),
+    which sits immediately before Form 1040's own OMB control number
+    (1545-0074, distinct from every other form/schedule's own number).
+    Anchoring there, rather than just the first N characters of the whole
+    document, avoids two failure modes seen on real returns: missing the
+    year entirely on a return with blank cover pages ahead of the actual
+    form, and picking up an unrelated year from a tax-preparer's cover
+    letter (e.g. a payment due date) that can precede the form itself."""
+    omb_match = _FORM_1040_OMB_RE.search(text)
+    if omb_match:
+        window = text[max(0, omb_match.start() - 200):omb_match.start()]
+        matches = TAX_YEAR_RE.findall(window)
+        if matches:
+            return int(matches[-1])
+    match = TAX_YEAR_RE.search(text[:600])
     return int(match.group(1)) if match else None
 
 

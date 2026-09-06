@@ -143,6 +143,7 @@ export const LINE_DEFINITIONS: LineDefinition[] = [
   ["1z", "Total wages (Form W-2 box 1)",
     ["add lines 1a through 1h", "wages, salaries, tips", "total is your total wages"], "1z"],
   ["2b", "Taxable interest", ["taxable interest"], "2b"],
+  ["3a", "Qualified dividends", ["qualified dividends"], "3a"],
   ["3b", "Ordinary dividends", ["ordinary dividends"], "3b"],
   ["4b", "Taxable IRA distributions", ["ira distributions", "taxable amount"], "4b"],
   ["5b", "Taxable pensions and annuities", ["pensions and annuities"], "5b"],
@@ -259,15 +260,48 @@ export function asValueMap(lines: ExtractedLine[]): Record<string, number> {
   return values;
 }
 
+const SPOUSE_NAME_RE =
+  /if joint return,?\s*spouse.s first name.{0,40}?social security number\s*\n?\s*([A-Za-z][^\n|]{2,60}?)\s*(?:\n|$)/is;
+
 function detectFilingStatus(text: string): string | null {
   const lowered = text.toLowerCase();
+
+  // All five status labels are always printed on Form 1040's checkbox row
+  // regardless of which one is actually checked, so the mere presence of
+  // e.g. "single" anywhere in the document (true of nearly every 1040)
+  // can't tell us which box was marked. A genuinely filled-in "joint
+  // return" spouse name field is a far more reliable signal — it's only
+  // ever populated on a return that's actually married filing jointly.
+  const spouseMatch = SPOUSE_NAME_RE.exec(text);
+  if (spouseMatch) {
+    const captured = spouseMatch[1].trim().replace(/^[.|_\s]+|[.|_\s]+$/g, "");
+    // An empty field is immediately followed by the next printed label
+    // ("Home address...") rather than an actual name — don't mistake that
+    // label text itself for a filled-in spouse name.
+    if (captured && !captured.toLowerCase().startsWith("home address")) return "mfj";
+  }
+
   for (const [statusId, pattern] of FILING_STATUS_PATTERNS) {
     if (pattern.test(lowered)) return statusId;
   }
   return null;
 }
 
+const FORM_1040_OMB_RE = /1545-0074/;
+
 function detectTaxYear(text: string): number | null {
+  // Look for the tax year printed right before Form 1040's own OMB control
+  // number (1545-0074, distinct from every other form/schedule's number)
+  // rather than just the first N characters of the whole document — that
+  // avoids missing the year on a return with blank cover pages ahead of
+  // the actual form, and avoids picking up an unrelated year from a
+  // preparer's cover letter (e.g. a payment due date) that can precede it.
+  const ombMatch = FORM_1040_OMB_RE.exec(text);
+  if (ombMatch) {
+    const window = text.slice(Math.max(0, ombMatch.index - 200), ombMatch.index);
+    const matches = [...window.matchAll(new RegExp(TAX_YEAR_RE.source, "g"))];
+    if (matches.length) return parseInt(matches[matches.length - 1][1], 10);
+  }
   const header = text.slice(0, 600);
   const match = TAX_YEAR_RE.exec(header);
   return match ? parseInt(match[1], 10) : null;

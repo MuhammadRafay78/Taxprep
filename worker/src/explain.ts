@@ -6,6 +6,8 @@ import type { FilingStatus } from "./taxData";
 export const LINE_EXPLANATIONS: Record<string, string> = {
   "1z": "Wages from your W-2s (box 1 of every W-2 you received), added together.",
   "2b": "Interest income that's taxed at your regular rate (bank interest, bond interest, etc).",
+  "3a": "The portion of your dividends that qualifies for lower long-term capital gains tax rates " +
+        "instead of your regular rate.",
   "3b": "Dividend income from stocks or funds you own.",
   "4b": "The taxable portion of any money you took out of an IRA this year.",
   "5b": "The taxable portion of pension or annuity payments you received.",
@@ -110,8 +112,11 @@ export function buildFlags(
   const refund = values["34"];
   const owed = values["37"];
   const capitalGains = values["7"];
+  const qualifiedDividends = values["3a"];
   const dividends = values["3b"];
   const seTax = values["s2_4"];
+  const niit = values["s2_12"];
+  const addMedicare = values["s2_11"];
 
   if (totalTax !== undefined && totalIncome !== undefined && totalTax > totalIncome) {
     flags.push({ severity: "warning", message: "Total tax (line 24) is greater than total income (line 9) — " +
@@ -163,24 +168,26 @@ export function buildFlags(
       "present — only one of these should be filled in." });
   }
 
-  if (
-    tax !== undefined &&
-    taxableIncome &&
-    filingStatus &&
-    taxYear !== null &&
-    taxData.TAX_BRACKETS[taxYear] &&
-    !capitalGains &&
-    !dividends
-  ) {
+  if (tax !== undefined && taxableIncome && filingStatus && taxYear !== null && taxData.TAX_BRACKETS[taxYear]) {
     const brackets = taxData.TAX_BRACKETS[taxYear][filingStatus as FilingStatus];
-    if (brackets) {
-      const expected = taxData.computeBracketTax(taxableIncome, brackets);
-      if (expected > 0 && Math.abs(tax - expected) / expected > 0.08 && Math.abs(tax - expected) > 75) {
-        flags.push({ severity: "info", message: `Tax on line 16 ($${tax.toLocaleString()}) is noticeably ` +
-          `different from a straightforward ${taxYear} bracket calculation on your taxable income ` +
-          `(~$${expected.toLocaleString()}). This can be normal (tax table rounding, a special worksheet), ` +
-          "but worth a second look if it surprises you." });
-      }
+    const hasPreferentialIncome = !!(capitalGains && capitalGains > 0) || !!qualifiedDividends;
+    const cgBrackets = taxData.CAPITAL_GAINS_BRACKETS[taxYear]?.[filingStatus as FilingStatus];
+    let expected: number | undefined;
+    let basis = "";
+    if (brackets && hasPreferentialIncome && cgBrackets) {
+      expected = taxData.computeQdcgtTax(
+        taxableIncome, qualifiedDividends || 0, capitalGains || 0, brackets, cgBrackets,
+      );
+      basis = "accounting for the lower rate on your qualified dividends/long-term capital gains";
+    } else if (brackets && !hasPreferentialIncome) {
+      expected = taxData.computeBracketTax(taxableIncome, brackets);
+      basis = "using a straightforward bracket calculation";
+    }
+    if (expected !== undefined && expected > 0 && Math.abs(tax - expected) / expected > 0.08 && Math.abs(tax - expected) > 75) {
+      flags.push({ severity: "info", message: `Tax on line 16 ($${tax.toLocaleString()}) is noticeably ` +
+        `different from what ${taxYear} tax rates would give on your taxable income, ${basis} ` +
+        `(~$${expected.toLocaleString()}). This can be normal (tax table rounding, a special worksheet), ` +
+        "but worth a second look if it surprises you." });
     }
   }
 
@@ -204,6 +211,40 @@ export function buildFlags(
     flags.push({ severity: "info", message: `Self-employment tax of $${seTax.toLocaleString()} is on this ` +
       "return (Schedule 2, line 4) — that means self-employment/1099 income was reported, which also " +
       "entitles you to a deduction for half of it on Schedule 1, line 15." });
+  }
+
+  if (agi !== undefined && filingStatus && taxYear !== null && taxData.AMT_EXEMPTION[taxYear] && !values["s2_1"]) {
+    const exemption = taxData.AMT_EXEMPTION[taxYear][filingStatus as FilingStatus];
+    if (exemption !== undefined && agi > exemption * 1.5) {
+      flags.push({ severity: "info", message: "AGI is well above the AMT exemption amount for your filing " +
+        "status. No AMT (Schedule 2, line 1) is shown here, which is common, but returns with a lot of " +
+        "itemized deductions or exercised incentive stock options sometimes trigger it at this income level." });
+    }
+  }
+
+  if (agi !== undefined && filingStatus && agi > (taxData.NIIT_THRESHOLD[filingStatus as FilingStatus] ?? Infinity)) {
+    if ((capitalGains || dividends || values["2b"]) && !niit) {
+      const threshold = taxData.NIIT_THRESHOLD[filingStatus as FilingStatus];
+      flags.push({ severity: "info", message: "AGI is above the Net Investment Income Tax threshold for " +
+        `your filing status ($${threshold.toLocaleString()}), and this return has investment income ` +
+        "(interest, dividends, or capital gains), but no NIIT (Schedule 2, line 12) is shown. Worth checking " +
+        "whether Form 8960 applies." });
+    }
+  }
+
+  if (
+    agi !== undefined &&
+    filingStatus &&
+    agi > (taxData.ADDITIONAL_MEDICARE_THRESHOLD[filingStatus as FilingStatus] ?? Infinity) &&
+    values["1z"] &&
+    !addMedicare &&
+    !seTax
+  ) {
+    const threshold = taxData.ADDITIONAL_MEDICARE_THRESHOLD[filingStatus as FilingStatus];
+    flags.push({ severity: "info", message: "Wages plus other income are above the Additional Medicare Tax " +
+      `threshold for your filing status ($${threshold.toLocaleString()}), but no Additional Medicare Tax ` +
+      "(Schedule 2, line 11) is shown. This can be correct if it was already withheld by an employer, so " +
+      "it's just worth a glance at your W-2 box 6." });
   }
 
   return flags;

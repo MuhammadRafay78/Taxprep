@@ -8,6 +8,8 @@ from . import tax_data
 LINE_EXPLANATIONS: dict[str, str] = {
     "1z": "Wages from your W-2s (box 1 of every W-2 you received), added together.",
     "2b": "Interest income that's taxed at your regular rate (bank interest, bond interest, etc).",
+    "3a": "The portion of your dividends that qualifies for lower long-term capital gains tax rates "
+          "instead of your regular rate.",
     "3b": "Dividend income from stocks or funds you own.",
     "4b": "The taxable portion of any money you took out of an IRA this year.",
     "5b": "The taxable portion of pension or annuity payments you received.",
@@ -114,8 +116,11 @@ def build_flags(
     refund = values.get("34")
     owed = values.get("37")
     capital_gains = values.get("7")
+    qualified_dividends = values.get("3a")
     dividends = values.get("3b")
     se_tax = values.get("s2_4")
+    niit = values.get("s2_12")
+    add_medicare = values.get("s2_11")
 
     if total_tax is not None and total_income is not None and total_tax > total_income:
         flags.append(Flag("warning", "Total tax (line 24) is greater than total income (line 9) — "
@@ -159,23 +164,26 @@ def build_flags(
         flags.append(Flag("warning", "Both a refund (line 34) and an amount owed (line 37) are present — "
                                       "only one of these should be filled in."))
 
-    if (
-        tax is not None
-        and taxable_income
-        and filing_status
-        and tax_year in tax_data.TAX_BRACKETS
-        and not capital_gains
-        and not dividends
-    ):
+    if tax is not None and taxable_income and filing_status and tax_year in tax_data.TAX_BRACKETS:
         brackets = tax_data.TAX_BRACKETS[tax_year].get(filing_status)
-        if brackets:
+        has_preferential_income = bool(capital_gains and capital_gains > 0) or bool(qualified_dividends)
+        cg_brackets = tax_data.CAPITAL_GAINS_BRACKETS.get(tax_year, {}).get(filing_status)
+        if brackets and has_preferential_income and cg_brackets:
+            expected = tax_data.compute_qdcgt_tax(
+                taxable_income, qualified_dividends or 0, capital_gains or 0, brackets, cg_brackets,
+            )
+            basis = "accounting for the lower rate on your qualified dividends/long-term capital gains"
+        elif brackets and not has_preferential_income:
             expected = tax_data.compute_bracket_tax(taxable_income, brackets)
-            if expected > 0 and abs(tax - expected) / expected > 0.08 and abs(tax - expected) > 75:
-                flags.append(Flag("info", f"Tax on line 16 (${tax:,.0f}) is noticeably different from a "
-                                           f"straightforward {tax_year} bracket calculation on your taxable "
-                                           f"income (~${expected:,.0f}). This can be normal (tax table "
-                                           "rounding, a special worksheet), but worth a second look if it "
-                                           "surprises you."))
+            basis = "using a straightforward bracket calculation"
+        else:
+            expected = None
+            basis = ""
+        if expected is not None and expected > 0 and abs(tax - expected) / expected > 0.08 and abs(tax - expected) > 75:
+            flags.append(Flag("info", f"Tax on line 16 (${tax:,.0f}) is noticeably different from what "
+                                       f"{tax_year} tax rates would give on your taxable income, {basis} "
+                                       f"(~${expected:,.0f}). This can be normal (tax table rounding, a "
+                                       "special worksheet), but worth a second look if it surprises you."))
 
     if (
         agi is not None
@@ -195,6 +203,42 @@ def build_flags(
         flags.append(Flag("info", f"Self-employment tax of ${se_tax:,.0f} is on this return (Schedule 2, "
                                    "line 4) — that means self-employment/1099 income was reported, which "
                                    "also entitles you to a deduction for half of it on Schedule 1, line 15."))
+
+    if (
+        agi is not None
+        and filing_status
+        and tax_year in tax_data.AMT_EXEMPTION
+        and not values.get("s2_1")
+    ):
+        exemption = tax_data.AMT_EXEMPTION[tax_year].get(filing_status)
+        if exemption is not None and agi > exemption * 1.5:
+            flags.append(Flag("info", "AGI is well above the AMT exemption amount for your filing status. "
+                                       "No AMT (Schedule 2, line 1) is shown here, which is common, but "
+                                       "returns with a lot of itemized deductions or exercised incentive "
+                                       "stock options sometimes trigger it at this income level."))
+
+    if agi is not None and filing_status and agi > tax_data.NIIT_THRESHOLD.get(filing_status, float("inf")):
+        if (capital_gains or dividends or values.get("2b")) and not niit:
+            flags.append(Flag("info", f"AGI is above the Net Investment Income Tax threshold for your "
+                                       f"filing status (${tax_data.NIIT_THRESHOLD[filing_status]:,.0f}), and "
+                                       "this return has investment income (interest, dividends, or capital "
+                                       "gains), but no NIIT (Schedule 2, line 12) is shown. Worth checking "
+                                       "whether Form 8960 applies."))
+
+    if (
+        agi is not None
+        and filing_status
+        and agi > tax_data.ADDITIONAL_MEDICARE_THRESHOLD.get(filing_status, float("inf"))
+        and values.get("1z")
+        and not add_medicare
+        and not se_tax
+    ):
+        flags.append(Flag("info", "Wages plus other income are above the Additional Medicare Tax threshold "
+                                   "for your filing status "
+                                   f"(${tax_data.ADDITIONAL_MEDICARE_THRESHOLD[filing_status]:,.0f}), but no "
+                                   "Additional Medicare Tax (Schedule 2, line 11) is shown. This can be "
+                                   "correct if it was already withheld by an employer, so it's just worth "
+                                   "a glance at your W-2 box 6."))
 
     return flags
 

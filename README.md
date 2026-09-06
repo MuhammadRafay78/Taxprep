@@ -32,13 +32,18 @@ extracted number before it explains anything.
    - Red flags — inconsistencies (e.g. tax exceeding total income) and
      "worth a second look" notes: heavy over-withholding, a deduction that
      doesn't match the standard amount for your filing status and tax year,
-     a reported tax that's noticeably off from a plain bracket calculation
-     on your taxable income (suppressed when capital gains/dividends are
-     present, since those get preferential rates), a hint that you might
-     qualify for the Earned Income Credit but didn't claim it, and a note
-     when self-employment tax shows up (with the deduction it entitles you
-     to). Bracket/EIC/standard-deduction figures live in `backend/tax_data.py`
-     for 2023–2025 and degrade gracefully for years outside that table.
+     a reported tax that's noticeably off from what the year's tax rates
+     would give on your taxable income — using the IRS Qualified Dividends
+     and Capital Gains Tax Worksheet approximation when the return has
+     long-term capital gains or qualified dividends, so those returns get a
+     real check instead of being skipped — a hint that you might qualify
+     for the Earned Income Credit but didn't claim it, a note when
+     self-employment tax shows up (with the deduction it entitles you to),
+     and proximity hints for the Alternative Minimum Tax exemption, the Net
+     Investment Income Tax threshold, and the Additional Medicare Tax
+     threshold. Bracket/capital-gains/AMT/EIC/standard-deduction figures
+     live in `backend/tax_data.py` for 2020–2025 and degrade gracefully for
+     years outside that table.
    - A step-by-step money-flow breakdown from total income down to your
      refund or amount owed, rendered as a simple bar-based waterfall.
 4. Optionally, upload a **second year's** Form 1040 to compare against the
