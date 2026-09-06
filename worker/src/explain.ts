@@ -250,6 +250,191 @@ export function buildFlags(
   return flags;
 }
 
+// Short display names for the computation-walkthrough tables — distinct
+// from LINE_EXPLANATIONS, which is full plain-language prose for a
+// different part of the UI. Ported from backend/explain.py's ITEM_LABELS.
+const ITEM_LABELS: Record<string, string> = {
+  "1z": "Wages", "2b": "Taxable interest", "3b": "Ordinary dividends",
+  "4b": "Taxable IRA distributions", "5b": "Taxable pensions/annuities",
+  "6b": "Taxable Social Security", "7": "Capital gain or (loss)",
+  "8": "Additional income (Schedule 1)", "9": "Total income",
+  "10": "Adjustments to income", "11": "Adjusted gross income",
+  "12": "Standard/itemized deduction", "13": "QBI deduction",
+  "15": "Taxable income", "16": "Tax", "17": "Schedule 2, line 3",
+  "18": "Add lines 16 and 17", "19": "Child tax credit / credit for other dependents",
+  "20": "Schedule 3, line 8", "21": "Add lines 19 and 20",
+  "22": "Subtract line 21 from line 18", "23": "Other taxes (Schedule 2)",
+  "24": "Total tax", "25d": "Federal income tax withheld",
+  "26": "Estimated tax payments", "27": "Earned income credit",
+  "28": "Additional child tax credit", "31": "Schedule 3, line 13",
+  "32": "Total other payments/refundable credits", "33": "Total payments",
+  "34": "Overpayment", "37": "Amount you owe",
+};
+
+const FILING_STATUS_LABELS: Record<string, string> = {
+  single: "Single", mfj: "Married filing jointly", mfs: "Married filing separately",
+  hoh: "Head of household", qss: "Qualifying surviving spouse",
+};
+
+const INCOME_LINE_IDS = ["1z", "2b", "3b", "4b", "5b", "6b", "7", "8"];
+const OUTCOME_LINE_IDS = ["16", "17", "18", "19", "20", "21", "22", "23", "24",
+  "25d", "26", "27", "28", "31", "32", "33"];
+
+export interface ComputationRow {
+  line: string;
+  item: string;
+  amount: number;
+  note: string | null;
+}
+
+export interface Computation {
+  header: {
+    filingStatus: string | null;
+    taxYear: number | null;
+    resultType: "refund" | "owed" | null;
+    resultAmount: number | null;
+  };
+  incomeToAgi: ComputationRow[];
+  agiToTaxable: {
+    agi: number | null;
+    deduction: number | null;
+    deductionNote: string | null;
+    qbi: number | null;
+    taxableIncome: number | null;
+  };
+  taxComputation: {
+    method: "qdcgt" | "brackets";
+    ordinaryIncome?: number;
+    ordinaryTax?: number;
+    preferentialIncome?: number;
+    preferentialRows?: { rate: number; amount: number; tax: number }[];
+    bracketRows?: { range: string; rate: number; amount: number; tax: number }[];
+    reconstructedTax: number;
+    reportedTax: number | undefined;
+    tiesOut: boolean;
+  } | null;
+  taxToOutcome: ComputationRow[];
+  reviewerNotes: Flag[];
+}
+
+/** A table-driven walkthrough of how this return's numbers were computed,
+ * in the order Form 1040 stacks up: income -> AGI -> taxable income -> tax
+ * (reconstructed via the bracket schedule or the Qualified Dividends &
+ * Capital Gain Tax Worksheet, whichever applies, checked against line 16)
+ * -> total tax -> refund/amount owed. Ported from backend/explain.py's
+ * build_computation(). */
+export function buildComputation(
+  values: Record<string, number>,
+  filingStatus: string | null,
+  taxYear: number | null,
+): Computation {
+  const v = (id: string): number | undefined => values[id];
+
+  const refund = v("34");
+  const owed = v("37");
+  const header = {
+    filingStatus: filingStatus ? (FILING_STATUS_LABELS[filingStatus] ?? filingStatus) : null,
+    taxYear,
+    resultType: refund ? ("refund" as const) : owed ? ("owed" as const) : null,
+    resultAmount: refund ? refund : owed ? owed : null,
+  };
+
+  const incomeToAgi: ComputationRow[] = [];
+  for (const lineId of INCOME_LINE_IDS) {
+    const amount = v(lineId);
+    if (!amount) continue;
+    let note: string | null = null;
+    if (lineId === "3b" && v("3a")) note = `of which $${v("3a")!.toLocaleString()} is qualified`;
+    incomeToAgi.push({ line: lineId, item: ITEM_LABELS[lineId], amount, note });
+  }
+  const totalIncome = v("9");
+  if (totalIncome !== undefined) incomeToAgi.push({ line: "9", item: "Total income", amount: totalIncome, note: null });
+  const adjustments = v("10");
+  if (adjustments) incomeToAgi.push({ line: "10", item: "Adjustments to income", amount: -adjustments, note: null });
+  const agi = v("11");
+  if (agi !== undefined) incomeToAgi.push({ line: "11", item: "Adjusted gross income (AGI)", amount: agi, note: null });
+
+  const deduction = v("12");
+  const qbi = v("13");
+  const taxableIncome = v("15");
+  let deductionNote: string | null = null;
+  if (deduction !== undefined && filingStatus && taxYear !== null && taxData.STANDARD_DEDUCTIONS[taxYear]) {
+    const standard = taxData.STANDARD_DEDUCTIONS[taxYear][filingStatus as FilingStatus];
+    if (standard !== undefined) {
+      deductionNote = Math.abs(deduction - standard) <= 1 ? "standard deduction" : "itemized (Schedule A)";
+    }
+  }
+  const agiToTaxable = {
+    agi: agi ?? null, deduction: deduction ?? null, deductionNote,
+    qbi: qbi ?? null, taxableIncome: taxableIncome ?? null,
+  };
+
+  let taxComputation: Computation["taxComputation"] = null;
+  const reportedTax = v("16");
+  const capitalGains = v("7");
+  const qualifiedDividends = v("3a");
+  if (taxableIncome && filingStatus && taxYear !== null && taxData.TAX_BRACKETS[taxYear]) {
+    const brackets = taxData.TAX_BRACKETS[taxYear][filingStatus as FilingStatus];
+    const hasPreferential = !!(capitalGains && capitalGains > 0) || !!qualifiedDividends;
+    const cgBrackets = taxData.CAPITAL_GAINS_BRACKETS[taxYear]?.[filingStatus as FilingStatus];
+    if (brackets && hasPreferential && cgBrackets) {
+      let preferential = Math.max(0, qualifiedDividends || 0) + Math.max(0, capitalGains || 0);
+      preferential = Math.min(preferential, taxableIncome);
+      const ordinary = taxableIncome - preferential;
+      const ordinaryTax = taxData.computeBracketTax(ordinary, brackets);
+      const preferentialRows: { rate: number; amount: number; tax: number }[] = [];
+      let lower = ordinary;
+      for (const [ceiling, rate] of cgBrackets) {
+        const upper = ceiling ?? Infinity;
+        if (taxableIncome <= lower) break;
+        const bandTop = Math.min(taxableIncome, Math.max(upper, ordinary));
+        const taxed = Math.max(0, bandTop - lower);
+        if (taxed > 0) preferentialRows.push({ rate, amount: taxed, tax: Math.round(taxed * rate * 100) / 100 });
+        lower = bandTop;
+      }
+      const reconstructed = Math.round((ordinaryTax + preferentialRows.reduce((s, r) => s + r.tax, 0)) * 100) / 100;
+      taxComputation = {
+        method: "qdcgt", ordinaryIncome: ordinary, ordinaryTax, preferentialIncome: preferential,
+        preferentialRows, reconstructedTax: reconstructed, reportedTax,
+        tiesOut: reportedTax !== undefined && Math.abs(reportedTax - reconstructed) <= Math.max(75, reconstructed * 0.08),
+      };
+    } else if (brackets) {
+      const bracketRows: { range: string; rate: number; amount: number; tax: number }[] = [];
+      let lower = 0;
+      for (const [ceiling, rate] of brackets) {
+        const upper = ceiling ?? Infinity;
+        if (taxableIncome <= lower) break;
+        const taxed = Math.min(taxableIncome, upper) - lower;
+        if (taxed > 0) {
+          bracketRows.push({
+            range: ceiling !== null ? `$${lower.toLocaleString()}–$${upper.toLocaleString()}` : `$${lower.toLocaleString()}+`,
+            rate, amount: taxed, tax: Math.round(taxed * rate * 100) / 100,
+          });
+        }
+        lower = upper;
+      }
+      const reconstructed = Math.round(bracketRows.reduce((s, r) => s + r.tax, 0) * 100) / 100;
+      taxComputation = {
+        method: "brackets", bracketRows, reconstructedTax: reconstructed, reportedTax,
+        tiesOut: reportedTax !== undefined && Math.abs(reportedTax - reconstructed) <= Math.max(75, reconstructed * 0.08),
+      };
+    }
+  }
+
+  const taxToOutcome: ComputationRow[] = [];
+  for (const lineId of OUTCOME_LINE_IDS) {
+    const amount = v(lineId);
+    if (amount === undefined) continue;
+    taxToOutcome.push({ line: lineId, item: ITEM_LABELS[lineId], amount, note: null });
+  }
+  if (refund) taxToOutcome.push({ line: "34", item: "Overpayment (refund)", amount: refund, note: null });
+  else if (owed) taxToOutcome.push({ line: "37", item: "Amount you owe", amount: owed, note: null });
+
+  const reviewerNotes = buildFlags(values, filingStatus, taxYear);
+
+  return { header, incomeToAgi, agiToTaxable, taxComputation, taxToOutcome, reviewerNotes };
+}
+
 export interface FlowStep {
   label: string;
   value: number;

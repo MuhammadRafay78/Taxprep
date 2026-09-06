@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from backend.explain import build_flags  # noqa: E402
+from backend.explain import build_computation, build_flags  # noqa: E402
 from backend import tax_data  # noqa: E402
 
 
@@ -81,3 +81,34 @@ def test_compute_bracket_tax_matches_known_single_2023_bracket():
     brackets = tax_data.TAX_BRACKETS[2023]["single"]
     expected = 11000 * 0.10 + (44725 - 11000) * 0.12 + (50000 - 44725) * 0.22
     assert tax_data.compute_bracket_tax(50000, brackets) == round(expected, 2)
+
+
+def test_build_computation_uses_bracket_method_with_no_preferential_income():
+    values = {"1z": 60000, "9": 60000, "11": 60000, "12": 13850, "15": 46150, "16": 5307, "24": 5307}
+    comp = build_computation(values, "single", 2023)
+    assert comp["header"]["filing_status"] == "Single"
+    assert comp["header"]["tax_year"] == 2023
+    assert comp["tax_computation"]["method"] == "brackets"
+    assert comp["tax_computation"]["ties_out"] is True
+    assert comp["agi_to_taxable"]["deduction_note"] == "standard deduction"
+
+
+def test_build_computation_uses_qdcgt_method_with_capital_gains():
+    values = {"1z": 100000, "7": 40000, "9": 140000, "11": 140000, "12": 13850,
+              "15": 126150, "16": 24000, "24": 24000}
+    comp = build_computation(values, "single", 2023)
+    assert comp["tax_computation"]["method"] == "qdcgt"
+    assert comp["tax_computation"]["preferential_income"] == 40000
+
+
+def test_build_computation_notes_qualified_dividend_portion():
+    values = {"3a": 500, "3b": 800, "9": 800, "11": 800}
+    comp = build_computation(values, "single", 2023)
+    dividend_row = next(r for r in comp["income_to_agi"] if r["line"] == "3b")
+    assert dividend_row["note"] == "of which $500 is qualified"
+
+
+def test_build_computation_flags_a_tax_figure_that_does_not_tie_out():
+    values = {"1z": 60000, "9": 60000, "11": 60000, "12": 13850, "15": 46150, "16": 40000, "24": 40000}
+    comp = build_computation(values, "single", 2023)
+    assert comp["tax_computation"]["ties_out"] is False

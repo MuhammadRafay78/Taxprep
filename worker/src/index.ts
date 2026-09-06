@@ -1,5 +1,5 @@
 import { parse1040 } from "./parser";
-import { LINE_EXPLANATIONS, buildFlags, buildFlow } from "./explain";
+import { LINE_EXPLANATIONS, buildComputation, buildFlags, buildFlow } from "./explain";
 
 export interface Env {
   ASSETS: Fetcher;
@@ -75,12 +75,44 @@ async function handleAnalyze(request: Request): Promise<Response> {
     }
   }
 
-  const flags = buildFlags(values, payload.filing_status ?? null, payload.tax_year ?? null);
+  const filingStatus = payload.filing_status ?? null;
+  const taxYear = payload.tax_year ?? null;
+  const flags = buildFlags(values, filingStatus, taxYear);
   const flow = buildFlow(values);
+  const comp = buildComputation(values, filingStatus, taxYear);
 
   return Response.json({
     flags: flags.map((f) => ({ severity: f.severity, message: f.message })),
     flow,
+    computation: {
+      header: {
+        filing_status: comp.header.filingStatus,
+        tax_year: comp.header.taxYear,
+        result_type: comp.header.resultType,
+        result_amount: comp.header.resultAmount,
+      },
+      income_to_agi: comp.incomeToAgi,
+      agi_to_taxable: {
+        agi: comp.agiToTaxable.agi,
+        deduction: comp.agiToTaxable.deduction,
+        deduction_note: comp.agiToTaxable.deductionNote,
+        qbi: comp.agiToTaxable.qbi,
+        taxable_income: comp.agiToTaxable.taxableIncome,
+      },
+      tax_computation: comp.taxComputation && {
+        method: comp.taxComputation.method,
+        ordinary_income: comp.taxComputation.ordinaryIncome,
+        ordinary_tax: comp.taxComputation.ordinaryTax,
+        preferential_income: comp.taxComputation.preferentialIncome,
+        preferential_rows: comp.taxComputation.preferentialRows,
+        bracket_rows: comp.taxComputation.bracketRows,
+        reconstructed_tax: comp.taxComputation.reconstructedTax,
+        reported_tax: comp.taxComputation.reportedTax ?? null,
+        ties_out: comp.taxComputation.tiesOut,
+      },
+      tax_to_outcome: comp.taxToOutcome,
+      reviewer_notes: comp.reviewerNotes.map((f) => ({ severity: f.severity, message: f.message })),
+    },
   });
 }
 

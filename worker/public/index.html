@@ -95,6 +95,19 @@
   .compare-table th, .compare-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
   .compare-table td.delta.up { color: var(--warn); }
   .compare-table td.delta.down { color: var(--accent); }
+
+  .comp-section { margin-bottom: 22px; }
+  .comp-section h3 { font-size: 0.95rem; margin: 0 0 8px; }
+  .comp-header-facts { font-size: 0.9rem; color: var(--muted); margin-bottom: 4px; }
+  .comp-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .comp-table th { text-align: left; padding: 6px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+  .comp-table td { text-align: left; padding: 6px; border-bottom: 1px solid #f0efe9; }
+  .comp-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .comp-table tr.comp-total td { font-weight: 700; border-top: 2px solid var(--border); }
+  .comp-note { color: var(--muted); font-size: 0.8rem; }
+  .comp-tie { padding: 8px 10px; border-radius: 6px; font-size: 0.85rem; margin-top: 8px; }
+  .comp-tie.ok { background: var(--accent-dim); color: var(--accent); }
+  .comp-tie.off { background: var(--warn-dim); color: var(--warn); }
   .compare-note { color: var(--muted); font-size: 0.85rem; margin-top: 10px; }
 </style>
 </head>
@@ -160,8 +173,8 @@
   </section>
 
   <section class="panel hidden" id="results-panel">
-    <h2>Red flags &amp; things worth double-checking</h2>
-    <div id="flags"></div>
+    <h2>Computation walkthrough</h2>
+    <div id="computation"></div>
 
     <h2>How the money flows</h2>
     <div id="flow"></div>
@@ -632,18 +645,124 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
   renderResults(data);
 });
 
+function computationRowsHtml(rows, { signed = false } = {}) {
+  return rows.map(r => `
+    <tr>
+      <td>${r.line}</td>
+      <td>${r.item}${r.note ? `<div class="comp-note">${r.note}</div>` : ''}</td>
+      <td class="num">${signed ? fmtSignedMoney(r.amount) : fmtMoney(r.amount)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderComputation(comp) {
+  const el = document.getElementById('computation');
+  if (!comp) { el.innerHTML = ''; return; }
+
+  const h = comp.header;
+  const resultLine = h.result_type === 'refund'
+    ? `Refund: ${fmtMoney(h.result_amount)}`
+    : h.result_type === 'owed' ? `Amount owed: ${fmtMoney(h.result_amount)}` : 'Refund/amount owed not found';
+
+  let html = `
+    <div class="comp-section">
+      <div class="comp-header-facts"><strong>Filing status:</strong> ${h.filing_status || '—'}</div>
+      <div class="comp-header-facts"><strong>Tax year:</strong> ${h.tax_year || '—'}</div>
+      <div class="comp-header-facts"><strong>Result:</strong> ${resultLine}</div>
+    </div>
+
+    <div class="comp-section">
+      <h3>Income &rarr; AGI</h3>
+      <table class="comp-table">
+        <thead><tr><th>Line</th><th>Item</th><th class="num">Amount</th></tr></thead>
+        <tbody>${computationRowsHtml(comp.income_to_agi, { signed: true })}</tbody>
+      </table>
+    </div>
+  `;
+
+  const at = comp.agi_to_taxable;
+  html += `
+    <div class="comp-section">
+      <h3>AGI &rarr; Taxable income</h3>
+      <table class="comp-table">
+        <thead><tr><th>Line</th><th>Item</th><th class="num">Amount</th></tr></thead>
+        <tbody>
+          <tr><td>11</td><td>Adjusted gross income</td><td class="num">${at.agi !== null ? fmtMoney(at.agi) : '—'}</td></tr>
+          <tr><td>12</td><td>Deduction${at.deduction_note ? `<div class="comp-note">${at.deduction_note}</div>` : ''}</td><td class="num">${at.deduction !== null ? '-' + fmtMoney(at.deduction) : '—'}</td></tr>
+          ${at.qbi ? `<tr><td>13</td><td>QBI deduction</td><td class="num">-${fmtMoney(at.qbi)}</td></tr>` : ''}
+          <tr class="comp-total"><td>15</td><td>Taxable income</td><td class="num">${at.taxable_income !== null ? fmtMoney(at.taxable_income) : '—'}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  const tc = comp.tax_computation;
+  if (tc) {
+    html += `<div class="comp-section"><h3>How the tax figure is built</h3>`;
+    if (tc.method === 'qdcgt') {
+      html += `
+        <table class="comp-table">
+          <thead><tr><th>Portion</th><th>Rate basis</th><th class="num">Amount</th><th class="num">Tax</th></tr></thead>
+          <tbody>
+            <tr><td>Ordinary income</td><td>Regular brackets</td><td class="num">${fmtMoney(tc.ordinary_income)}</td><td class="num">${fmtMoney(tc.ordinary_tax)}</td></tr>
+            ${tc.preferential_rows.map(r => `
+              <tr><td>Qualified dividends / LTCG</td><td>${(r.rate * 100).toFixed(0)}%</td><td class="num">${fmtMoney(r.amount)}</td><td class="num">${fmtMoney(r.tax)}</td></tr>
+            `).join('')}
+            <tr class="comp-total"><td colspan="3">Reconstructed tax (Qualified Dividends &amp; Capital Gain Tax Worksheet)</td><td class="num">${fmtMoney(tc.reconstructed_tax)}</td></tr>
+          </tbody>
+        </table>
+      `;
+    } else {
+      html += `
+        <table class="comp-table">
+          <thead><tr><th>Bracket</th><th>Rate</th><th class="num">Amount taxed</th><th class="num">Tax</th></tr></thead>
+          <tbody>
+            ${tc.bracket_rows.map(r => `
+              <tr><td>${r.range}</td><td>${(r.rate * 100).toFixed(0)}%</td><td class="num">${fmtMoney(r.amount)}</td><td class="num">${fmtMoney(r.tax)}</td></tr>
+            `).join('')}
+            <tr class="comp-total"><td colspan="3">Reconstructed tax</td><td class="num">${fmtMoney(tc.reconstructed_tax)}</td></tr>
+          </tbody>
+        </table>
+      `;
+    }
+    const reportedText = tc.reported_tax !== null && tc.reported_tax !== undefined ? fmtMoney(tc.reported_tax) : 'not found';
+    html += tc.ties_out
+      ? `<div class="comp-tie ok">Ties out: reconstructed ${fmtMoney(tc.reconstructed_tax)} vs. line 16 reported ${reportedText}.</div>`
+      : `<div class="comp-tie off">Doesn't tie out: reconstructed ${fmtMoney(tc.reconstructed_tax)} vs. line 16 reported ${reportedText} — worth a second look.</div>`;
+    html += `</div>`;
+  }
+
+  html += `
+    <div class="comp-section">
+      <h3>Tax &rarr; Total tax &rarr; Refund/Balance due</h3>
+      <table class="comp-table">
+        <thead><tr><th>Line</th><th>Item</th><th class="num">Amount</th></tr></thead>
+        <tbody>${computationRowsHtml(comp.tax_to_outcome)}</tbody>
+      </table>
+    </div>
+  `;
+
+  if (comp.reviewer_notes.length > 0) {
+    html += `
+      <div class="comp-section">
+        <h3>Reviewer notes</h3>
+        ${comp.reviewer_notes.map(n => `<div class="flag ${n.severity}">${n.message}</div>`).join('')}
+      </div>
+    `;
+  } else {
+    html += `
+      <div class="comp-section">
+        <h3>Reviewer notes</h3>
+        <p class="explain">Nothing stood out from the numbers provided.</p>
+      </div>
+    `;
+  }
+
+  el.innerHTML = html;
+}
+
 function renderResults(data) {
-  const flagsEl = document.getElementById('flags');
-  flagsEl.innerHTML = '';
-  if (data.flags.length === 0) {
-    flagsEl.innerHTML = '<p class="explain">Nothing stood out from the numbers provided.</p>';
-  }
-  for (const flag of data.flags) {
-    const div = document.createElement('div');
-    div.className = 'flag ' + flag.severity;
-    div.textContent = flag.message;
-    flagsEl.appendChild(div);
-  }
+  renderComputation(data.computation);
 
   const flowEl = document.getElementById('flow');
   flowEl.innerHTML = '';
