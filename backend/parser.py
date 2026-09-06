@@ -474,6 +474,9 @@ def _match_by_phrase(lines: list[str], phrases: list[str], known_number: str) ->
     return None
 
 
+_ALPHANUMERIC_LINE_NUMBER_RE = re.compile(r"^\d{1,2}[a-z]$")
+
+
 def _match_by_number(lines: list[str] | None, number: str) -> float | None:
     """Only used once phrase matching has already failed. Anchors strictly
     on the number being the row's *first* token — a genuine "this is line
@@ -483,8 +486,7 @@ def _match_by_number(lines: list[str] | None, number: str) -> float | None:
     as its second token), and would then grab whatever else was printed
     nearby (like the tax year) as if it were that line's value — a
     real regression seen when this was loosened to handle OCR prepending a
-    stray garbled word to some rows. That OCR case stays unhandled here;
-    it's the lower-priority failure mode of the two."""
+    stray garbled word to some rows."""
     if lines is None:
         return None
     target = number.lower()
@@ -494,6 +496,37 @@ def _match_by_number(lines: list[str] | None, number: str) -> float | None:
             value = _scan_from_anchor(lines, i, {target})
             if value is not None:
                 return value
+
+    # Second pass, only for alphanumeric line labels (e.g. "1z", "35a") —
+    # specific enough that finding one anywhere in a row, not just as its
+    # first token, is still a reliable signal (unlike a bare digit like "1",
+    # which is exactly what caused the regression above). This recovers a
+    # real OCR failure mode seen on a scanned return: the row's own leading
+    # label got mangled or merged into the previous row's trailing garbage,
+    # but the line's echoed number printed right before its value survived
+    # intact.
+    if _ALPHANUMERIC_LINE_NUMBER_RE.match(target):
+        for i, row in enumerate(lines):
+            tokens = _tokenize(row)
+            for ti in range(1, len(tokens)):
+                if tokens[ti].strip(".:").lower() != target:
+                    continue
+                # Two lines' numbers and values can be packed onto one
+                # physical row (e.g. "3a 1,066| b 3b 1,180") — if the token
+                # right after this one is itself an amount, that's this
+                # line's own value, not whatever happens to be last on the
+                # row (which could belong to a different line entirely). A
+                # stray OCR'd table-border character (a misread "|") can
+                # cling to that token, so it's stripped before checking.
+                if ti + 1 < len(tokens):
+                    candidate = tokens[ti + 1].strip("|")
+                    if AMOUNT_RE.fullmatch(candidate):
+                        value = _parse_amount(candidate)
+                        if value is not None:
+                            return value
+                value = _scan_from_anchor(lines, i, {target})
+                if value is not None:
+                    return value
     return None
 
 

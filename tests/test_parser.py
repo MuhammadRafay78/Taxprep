@@ -381,3 +381,32 @@ def test_tax_year_not_confused_by_preparer_cover_letter_date():
         "1040 U.S. Individual Income Tax Return | 2023\nOMB No. 1545-0074\n"
     )
     assert detect_tax_year(text) == 2023
+
+
+def test_alphanumeric_line_number_found_when_its_own_leading_label_is_garbled():
+    # Real OCR failure mode: the row's own leading label ("z Add lines 1a
+    # through 1h") got mangled and lost its leading "1" (merged into the
+    # previous row's trailing garbage instead), but the line's echoed
+    # number printed right before its value survived intact.
+    pdf_bytes = make_pdf([[
+        ("h Other earned income (see instructions) . . 1h", ""),
+        ("i Nontaxable combat pay election (see instructions) ........22058 1i", ""),
+        ("z Addlinestathroughth . 2 . eee ee 1z", "156,589"),
+        ("2a Tax-exempt interest . . . 2a  b Taxable interest ......... 2b", "497"),
+    ]])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+    assert by_id["1z"].value == 156589
+
+
+def test_two_lines_values_on_one_row_are_not_confused():
+    # Some scanned layouts pack two lines' numbers and values onto a single
+    # physical row (e.g. "3a 1,066 b 3b 1,180") — each should get its own
+    # value, not whichever one happens to be last on the row.
+    pdf_bytes = make_pdf([[
+        ("if required. Qualified dividendz ..... 3a 1,066| b Ordinary dividendz ........ 3b", "1,180"),
+    ]])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+    assert by_id["3a"].value == 1066
+    assert by_id["3b"].value == 1180

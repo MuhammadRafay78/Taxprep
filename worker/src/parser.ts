@@ -411,6 +411,8 @@ function matchByPhrase(lines: string[], phrases: string[]): number | null {
  * row, which used to match a schedule's own title header (e.g. "SCHEDULE 1
  * ..." contains the token "1") and grab whatever was printed nearby.
  */
+const ALPHANUMERIC_LINE_NUMBER_RE = /^\d{1,2}[a-z]$/;
+
 function matchByNumber(lines: string[] | null, number: string): number | null {
   if (lines === null) return null;
   const target = number.toLowerCase();
@@ -419,6 +421,32 @@ function matchByNumber(lines: string[] | null, number: string): number | null {
     if (tokens.length > 0 && tokens[0].replace(/[.:]+$/, "").toLowerCase() === target) {
       const value = scanFromAnchor(lines, i, number);
       if (value !== null) return value;
+    }
+  }
+
+  // Second pass, only for alphanumeric line labels (e.g. "1z", "35a") —
+  // specific enough that finding one anywhere in a row, not just as its
+  // first token, is still a reliable signal (unlike a bare digit, which
+  // can spuriously match a schedule's own title header).
+  if (ALPHANUMERIC_LINE_NUMBER_RE.test(target)) {
+    for (let i = 0; i < lines.length; i++) {
+      const tokens = tokenize(lines[i]);
+      for (let ti = 1; ti < tokens.length; ti++) {
+        if (tokens[ti].replace(/[.:]+$/, "").toLowerCase() !== target) continue;
+        // Two lines' numbers and values can be packed onto one physical
+        // row (e.g. "3a 1,066| b 3b 1,180") — if the token right after
+        // this one is itself an amount, that's this line's own value, not
+        // whatever happens to be last on the row.
+        if (ti + 1 < tokens.length) {
+          const candidate = tokens[ti + 1].replace(/\|/g, "");
+          if (AMOUNT_RE.test(candidate)) {
+            const value = parseAmount(candidate);
+            if (value !== null) return value;
+          }
+        }
+        const value = scanFromAnchor(lines, i, number);
+        if (value !== null) return value;
+      }
     }
   }
   return null;
