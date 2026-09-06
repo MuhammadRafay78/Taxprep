@@ -39,6 +39,39 @@ from . import ocr
 # like the "2441" in "...from Form 2441," or "line 11.".
 AMOUNT_RE = re.compile(r"^\(?\$?-?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{0,2})?\)?$")
 
+# OCR sometimes inserts a stray space right after a thousands-separator
+# comma (e.g. "51,808" rendered as two words "51," "808"). Left unmerged,
+# every amount-matching helper below would only ever see the trailing
+# "808" - silently truncating a real dollar figure down to its last three
+# digits rather than failing loudly. _TOKENIZE_LEAD_RE matches the first
+# group of a split number ("51,", "$1,", "(2,"); _TOKENIZE_MID_RE matches a
+# continuation group for numbers with more than one comma ("234,");
+# _TOKENIZE_TAIL_RE matches the final group, with no trailing comma.
+_TOKENIZE_LEAD_RE = re.compile(r"^\(?\$?-?\d{1,3},$")
+_TOKENIZE_MID_RE = re.compile(r"^\d{3},$")
+_TOKENIZE_TAIL_RE = re.compile(r"^\d{3}(?:\.\d{0,2})?\)?$")
+
+
+def _tokenize(row: str) -> list[str]:
+    raw = row.split()
+    tokens: list[str] = []
+    i = 0
+    while i < len(raw):
+        if _TOKENIZE_LEAD_RE.match(raw[i]):
+            j = i + 1
+            combined = raw[i]
+            while j < len(raw) and _TOKENIZE_MID_RE.match(raw[j]):
+                combined += raw[j]
+                j += 1
+            if j < len(raw) and _TOKENIZE_TAIL_RE.match(raw[j]):
+                combined += raw[j]
+                tokens.append(combined)
+                i = j + 1
+                continue
+        tokens.append(raw[i])
+        i += 1
+    return tokens
+
 
 def _parse_amount(token: str) -> float | None:
     negative = token.startswith("(") and token.endswith(")")
@@ -55,6 +88,25 @@ def _parse_amount(token: str) -> float | None:
 def _is_bare_integer(token: str) -> bool:
     core = token.strip("()$")
     return "," not in core and "." not in core
+
+
+_LINE_NUMBER_START_RE = re.compile(r"^\d{1,2}[a-z]?$", re.IGNORECASE)
+
+
+def _starts_new_numbered_line(row: str) -> bool:
+    """True if this row looks like it opens with a different line's own
+    number (e.g. "9", "10", "1z") — a strong signal that the previous row's
+    label genuinely ended (however garbled its own trailing text), rather
+    than continuing to wrap onto this one. A real wrapped-label
+    continuation row starts with ordinary prose ("Form 2441 . . ."), never
+    with what reads as a bare line number.
+
+    Checks the first two tokens, not just the very first: OCR sometimes
+    prepends a stray garbled word to a row (bleed from an adjacent column
+    or margin note), pushing the real leading line number to the second
+    token."""
+    tokens = _tokenize(row)
+    return any(_LINE_NUMBER_START_RE.match(tok.strip(".:")) for tok in tokens[:2])
 
 
 def _scan_from_anchor(lines: list[str], idx: int, reject_numbers: set[str], lookahead: int = 2) -> float | None:
@@ -96,7 +148,16 @@ def _scan_from_anchor(lines: list[str], idx: int, reject_numbers: set[str], look
         j = idx + offset
         if j >= len(lines):
             break
-        tokens = lines[j].split()
+        if offset > 0 and _starts_new_numbered_line(lines[j]):
+            # The previous row's label didn't yield a value and this one
+            # opens with what looks like a different line's own number -
+            # stop rather than treating it as a wrapped continuation. This
+            # matters most on OCR'd text, where a row can fail to parse for
+            # reasons other than genuinely wrapping (garbled trailing
+            # characters), and the very next row is really just the next
+            # line's own entry, not a continuation of this one.
+            break
+        tokens = _tokenize(lines[j])
         if not tokens:
             continue
         last = tokens[-1]
@@ -104,7 +165,7 @@ def _scan_from_anchor(lines: list[str], idx: int, reject_numbers: set[str], look
             continue
         if _is_bare_integer(last) and last.strip("()$") in reject_numbers:
             for k in range(j + 1, min(j + 1 + lookahead, len(lines))):
-                next_tokens = lines[k].split()
+                next_tokens = _tokenize(lines[k])
                 if not next_tokens:
                     continue
                 if len(next_tokens) == 1 and AMOUNT_RE.fullmatch(next_tokens[0]):
@@ -360,7 +421,7 @@ def _match_by_phrase(lines: list[str], phrases: list[str], known_number: str) ->
     match even on a genuinely blank line."""
     for i, row in enumerate(lines):
         if any(phrase in row.strip().lower() for phrase in phrases):
-            tokens = row.split()
+            tokens = _tokenize(row)
             reject_numbers = {known_number.lower()}
             if tokens:
                 reject_numbers.add(tokens[0].strip(".:").lower())
@@ -374,15 +435,18 @@ def _match_by_number(lines: list[str] | None, number: str) -> float | None:
     """Only used once phrase matching has already failed. Anchors strictly
     on the number being the row's *first* token — a genuine "this is line
     N's own label" signal — rather than the number appearing anywhere in
-    the row. The looser "anywhere" check used to match a schedule's own
-    title header (e.g. "SCHEDULE 1 ..." contains the token "1"), and would
-    then grab whatever else was printed nearby (like the tax year) as if
-    it were that line's value."""
+    the row. The looser "anywhere" (or even "first two tokens") check used
+    to match a schedule's own title header (e.g. "SCHEDULE 1 ..." has "1"
+    as its second token), and would then grab whatever else was printed
+    nearby (like the tax year) as if it were that line's value — a
+    real regression seen when this was loosened to handle OCR prepending a
+    stray garbled word to some rows. That OCR case stays unhandled here;
+    it's the lower-priority failure mode of the two."""
     if lines is None:
         return None
     target = number.lower()
     for i, row in enumerate(lines):
-        tokens = row.split()
+        tokens = _tokenize(row)
         if tokens and tokens[0].strip(".:").lower() == target:
             value = _scan_from_anchor(lines, i, {target})
             if value is not None:
@@ -436,7 +500,7 @@ def _extract_generic_lines(lines: list[str]) -> list[tuple[str, str, float]]:
     results: list[tuple[str, str, float]] = []
     seen_numbers: set[str] = set()
     for i, row in enumerate(lines):
-        tokens = row.split()
+        tokens = _tokenize(row)
         if len(tokens) < 2:
             continue
         first_raw = tokens[0].strip(".:")
@@ -487,9 +551,11 @@ def parse_1040(pdf_bytes: bytes) -> ExtractionResult:
     # OCR is slower and less reliable than a real text layer, so it's only
     # ever used to fill in pages that have literally no extractable text at
     # all — never to double-check a page that already parsed normally.
+    # Pages are OCR'd concurrently (see ocr.py) since a multi-page scanned
+    # return run one page at a time can take minutes.
     ocr_page_indices: set[int] = set()
-    for i in scanned_page_indices:
-        ocr_text = ocr.ocr_page_text(pdf_bytes, i)
+    ocr_results = ocr.ocr_pages_text(pdf_bytes, scanned_page_indices)
+    for i, ocr_text in ocr_results.items():
         if ocr_text.strip():
             pages[i] = ocr_text
             page_lines[i] = ocr_text.splitlines()

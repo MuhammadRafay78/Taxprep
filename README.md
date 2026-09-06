@@ -62,6 +62,16 @@ extracted number before it explains anything.
    match on real text. The UI banner tells you which pages needed OCR and
    whether it actually recovered anything from each one.
 
+   Scanned pages are OCR'd concurrently (one Tesseract subprocess per page,
+   in a thread pool sized to the CPU count) — a multi-page scanned return
+   run one page at a time can take minutes, which is well past what anyone
+   will wait on for a PDF upload. Each Tesseract invocation is also capped
+   at 20 seconds and constrained to a single internal thread
+   (`OMP_THREAD_LIMIT=1`); without that, running several multi-threaded
+   Tesseract processes at once oversubscribes the machine badly (measured:
+   4 workers × 4 internal threads each on a 4-core box turned a ~20-second
+   job into a 2-minute one where nearly every page hit the timeout).
+
 ## What it deliberately doesn't do
 
 - **No e-filing, no tax calculation from scratch, no advice.** It explains

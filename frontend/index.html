@@ -52,6 +52,13 @@
   .category summary .cat-amount { font-variant-numeric: tabular-nums; font-weight: 600; }
   .category summary .cat-amount.na { color: var(--muted); font-weight: 400; }
   .category .cat-body { padding: 0 16px 14px; border-top: 1px solid var(--border); }
+  .category .narrative { font-size: 0.92rem; line-height: 1.5; margin: 14px 0; }
+  .numbers-toggle { margin-top: 4px; }
+  .numbers-toggle > summary { cursor: pointer; font-size: 0.82rem; color: var(--muted); padding: 4px 0; list-style: none; }
+  .numbers-toggle > summary::-webkit-details-marker { display: none; }
+  .numbers-toggle > summary::before { content: '▸ '; }
+  .numbers-toggle[open] > summary::before { content: '▾ '; }
+  .numbers-body { padding-top: 6px; }
   .line-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0efe9; }
   .line-row:last-child { border-bottom: none; }
   .line-row .line-info { flex: 1; }
@@ -240,6 +247,14 @@ function fmtMoney(n) {
   return `$${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
+// Unlike fmtMoney (used where a separate +/- indicator already exists, like
+// the flow bars), this keeps the sign inline — needed anywhere a negative
+// number stands alone in a sentence, like "a $3 capital loss", so it doesn't
+// read as a gain.
+function fmtSignedMoney(n) {
+  return (n < 0 ? '-' : '') + fmtMoney(n);
+}
+
 function lineInputHtml(line) {
   let caption = '';
   if (line.confidence === 'not_found') {
@@ -261,6 +276,96 @@ function lineInputHtml(line) {
   `;
 }
 
+function val(id) {
+  const line = currentLinesById[id];
+  return line && line.value !== null ? line.value : null;
+}
+
+// A shared way to turn "here's the total, and here's what feeds into it"
+// into one plain sentence fragment, used by every category narrative below.
+// Skips anything zero/missing so a simple return doesn't read like a
+// checklist of "$0 dividends, $0 capital gains, ...".
+function describeContributors(components) {
+  const nonzero = components.filter(c => c.value !== null && c.value !== 0);
+  if (nonzero.length === 0) return '';
+  nonzero.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+  if (nonzero.length === 1) {
+    return ` — all from ${nonzero[0].label} (${fmtSignedMoney(nonzero[0].value)})`;
+  }
+  const [first, ...rest] = nonzero;
+  return ` — mostly ${first.label} (${fmtSignedMoney(first.value)}), plus ${rest.map(c => `${c.label} (${fmtSignedMoney(c.value)})`).join(', ')}`;
+}
+
+// One plain-English sentence or two per category: what the number is, and
+// roughly where it came from. This is the first thing shown when a category
+// opens — the line-by-line IRS jargon is still there, just tucked behind a
+// "Show the numbers" toggle for anyone who wants to verify or correct it.
+const CATEGORY_NARRATIVES = {
+  income() {
+    const total = val('9');
+    if (total === null) return "This return's total income wasn't found — check the numbers below.";
+    const parts = describeContributors([
+      { label: 'wages', value: val('1z') },
+      { label: 'taxable interest', value: val('2b') },
+      { label: 'dividends', value: val('3b') },
+      { label: 'capital gains', value: val('7') },
+      { label: 'IRA/pension income', value: (val('4b') || 0) + (val('5b') || 0) || null },
+      { label: 'Social Security benefits', value: val('6b') },
+      { label: 'other income', value: val('8') },
+    ]);
+    return `Total income was ${fmtMoney(total)}${parts}.`;
+  },
+  agi() {
+    const agi = val('11');
+    const adjustments = val('10');
+    if (agi === null) return "Adjusted gross income (AGI) wasn't found — check the numbers below.";
+    if (adjustments) {
+      return `After ${fmtMoney(adjustments)} in adjustments (things like retirement or student loan interest deductions), adjusted gross income (AGI) came to ${fmtMoney(agi)}.`;
+    }
+    return `With no adjustments, AGI stayed at ${fmtMoney(agi)} — the number a lot of other limits on the return are based on.`;
+  },
+  deductions() {
+    const ded = val('12');
+    const qbi = val('13');
+    if (ded === null) return "The deduction amount wasn't found — check the numbers below.";
+    let s = `A ${fmtMoney(ded)} deduction was subtracted from income`;
+    return s + (qbi ? `, plus a ${fmtMoney(qbi)} deduction for qualified business income.` : '.');
+  },
+  tax() {
+    const taxable = val('15');
+    const tax = val('16');
+    if (taxable === null || tax === null) return "Taxable income and tax weren't both found — check the numbers below.";
+    return `Tax was calculated on ${fmtMoney(taxable)} of taxable income (income after deductions), coming to ${fmtMoney(tax)} before any credits.`;
+  },
+  credits() {
+    const total = val('21');
+    if (!total) return 'No credits were claimed that reduce the tax bill directly.';
+    const parts = describeContributors([
+      { label: 'the Child Tax Credit / credit for other dependents', value: val('19') },
+      { label: 'other credits', value: val('20') },
+    ]);
+    return `${fmtMoney(total)} in credits reduced the tax owed${parts}.`;
+  },
+  othertax() {
+    const total = val('24');
+    if (total === null) return "Total tax wasn't found — check the numbers below.";
+    const other = val('23');
+    let s = `Total tax for the year came to ${fmtMoney(total)}`;
+    return s + (other ? `, including ${fmtMoney(other)} in other taxes (e.g. self-employment tax or the alternative minimum tax).` : '.');
+  },
+  payments() {
+    const total = val('33');
+    if (total === null) return "Total payments weren't found — check the numbers below.";
+    const parts = describeContributors([
+      { label: 'paycheck withholding', value: val('25d') },
+      { label: 'estimated tax payments', value: val('26') },
+      { label: 'the Earned Income Credit', value: val('27') },
+      { label: 'the Additional Child Tax Credit', value: val('28') },
+    ]);
+    return `${fmtMoney(total)} was paid in over the year${parts}.`;
+  },
+};
+
 function renderCategories() {
   categoriesEl.innerHTML = '';
   for (const cat of CATEGORIES) {
@@ -273,14 +378,22 @@ function renderCategories() {
     details.className = 'category';
     const amountText = headlineLine && headlineLine.value !== null ? fmtMoney(headlineLine.value) : '—';
     const ocrBadge = headlineLine && headlineLine.via_ocr ? ' <span class="uncertain" style="margin:0">(OCR)</span>' : '';
+    const narrativeFn = CATEGORY_NARRATIVES[cat.key];
+    const narrative = narrativeFn ? narrativeFn() : '';
     details.innerHTML = `
       <summary>
         <span class="cat-title">${cat.title}</span>
         <span class="cat-amount ${headlineLine && headlineLine.value !== null ? '' : 'na'}">${amountText}${ocrBadge}</span>
       </summary>
       <div class="cat-body">
-        ${headlineLine ? lineInputHtml(headlineLine) : ''}
-        ${childLines.map(lineInputHtml).join('')}
+        ${narrative ? `<p class="narrative">${narrative}</p>` : ''}
+        <details class="numbers-toggle">
+          <summary>Show the numbers</summary>
+          <div class="numbers-body">
+            ${headlineLine ? lineInputHtml(headlineLine) : ''}
+            ${childLines.map(lineInputHtml).join('')}
+          </div>
+        </details>
       </div>
     `;
     // Categories with nothing found (e.g. no Schedule 2 in this return) stay
@@ -345,17 +458,26 @@ function renderExtraForms(lines) {
       </div>
     </details>
   `).join('');
-  el.innerHTML = `<h2>Other forms found in this PDF</h2>${sections}`;
+  el.innerHTML = `
+    <h2>Additional forms attached to this return</h2>
+    <p class="explain">These are already reflected in the totals above — they're here in case you want to see
+    where a number originally came from. Skip this section if you're just after the overview.</p>
+    ${sections}`;
 }
 
 function renderHero() {
-  const refund = currentLinesById['34']?.value;
-  const owed = currentLinesById['37']?.value;
+  const refund = val('34');
+  const owed = val('37');
+  const totalTax = val('24');
+  const totalPayments = val('33');
+  const howCalculated = (totalTax !== null && totalPayments !== null)
+    ? `<div class="caption" style="margin-top:2px">You paid in ${fmtMoney(totalPayments)} against a ${fmtMoney(totalTax)} tax bill.</div>`
+    : '';
   let html;
   if (refund) {
-    html = `<div class="amount refund">${fmtMoney(refund)}</div><div class="caption">Estimated refund</div>`;
+    html = `<div class="amount refund">${fmtMoney(refund)}</div><div class="caption">Estimated refund</div>${howCalculated}`;
   } else if (owed) {
-    html = `<div class="amount owed">${fmtMoney(owed)}</div><div class="caption">Estimated amount you owe</div>`;
+    html = `<div class="amount owed">${fmtMoney(owed)}</div><div class="caption">Estimated amount you owe</div>${howCalculated}`;
   } else {
     html = `<div class="amount na" style="color:var(--muted)">—</div><div class="caption">Refund/amount owed not found — check the Payments category</div>`;
   }

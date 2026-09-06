@@ -289,6 +289,34 @@ def test_value_printed_alone_on_the_row_after_the_echoed_number():
     assert by_id["s2_3"].confidence == "matched"
 
 
+def test_amount_split_by_a_stray_space_after_the_comma_is_reassembled():
+    # OCR occasionally renders a thousands-separator comma with a space
+    # right after it, splitting a real amount like "51,808" into two words
+    # "51," and "808". Reading only the last token would silently truncate
+    # the real value down to $808.
+    from backend.parser import _tokenize  # noqa: PLC0415
+
+    assert _tokenize("8  Other income from Schedule 1 8 51, 808") == \
+        ["8", "Other", "income", "from", "Schedule", "1", "8", "51,808"]
+    # A number with two comma groups (over $1,000,000) should reassemble
+    # the same way, not just the last split.
+    assert _tokenize("9 Total income 9 1, 234, 567") == \
+        ["9", "Total", "income", "9", "1,234,567"]
+    # An ordinary already-clean amount must pass through unchanged.
+    assert _tokenize("11 AGI 11 226,470") == ["11", "AGI", "11", "226,470"]
+
+
+def test_reassembled_split_amount_is_extracted_correctly():
+    pdf_bytes = make_raw_pdf([[
+        "SCHEDULE 1  Additional Income and Adjustments to Income  OMB No. 1545-0074",
+        "(Form 1040)  2023",
+        "9  Add lines 1 through 8. This is your total other income . 9 51, 808",
+    ]])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+    assert by_id["s1_9"].value == 51808
+
+
 def test_scanned_image_only_page_is_reported():
     # A page with literally no extractable text (e.g. a scanned Form 1040
     # summary) should be flagged so the UI can explain why its lines are

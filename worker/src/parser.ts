@@ -28,6 +28,57 @@ function isBareInteger(token: string): boolean {
   return !core.includes(",") && !core.includes(".");
 }
 
+// A row's text can (rarely, in odd PDF exports) have a thousands-separator
+// comma followed by a stray space, splitting a real amount like "51,808"
+// into two tokens "51," and "808" — left unmerged, every amount check
+// below would only ever see the trailing "808", silently truncating a
+// real dollar figure. TOKENIZE_LEAD_RE matches the first group of a split
+// number ("51,", "$1,", "(2,"); TOKENIZE_MID_RE a continuation group for
+// numbers with more than one comma ("234,"); TOKENIZE_TAIL_RE the final
+// group, with no trailing comma.
+const TOKENIZE_LEAD_RE = /^\(?\$?-?\d{1,3},$/;
+const TOKENIZE_MID_RE = /^\d{3},$/;
+const TOKENIZE_TAIL_RE = /^\d{3}(?:\.\d{0,2})?\)?$/;
+
+function tokenize(row: string): string[] {
+  const raw = row.split(/\s+/).filter(Boolean);
+  const tokens: string[] = [];
+  let i = 0;
+  while (i < raw.length) {
+    if (TOKENIZE_LEAD_RE.test(raw[i])) {
+      let j = i + 1;
+      let combined = raw[i];
+      while (j < raw.length && TOKENIZE_MID_RE.test(raw[j])) {
+        combined += raw[j];
+        j++;
+      }
+      if (j < raw.length && TOKENIZE_TAIL_RE.test(raw[j])) {
+        combined += raw[j];
+        tokens.push(combined);
+        i = j + 1;
+        continue;
+      }
+    }
+    tokens.push(raw[i]);
+    i++;
+  }
+  return tokens;
+}
+
+const LINE_NUMBER_START_RE = /^\d{1,2}[a-z]?$/i;
+
+/**
+ * True if this row looks like it opens with a different line's own number
+ * (e.g. "9", "10", "1z") — a strong signal that the previous row's label
+ * genuinely ended (however garbled its own trailing text), rather than
+ * continuing to wrap onto this one. Checks the first two tokens, not just
+ * the very first, in case a stray word got prepended to the row.
+ */
+function startsNewNumberedLine(row: string): boolean {
+  const tokens = tokenize(row);
+  return tokens.slice(0, 2).some((tok) => LINE_NUMBER_START_RE.test(tok.replace(/[.:]+$/, "")));
+}
+
 /**
  * Checks the anchor row at `idx`, then up to `lookahead` rows after it, for
  * a valid trailing amount — long labels often wrap, leaving the actual
@@ -60,13 +111,19 @@ function scanFromAnchor(lines: string[], idx: number, rejectNumber: string | nul
   for (let offset = 0; offset <= lookahead; offset++) {
     const j = idx + offset;
     if (j >= lines.length) break;
-    const tokens = lines[j].split(/\s+/).filter(Boolean);
+    if (offset > 0 && startsNewNumberedLine(lines[j])) {
+      // The previous row's label didn't yield a value and this one opens
+      // with what looks like a different line's own number - stop rather
+      // than treating it as a wrapped continuation.
+      break;
+    }
+    const tokens = tokenize(lines[j]);
     if (tokens.length === 0) continue;
     const last = tokens[tokens.length - 1];
     if (!AMOUNT_RE.test(last)) continue;
     if (rejectNumber !== null && isBareInteger(last) && last.replace(/[()$]/g, "") === rejectNumber) {
       for (let k = j + 1; k < Math.min(j + 1 + lookahead, lines.length); k++) {
-        const nextTokens = lines[k].split(/\s+/).filter(Boolean);
+        const nextTokens = tokenize(lines[k]);
         if (nextTokens.length === 0) continue;
         if (nextTokens.length === 1 && AMOUNT_RE.test(nextTokens[0])) {
           return parseAmount(nextTokens[0]);
@@ -304,7 +361,7 @@ function matchByPhrase(lines: string[], phrases: string[]): number | null {
   for (let i = 0; i < lines.length; i++) {
     const rowLower = lines[i].trim().toLowerCase();
     if (phrases.some((phrase) => rowLower.includes(phrase))) {
-      const tokens = lines[i].split(/\s+/).filter(Boolean);
+      const tokens = tokenize(lines[i]);
       const anchorNumber = tokens.length > 0 ? tokens[0].replace(/[.:]+$/, "").toLowerCase() : null;
       const value = scanFromAnchor(lines, i, anchorNumber);
       if (value !== null) return value;
@@ -324,7 +381,7 @@ function matchByNumber(lines: string[] | null, number: string): number | null {
   if (lines === null) return null;
   const target = number.toLowerCase();
   for (let i = 0; i < lines.length; i++) {
-    const tokens = lines[i].split(/\s+/).filter(Boolean);
+    const tokens = tokenize(lines[i]);
     if (tokens.length > 0 && tokens[0].replace(/[.:]+$/, "").toLowerCase() === target) {
       const value = scanFromAnchor(lines, i, number);
       if (value !== null) return value;
@@ -373,7 +430,7 @@ function extractGenericLines(lines: string[]): [string, string, number][] {
   const seenNumbers = new Set<string>();
   for (let i = 0; i < lines.length; i++) {
     const row = lines[i];
-    const tokens = row.split(/\s+/).filter(Boolean);
+    const tokens = tokenize(row);
     if (tokens.length < 2) continue;
     const firstRaw = tokens[0].replace(/[.:]+$/, "");
     if (!GENERIC_LINE_NUMBER_RE.test(firstRaw)) continue;
