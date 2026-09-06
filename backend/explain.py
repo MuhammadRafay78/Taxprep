@@ -243,6 +243,185 @@ def build_flags(
     return flags
 
 
+# Short display names for the computation-walkthrough tables below —
+# distinct from LINE_EXPLANATIONS, which is full plain-language prose meant
+# for a different part of the UI.
+ITEM_LABELS: dict[str, str] = {
+    "1z": "Wages", "2b": "Taxable interest", "3b": "Ordinary dividends",
+    "4b": "Taxable IRA distributions", "5b": "Taxable pensions/annuities",
+    "6b": "Taxable Social Security", "7": "Capital gain or (loss)",
+    "8": "Additional income (Schedule 1)", "9": "Total income",
+    "10": "Adjustments to income", "11": "Adjusted gross income",
+    "12": "Standard/itemized deduction", "13": "QBI deduction",
+    "15": "Taxable income", "16": "Tax", "17": "Schedule 2, line 3",
+    "18": "Add lines 16 and 17", "19": "Child tax credit / credit for other dependents",
+    "20": "Schedule 3, line 8", "21": "Add lines 19 and 20",
+    "22": "Subtract line 21 from line 18", "23": "Other taxes (Schedule 2)",
+    "24": "Total tax", "25d": "Federal income tax withheld",
+    "26": "Estimated tax payments", "27": "Earned income credit",
+    "28": "Additional child tax credit", "31": "Schedule 3, line 13",
+    "32": "Total other payments/refundable credits", "33": "Total payments",
+    "34": "Overpayment", "37": "Amount you owe",
+}
+
+FILING_STATUS_LABELS: dict[str, str] = {
+    "single": "Single", "mfj": "Married filing jointly", "mfs": "Married filing separately",
+    "hoh": "Head of household", "qss": "Qualifying surviving spouse",
+}
+
+_INCOME_LINE_IDS = ["1z", "2b", "3b", "4b", "5b", "6b", "7", "8"]
+_OUTCOME_LINE_IDS = ["16", "17", "18", "19", "20", "21", "22", "23", "24",
+                     "25d", "26", "27", "28", "31", "32", "33"]
+
+
+def build_computation(
+    values: dict[str, float],
+    filing_status: str | None,
+    tax_year: int | None,
+) -> dict:
+    """A table-driven walkthrough of how this return's numbers were
+    computed, in the order Form 1040 stacks up: income -> AGI -> taxable
+    income -> tax (reconstructed via the bracket schedule or the Qualified
+    Dividends & Capital Gain Tax Worksheet, whichever applies, and checked
+    against what's actually on line 16) -> total tax -> refund/amount owed.
+    Mirrors a preparer's own review of a filed return, not a re-preparation
+    of it — every figure comes from what's already on the return."""
+
+    def v(line_id: str) -> float | None:
+        return values.get(line_id)
+
+    refund = v("34")
+    owed = v("37")
+    header = {
+        "filing_status": FILING_STATUS_LABELS.get(filing_status, filing_status),
+        "tax_year": tax_year,
+        "result_type": "refund" if refund else ("owed" if owed else None),
+        "result_amount": refund if refund else (owed if owed else None),
+    }
+
+    # Income -> AGI
+    income_rows = []
+    for line_id in _INCOME_LINE_IDS:
+        amount = v(line_id)
+        if not amount:
+            continue
+        note = None
+        if line_id == "3b" and v("3a"):
+            note = f"of which ${v('3a'):,.0f} is qualified"
+        income_rows.append({"line": line_id, "item": ITEM_LABELS[line_id], "amount": amount, "note": note})
+    total_income = v("9")
+    if total_income is not None:
+        income_rows.append({"line": "9", "item": "Total income", "amount": total_income, "note": None})
+    adjustments = v("10")
+    if adjustments:
+        income_rows.append({"line": "10", "item": "Adjustments to income", "amount": -adjustments, "note": None})
+    agi = v("11")
+    if agi is not None:
+        income_rows.append({"line": "11", "item": "Adjusted gross income (AGI)", "amount": agi, "note": None})
+
+    # AGI -> Taxable income
+    deduction = v("12")
+    qbi = v("13")
+    taxable_income = v("15")
+    deduction_note = None
+    if deduction is not None and filing_status and tax_year in tax_data.STANDARD_DEDUCTIONS:
+        standard = tax_data.STANDARD_DEDUCTIONS[tax_year].get(filing_status)
+        if standard is not None:
+            deduction_note = "standard deduction" if abs(deduction - standard) <= 1 else "itemized (Schedule A)"
+    agi_to_taxable = {
+        "agi": agi,
+        "deduction": deduction,
+        "deduction_note": deduction_note,
+        "qbi": qbi,
+        "taxable_income": taxable_income,
+    }
+
+    # How the tax figure is built
+    tax_computation = None
+    reported_tax = v("16")
+    capital_gains = v("7")
+    qualified_dividends = v("3a")
+    if taxable_income and filing_status and tax_year in tax_data.TAX_BRACKETS:
+        brackets = tax_data.TAX_BRACKETS[tax_year].get(filing_status)
+        has_preferential = bool(capital_gains and capital_gains > 0) or bool(qualified_dividends)
+        cg_brackets = tax_data.CAPITAL_GAINS_BRACKETS.get(tax_year, {}).get(filing_status)
+        if brackets and has_preferential and cg_brackets:
+            preferential = max(0.0, qualified_dividends or 0) + max(0.0, capital_gains or 0)
+            preferential = min(preferential, taxable_income)
+            ordinary = taxable_income - preferential
+            ordinary_tax = tax_data.compute_bracket_tax(ordinary, brackets)
+            cg_rows = []
+            lower = ordinary
+            for ceiling, rate in cg_brackets:
+                upper = ceiling if ceiling is not None else float("inf")
+                if taxable_income <= lower:
+                    break
+                band_top = min(taxable_income, max(upper, ordinary))
+                taxed = max(0.0, band_top - lower)
+                if taxed > 0:
+                    cg_rows.append({"rate": rate, "amount": taxed, "tax": round(taxed * rate, 2)})
+                lower = band_top
+            reconstructed = round(ordinary_tax + sum(r["tax"] for r in cg_rows), 2)
+            tax_computation = {
+                "method": "qdcgt",
+                "ordinary_income": ordinary,
+                "ordinary_tax": ordinary_tax,
+                "preferential_income": preferential,
+                "preferential_rows": cg_rows,
+                "reconstructed_tax": reconstructed,
+                "reported_tax": reported_tax,
+                "ties_out": reported_tax is not None and abs(reported_tax - reconstructed) <= max(75, reconstructed * 0.08),
+            }
+        elif brackets:
+            bracket_rows = []
+            lower = 0.0
+            for ceiling, rate in brackets:
+                upper = ceiling if ceiling is not None else float("inf")
+                if taxable_income <= lower:
+                    break
+                taxed = min(taxable_income, upper) - lower
+                if taxed > 0:
+                    bracket_rows.append({
+                        "range": f"${lower:,.0f}–${upper:,.0f}" if ceiling is not None else f"${lower:,.0f}+",
+                        "rate": rate, "amount": taxed, "tax": round(taxed * rate, 2),
+                    })
+                lower = upper
+            reconstructed = round(sum(r["tax"] for r in bracket_rows), 2)
+            tax_computation = {
+                "method": "brackets",
+                "bracket_rows": bracket_rows,
+                "reconstructed_tax": reconstructed,
+                "reported_tax": reported_tax,
+                "ties_out": reported_tax is not None and abs(reported_tax - reconstructed) <= max(75, reconstructed * 0.08),
+            }
+
+    # Tax -> Total tax -> Refund/Balance due
+    outcome_rows = []
+    for line_id in _OUTCOME_LINE_IDS:
+        amount = v(line_id)
+        if amount is None:
+            continue
+        note = None
+        if line_id == "20" and v("s3_1"):
+            note = "includes foreign tax credit"
+        outcome_rows.append({"line": line_id, "item": ITEM_LABELS[line_id], "amount": amount, "note": note})
+    if refund:
+        outcome_rows.append({"line": "34", "item": "Overpayment (refund)", "amount": refund, "note": None})
+    elif owed:
+        outcome_rows.append({"line": "37", "item": "Amount you owe", "amount": owed, "note": None})
+
+    reviewer_notes = [{"severity": f.severity, "message": f.message} for f in build_flags(values, filing_status, tax_year)]
+
+    return {
+        "header": header,
+        "income_to_agi": income_rows,
+        "agi_to_taxable": agi_to_taxable,
+        "tax_computation": tax_computation,
+        "tax_to_outcome": outcome_rows,
+        "reviewer_notes": reviewer_notes,
+    }
+
+
 def build_flow(values: dict[str, float]) -> list[dict]:
     """A simplified income -> tax -> outcome waterfall for the flow diagram."""
     total_income = values.get("9")

@@ -102,6 +102,33 @@ it, `backend/ocr.py` fails closed: scanned pages are still reported in
 
 Then open http://127.0.0.1:8000/.
 
+## Hosting the OCR-capable backend
+
+The Cloudflare Worker (`worker/`) can't run OCR at all (see "What it
+deliberately doesn't do" above), so a return with scanned pages needs the
+Python backend running somewhere with a real server and the `tesseract-ocr`
+system package. The `Dockerfile` at the repo root packages exactly that —
+`tesseract-ocr` installed via `apt-get`, the Python dependencies, and
+`uvicorn` serving both the API and `frontend/`.
+
+```bash
+docker build -t taxprep-backend .
+docker run -p 8000:8000 taxprep-backend
+```
+
+Any host that runs an arbitrary Docker image works — for example:
+
+- **Fly.io**: `fly launch` (it detects the `Dockerfile` automatically),
+  then `fly deploy`.
+- **Render**: create a new Web Service, point it at this repo, and pick
+  "Docker" as the environment — no build/start command needed, it uses the
+  `Dockerfile`.
+- **Railway**: "Deploy from GitHub repo" also auto-detects the `Dockerfile`.
+
+None of these are wired up in this repo — deploying to any of them needs
+your own account and credentials on that platform, the same way the
+Cloudflare Worker deploy needs your own Cloudflare account.
+
 ## Running tests
 
 ```bash

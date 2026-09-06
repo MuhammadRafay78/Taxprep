@@ -18,7 +18,28 @@ rewritten in TypeScript:
 | `explain.py` | `explain.ts` | Same flags and money-flow logic. |
 | `tax_data.py` | `taxData.ts` | Same reference brackets/deductions/EIC limits. |
 | `pdfplumber` (`layout=True` text) | `pdfText.ts` + [`unpdf`](https://github.com/unjs/unpdf) | `unpdf` ships PDF.js built specifically for edge runtimes (worker thread inlined, no separate `pdf.worker.js` to load). It hands back individual positioned text runs (`extractTextItems`) rather than pre-assembled lines, so `pdfText.ts` groups runs sharing a y-coordinate into rows and sorts them left-to-right — reconstructing the same "label ... amount" row shape `parser.ts` expects. |
-| FastAPI routes + `StaticFiles` | `index.ts` fetch handler + Workers Assets | `/api/extract` and `/api/analyze` are handled in the Worker; everything else falls through to the static `public/` directory (which is `frontend/index.html`, copied as-is — same relative `/api/...` calls work since it's now same-origin). |
+| FastAPI routes + `StaticFiles` | `index.ts` fetch handler + Workers Assets | `/api/extract` and `/api/analyze` are handled in the Worker; everything else falls through to the static `public/` directory. |
+
+`public/index.html` is **not** a byte-for-byte copy of `../frontend/index.html`
+— it's copied over, then several spots are deliberately changed to reflect
+this deployment having no OCR (see "No OCR" below):
+1. **No PDF upload at all.** The Python frontend's `<div class="dropzone">`,
+   its file `<input>`, and the `<p id="status">` next to it are removed
+   entirely — most real-world returns include at least one scanned page,
+   and with no OCR fallback there's no benefit to offering upload here. In
+   their place, `<div id="upload-panel">` keeps only an explainer paragraph
+   and `<div id="sample-scenarios"></div>` (the two built-in sample-return
+   buttons, which work entirely client-side and need no upload). The shared
+   `<script>` guards every `dropzone`/`fileInput` reference with
+   `if (dropzone && fileInput) { ... }` specifically so it still runs fine
+   with those elements absent — don't remove that guard when porting
+   changes, and don't reintroduce the dropzone markup from a plain copy.
+2. The header subtitle (`Upload a Form 1040 PDF...` becomes `See a sample
+   tax return...`).
+
+When porting a UI change from `../frontend/index.html`, copy it over first,
+then re-apply all of the above — they should never make it back verbatim
+from a plain copy.
 
 Verified to produce byte-identical extraction results against the same test
 PDFs used for the Python backend's test suite (see the parent repo's

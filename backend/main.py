@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from .explain import LINE_EXPLANATIONS, build_flags, build_flow
+from .explain import LINE_EXPLANATIONS, build_computation, build_flags, build_flow
 from .parser import parse_1040
 
 app = FastAPI(title="Taxprep - Understand your tax return")
@@ -70,10 +70,12 @@ async def analyze(payload: AnalyzeRequest):
 
     flags = build_flags(values, payload.filing_status, payload.tax_year)
     flow = build_flow(values)
+    computation = build_computation(values, payload.filing_status, payload.tax_year)
 
     return {
         "flags": [{"severity": f.severity, "message": f.message} for f in flags],
         "flow": flow,
+        "computation": computation,
     }
 
 
