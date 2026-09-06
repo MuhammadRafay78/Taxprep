@@ -45,6 +45,7 @@ async def extract(file: UploadFile = File(...)):
         "filing_status": result.filing_status,
         "tax_year": result.tax_year,
         "scanned_pages": result.scanned_pages,
+        "ocr_pages": result.ocr_pages,
         "lines": [
             {
                 "id": ln.id,
@@ -52,6 +53,7 @@ async def extract(file: UploadFile = File(...)):
                 "value": ln.value,
                 "confidence": ln.confidence,
                 "group": ln.group,
+                "via_ocr": ln.via_ocr,
                 "explanation": LINE_EXPLANATIONS.get(ln.id, ""),
             }
             for ln in result.lines

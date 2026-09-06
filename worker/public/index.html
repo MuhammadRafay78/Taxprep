@@ -94,7 +94,7 @@
   <section class="panel" id="upload-panel">
     <div class="dropzone" id="dropzone">
       <p>Drop a Form 1040 PDF here, or click to choose a file.</p>
-      <p class="explain">Works with text-based PDFs (fillable IRS form, or one exported from tax software). Scanned/photographed returns aren't supported — there's no OCR here.</p>
+      <p class="explain">Works with text-based PDFs (fillable IRS form, or one exported from tax software). Scanned/photographed pages aren't supported on this deployment — there's no OCR here.</p>
       <input type="file" id="file-input" accept="application/pdf" />
     </div>
     <p id="status"></p>
@@ -244,6 +244,8 @@ function lineInputHtml(line) {
   let caption = '';
   if (line.confidence === 'not_found') {
     caption = '<div class="not-found">Not found in PDF — enter manually if it applies to you.</div>';
+  } else if (line.confidence === 'uncertain' && line.via_ocr) {
+    caption = '<div class="uncertain">Read via OCR from a scanned page — double-check this number against your PDF, OCR can misread digits.</div>';
   } else if (line.confidence === 'uncertain') {
     caption = '<div class="uncertain">Auto-detected from this form\'s layout, not double-checked — verify against your PDF.</div>';
   }
@@ -264,16 +266,17 @@ function renderCategories() {
   for (const cat of CATEGORIES) {
     const headlineLine = currentLinesById[cat.headline];
     const childLines = cat.ids.map(id => currentLinesById[id]).filter(Boolean);
-    const hasAnyData = (headlineLine && headlineLine.confidence === 'matched') ||
-      childLines.some(l => l.confidence === 'matched');
+    const hasData = l => l && l.confidence !== 'not_found';
+    const hasAnyData = hasData(headlineLine) || childLines.some(hasData);
 
     const details = document.createElement('details');
     details.className = 'category';
     const amountText = headlineLine && headlineLine.value !== null ? fmtMoney(headlineLine.value) : '—';
+    const ocrBadge = headlineLine && headlineLine.via_ocr ? ' <span class="uncertain" style="margin:0">(OCR)</span>' : '';
     details.innerHTML = `
       <summary>
         <span class="cat-title">${cat.title}</span>
-        <span class="cat-amount ${headlineLine && headlineLine.value !== null ? '' : 'na'}">${amountText}</span>
+        <span class="cat-amount ${headlineLine && headlineLine.value !== null ? '' : 'na'}">${amountText}${ocrBadge}</span>
       </summary>
       <div class="cat-body">
         ${headlineLine ? lineInputHtml(headlineLine) : ''}
@@ -288,17 +291,33 @@ function renderCategories() {
   }
 }
 
-function renderScannedBanner(scannedPages) {
+function renderScannedBanner(scannedPages, ocrPages) {
   const el = document.getElementById('scanned-banner');
   if (!scannedPages || scannedPages.length === 0) {
     el.innerHTML = '';
     return;
   }
-  const pageWord = scannedPages.length === 1 ? 'Page' : 'Pages';
-  el.innerHTML = `<div class="banner">${pageWord} ${scannedPages.join(', ')} of this PDF ${scannedPages.length === 1 ? 'is' : 'are'}
-    a scanned image with no extractable text — nothing on ${scannedPages.length === 1 ? 'it' : 'them'} could be read
-    automatically (this tool doesn't do OCR). If that's your Form 1040 summary page, its numbers below will need
-    to be entered by hand.</div>`;
+  ocrPages = ocrPages || [];
+  const pageWord = scannedPages.length === 1 ? 'page' : 'pages';
+  const failedPages = scannedPages.filter(p => !ocrPages.includes(p));
+
+  let html = `<div class="banner">${scannedPages.length} ${pageWord} of this PDF (${scannedPages.join(', ')}) `
+    + `${scannedPages.length === 1 ? 'has' : 'have'} no text layer — `;
+
+  if (ocrPages.length > 0) {
+    html += `so ${ocrPages.length === 1 ? 'it was' : 'they were'} run through OCR instead. `
+      + `Anything recovered that way is marked "Read via OCR" below and needs a closer look — `
+      + `OCR reads handwriting and small print well enough to be useful, but not perfectly, and it can misread digits.`;
+    if (failedPages.length > 0) {
+      html += ` OCR couldn't recover anything from ${failedPages.length === 1 ? 'page' : 'pages'} `
+        + `${failedPages.join(', ')} — those numbers still need to be entered by hand.`;
+    }
+  } else {
+    html += `and OCR wasn't able to read ${scannedPages.length === 1 ? 'it' : 'them'} either — `
+      + `those numbers will need to be entered by hand.`;
+  }
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 function renderExtraForms(lines) {
@@ -349,7 +368,7 @@ function renderSummary(data) {
   currentLinesById = {};
   for (const line of data.lines) currentLinesById[line.id] = line;
 
-  renderScannedBanner(data.scanned_pages);
+  renderScannedBanner(data.scanned_pages, data.ocr_pages);
   renderHero();
   renderCategories();
   renderExtraForms(data.lines);

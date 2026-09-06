@@ -47,15 +47,30 @@ extracted number before it explains anything.
    the two (computed client-side from whatever you've reviewed/corrected in
    both review tables).
 
+5. **Scanned pages fall back to OCR.** Any page with zero extractable text
+   (a photographed or scanned page in an otherwise text-based PDF) is
+   rendered to an image and run through Tesseract (`backend/ocr.py`).
+   Section-boundary detection (which pages belong to which schedule) is
+   still computed from the *original*, pre-OCR pages — Form 1040 itself
+   prints an OMB control number too, and once OCR reveals it, it would
+   otherwise look like a new attachment starting mid-return and truncate
+   the main form's scope. Every value recovered via OCR is marked
+   `confidence: "uncertain"` and `via_ocr: true` and shown with a "verify
+   this, OCR can misread digits" caption — it's meaningfully less reliable
+   than reading a real text layer (digit misreads, merged/garbled words),
+   so it's never treated with the same confidence as a phrase-anchored
+   match on real text. The UI banner tells you which pages needed OCR and
+   whether it actually recovered anything from each one.
+
 ## What it deliberately doesn't do
 
-- **No OCR.** Scanned or photographed returns aren't supported. Only PDFs
-  with a real text layer work. Handling scanned documents reliably would
-  need a proper OCR pipeline (e.g. Tesseract) and is out of scope for this
-  version.
 - **No e-filing, no tax calculation from scratch, no advice.** It explains
   the numbers that are already on the return; it doesn't compute what your
   taxes *should* be.
+- **No OCR on the Cloudflare Workers port** (`worker/`). Workers can't run
+  the `tesseract-ocr` native binary this needs (no native binaries in its
+  WASM sandbox) — see `worker/README.md`. That deployment stays text-layer
+  only; a scanned page there is reported as such with no fallback.
 
 ## Running it
 
@@ -63,6 +78,12 @@ extracted number before it explains anything.
 pip install -r requirements.txt
 uvicorn backend.main:app --reload
 ```
+
+OCR requires the `tesseract-ocr` system package (not just the Python
+`pytesseract` wrapper installed via pip) — e.g. `apt-get install
+tesseract-ocr` on Debian/Ubuntu, `brew install tesseract` on macOS. Without
+it, `backend/ocr.py` fails closed: scanned pages are still reported in
+`scanned_pages`, just never recovered into `ocr_pages`.
 
 Then open http://127.0.0.1:8000/.
 
@@ -84,6 +105,7 @@ and the self-employment tax note.
 ```
 backend/
   parser.py     PDF -> extracted line values, incl. Schedules 1-3 (pdfplumber-based)
+  ocr.py        OCR fallback (Tesseract) for pages with no text layer
   tax_data.py   reference standard deductions / brackets / EIC limits for sanity checks
   explain.py    line explanations, anomaly flags, money-flow breakdown
   main.py       FastAPI app (/api/extract, /api/analyze) + serves frontend/

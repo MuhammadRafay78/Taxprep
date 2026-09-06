@@ -14,7 +14,10 @@ belongs to (found via each schedule's title text), since bare line numbers
 like "1" repeat across the main form and every schedule — matching one
 anywhere in the document would happily grab the wrong line.
 
-This is inherently heuristic, and OCR'd (scanned) PDFs won't extract at all.
+This is inherently heuristic. Pages with no text layer at all (a scanned or
+photographed page) are run through OCR as a fallback (see ocr.py) — slower
+and less reliable than reading real text, so lines recovered that way are
+marked `via_ocr` and never given full "matched" confidence.
 Callers should always let the person reviewing the result correct any field
 before relying on it; see the `confidence` field on each result.
 """
@@ -25,6 +28,8 @@ import re
 from dataclasses import dataclass, field
 
 import pdfplumber
+
+from . import ocr
 
 # Requires proper thousands-grouping (",ddd" in groups of exactly 3) when a
 # comma is present, and allows 0-2 digits after a decimal point (real IRS
@@ -52,7 +57,7 @@ def _is_bare_integer(token: str) -> bool:
     return "," not in core and "." not in core
 
 
-def _scan_from_anchor(lines: list[str], idx: int, reject_number: str | None, lookahead: int = 2) -> float | None:
+def _scan_from_anchor(lines: list[str], idx: int, reject_numbers: set[str], lookahead: int = 2) -> float | None:
     """Checks the anchor row at `idx`, then up to `lookahead` rows after it,
     for a valid trailing amount — long labels often wrap, leaving the
     actual entered value alone on a following row.
@@ -68,18 +73,23 @@ def _scan_from_anchor(lines: list[str], idx: int, reject_number: str | None, loo
     handled differently:
       - not amount-shaped at all (e.g. ends in "Attach") -> the label is
         still wrapping onto the next row, so keep looking ahead.
-      - a bare integer equal to `reject_number` (e.g. "...taxes . . . 1"
-        when the anchor row itself was line 1's own label) -> ambiguous.
-        Most PDFs print this only when the line was left blank, with
-        nothing else following. But some print the line number's own echo
-        *unconditionally*, with the actual value (when there is one)
+      - a bare integer matching one of `reject_numbers` (e.g. "...taxes
+        . . . 1" when the anchor row itself was line 1's own label) ->
+        ambiguous. Most PDFs print this only when the line was left blank,
+        with nothing else following. But some print the line number's own
+        echo *unconditionally*, with the actual value (when there is one)
         printed alone on the very next row instead of the same row — so we
         peek once more: if the immediate next non-blank row is nothing but
         a single amount token, that's this line's real value; anything
         else (a different line's label, more prose, ...) means this line
-        really was left blank. `reject_number` is derived from the anchor
-        row's own leading number, not assumed from our line definitions,
-        since a schedule's line numbering can shift between tax years.
+        really was left blank. `reject_numbers` normally holds just the
+        anchor row's own leading number (not a hardcoded expectation of
+        which number this line "should" be, since a schedule's line
+        numbering can shift between tax years) — but callers reading OCR'd
+        text also pass the line's officially-known number as a second
+        candidate, since OCR can misread the same printed digits
+        differently the first time (the row's leading label) versus the
+        second (this trailing echo).
       - anything else amount-shaped -> a real value; return it.
     """
     for offset in range(lookahead + 1):
@@ -92,7 +102,7 @@ def _scan_from_anchor(lines: list[str], idx: int, reject_number: str | None, loo
         last = tokens[-1]
         if not AMOUNT_RE.fullmatch(last):
             continue
-        if reject_number is not None and _is_bare_integer(last) and last.strip("()$") == reject_number:
+        if _is_bare_integer(last) and last.strip("()$") in reject_numbers:
             for k in range(j + 1, min(j + 1 + lookahead, len(lines))):
                 next_tokens = lines[k].split()
                 if not next_tokens:
@@ -208,15 +218,15 @@ class ExtractedLine:
     label: str
     value: float | None
     # "matched" / "not_found": a curated line (Form 1040, Schedule 1/2/3) -
-    # phrase-anchored, validated against real returns. "uncertain": a
-    # generically-detected line on a form we have no curated definitions
-    # for - position-based only, with no phrase anchor to confirm it's
-    # reading the right cell. Dense multi-column worksheets (Form 2441,
-    # Schedule 8812) in particular can misattribute a neighboring column's
-    # number, so these should be shown with a visible "verify this" caveat
-    # rather than the same confidence as a curated field.
+    # phrase-anchored, validated against real returns. "uncertain": either
+    # a generically-detected line on a form we have no curated definitions
+    # for (position-based only, no phrase anchor to confirm it's reading
+    # the right cell), or a curated line recovered via OCR (see `via_ocr`)
+    # rather than a real text layer - OCR misreads digits often enough that
+    # even a phrase-anchored match shouldn't be shown with full confidence.
     confidence: str
     group: str = "Form 1040"
+    via_ocr: bool = False
 
 
 @dataclass
@@ -226,9 +236,12 @@ class ExtractionResult:
     tax_year: int | None = None
     raw_text: str = ""
     # 1-indexed page numbers with zero extractable text — almost always a
-    # scanned/rasterized page (an image with no text layer at all). Nothing
-    # on that page could have been read, with or without OCR support.
+    # scanned/rasterized page (an image with no text layer at all).
     scanned_pages: list[int] = field(default_factory=list)
+    # Subset of scanned_pages that OCR successfully recovered *some* text
+    # from (Tesseract not installed, or OCR itself failing, leaves a page
+    # in scanned_pages but out of this list).
+    ocr_pages: list[int] = field(default_factory=list)
 
     def as_value_map(self) -> dict[str, float]:
         return {ln.id: ln.value for ln in self.lines if ln.value is not None}
@@ -332,21 +345,26 @@ def _detect_form_sections(pages: list[str], page_lines: list[list[str]]) -> list
     return sections
 
 
-def _match_by_phrase(lines: list[str], phrases: list[str]) -> float | None:
+def _match_by_phrase(lines: list[str], phrases: list[str], known_number: str) -> float | None:
     """Locates a row by a distinctive label phrase, then reads the value off
     it (or a wrapped continuation row). The "is this bare number actually
-    just this line's own echoed number" check is derived from the anchor
-    row's own leading token — not a hardcoded expectation of which number
-    this line "should" be — since a schedule's line numbering genuinely
-    shifts between tax years (e.g. Schedule 1's adjustments total moved
-    from line 25 to line 26 between recent years). Using a fixed number
-    here would fail to recognize the echo in a year where the label we
-    found isn't at the line number our own definitions assumed."""
+    just this line's own echoed number" check is primarily derived from the
+    anchor row's own leading token — not a hardcoded expectation of which
+    number this line "should" be — since a schedule's line numbering
+    genuinely shifts between tax years (e.g. Schedule 1's adjustments total
+    moved from line 25 to line 26 between recent years). `known_number` (the
+    line's officially-defined number) is checked too, as a second candidate:
+    on OCR'd text, the same printed digits can be misread differently the
+    first time (this row's own leading label) versus the second (the
+    trailing echo we're trying to recognize), so the two won't always
+    match even on a genuinely blank line."""
     for i, row in enumerate(lines):
         if any(phrase in row.strip().lower() for phrase in phrases):
             tokens = row.split()
-            anchor_number = tokens[0].strip(".:").lower() if tokens else None
-            value = _scan_from_anchor(lines, i, anchor_number)
+            reject_numbers = {known_number.lower()}
+            if tokens:
+                reject_numbers.add(tokens[0].strip(".:").lower())
+            value = _scan_from_anchor(lines, i, reject_numbers)
             if value is not None:
                 return value
     return None
@@ -366,7 +384,7 @@ def _match_by_number(lines: list[str] | None, number: str) -> float | None:
     for i, row in enumerate(lines):
         tokens = row.split()
         if tokens and tokens[0].strip(".:").lower() == target:
-            value = _scan_from_anchor(lines, i, number)
+            value = _scan_from_anchor(lines, i, {target})
             if value is not None:
                 return value
     return None
@@ -377,18 +395,24 @@ def _extract_group(
     fallback_scope: list[str] | None,
     definitions: list[tuple[str, str, list[str], str]],
     group: str,
+    via_ocr: bool = False,
 ) -> list[ExtractedLine]:
     results = []
     for line_id, label, phrases, fallback_number in definitions:
-        value = _match_by_phrase(phrase_scope, phrases)
+        value = _match_by_phrase(phrase_scope, phrases, fallback_number)
         if value is None:
             value = _match_by_number(fallback_scope, fallback_number)
+        matched = value is not None
         results.append(ExtractedLine(
             id=line_id,
             label=label,
             value=value,
-            confidence="matched" if value is not None else "not_found",
+            # A phrase-anchored match is normally trustworthy ("matched"),
+            # but OCR misreads digits often enough that even a correctly
+            # *located* line shouldn't be shown with full confidence.
+            confidence=("uncertain" if via_ocr else "matched") if matched else "not_found",
             group=group,
+            via_ocr=via_ocr and matched,
         ))
     return results
 
@@ -421,7 +445,7 @@ def _extract_generic_lines(lines: list[str]) -> list[tuple[str, str, float]]:
         number = first_raw.lower()
         if number in seen_numbers:
             continue
-        value = _scan_from_anchor(lines, i, number)
+        value = _scan_from_anchor(lines, i, {number})
         if value is None:
             continue
         label = _DOTTED_LEADER_RE.split(row.strip(), maxsplit=1)[0]
@@ -442,36 +466,68 @@ _CURATED_SCHEDULES: dict[str, tuple[list[tuple[str, str, list[str], str]], str]]
 
 def parse_1040(pdf_bytes: bytes) -> ExtractionResult:
     pages = _page_texts(pdf_bytes)
-    text = "\n".join(pages)
     page_lines = [p.splitlines() for p in pages]
     total_pages = len(pages)
+
+    scanned_page_indices = [i for i, rows in enumerate(page_lines) if not any(row.strip() for row in rows)]
+
+    # Section boundaries are detected from the *original* (pre-OCR) pages,
+    # before any OCR substitution below. Form 1040 itself prints an OMB
+    # control number too (the same one Schedules 1/2/3 use, in fact) - as
+    # long as its own page has no text layer, it naturally can't trigger a
+    # false section boundary, exactly like every other scanned page. Once
+    # OCR fills that page's text in, it *would* otherwise look like a new
+    # attachment starting mid-return and wrongly cut the main form's scope
+    # short before ever reaching its real content. Using the pre-OCR
+    # snapshot for section detection keeps that boundary exactly where it
+    # was, while OCR'd text is still used for the actual value extraction
+    # within whatever section a page falls into.
+    sections = _detect_form_sections(list(pages), [list(p) for p in page_lines])
+
+    # OCR is slower and less reliable than a real text layer, so it's only
+    # ever used to fill in pages that have literally no extractable text at
+    # all — never to double-check a page that already parsed normally.
+    ocr_page_indices: set[int] = set()
+    for i in scanned_page_indices:
+        ocr_text = ocr.ocr_page_text(pdf_bytes, i)
+        if ocr_text.strip():
+            pages[i] = ocr_text
+            page_lines[i] = ocr_text.splitlines()
+            ocr_page_indices.add(i)
+
+    text = "\n".join(pages)
 
     result = ExtractionResult(raw_text=text)
     result.filing_status = detect_filing_status(text)
     result.tax_year = detect_tax_year(text)
-    result.scanned_pages = [i + 1 for i, rows in enumerate(page_lines) if not any(row.strip() for row in rows)]
+    result.scanned_pages = [i + 1 for i in scanned_page_indices]
+    result.ocr_pages = [i + 1 for i in sorted(ocr_page_indices)]
 
     def flatten(a: int, b: int) -> list[str]:
         return [line for page in page_lines[a:b] for line in page]
+
+    def uses_ocr(a: int, b: int) -> bool:
+        return any(i in ocr_page_indices for i in range(a, b))
 
     # Every attached form/schedule (curated or not) is bounded by the next
     # one's own first page, found generically via its OMB control number —
     # see _detect_form_sections. This is what keeps e.g. Schedule 3's scope
     # from silently running into Schedule D/Form 8949/etc. that follow it in
     # the PDF when there's no next *known* schedule to stop at.
-    sections = _detect_form_sections(pages, page_lines)
     main_end = sections[0].start_page if sections else total_pages
     main_scope = flatten(0, main_end)
-    result.lines.extend(_extract_group(main_scope, main_scope, LINE_DEFINITIONS, "Form 1040"))
+    result.lines.extend(_extract_group(main_scope, main_scope, LINE_DEFINITIONS, "Form 1040",
+                                        via_ocr=uses_ocr(0, main_end)))
 
     curated_found: set[str] = set()
     for section in sections:
         scope = flatten(section.start_page, section.end_page)
+        section_via_ocr = uses_ocr(section.start_page, section.end_page)
         curated_key = next((k for k in _CURATED_SCHEDULES if section.title.lower().startswith(k)), None)
         if curated_key:
             curated_found.add(curated_key)
             definitions, group_name = _CURATED_SCHEDULES[curated_key]
-            result.lines.extend(_extract_group(scope, scope, definitions, group_name))
+            result.lines.extend(_extract_group(scope, scope, definitions, group_name, via_ocr=section_via_ocr))
         else:
             # No hand-written line definitions for this form (Schedule D,
             # Form 8949, Schedule E, Form 2441, etc.) — surface whatever
@@ -484,6 +540,7 @@ def parse_1040(pdf_bytes: bytes) -> ExtractionResult:
                     value=value,
                     confidence="uncertain",
                     group=section.title,
+                    via_ocr=section_via_ocr,
                 ))
 
     # A curated schedule with no detected page at all is simply absent from

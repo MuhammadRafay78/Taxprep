@@ -203,6 +203,20 @@ def test_absent_schedule_never_searches_unrelated_later_pages():
         assert by_id[line_id].value is None
 
 
+def test_ocr_misread_leading_digit_still_recognizes_blank_echo():
+    # OCR can misread the same printed line number differently the two
+    # times it appears on a row: once as the leading label ("10" -> "4Q")
+    # and once as the trailing echo on a blank line (still "10", correctly
+    # read the second time). Recognizing that echo as "line 10 was left
+    # blank" needs the line's officially-known number as a second
+    # candidate, not just what OCR read on this specific row's own label.
+    from backend.parser import _match_by_phrase  # noqa: PLC0415
+
+    lines = ["4Q Adjustments to income from Schedule 1, line 26 . 10"]
+    value = _match_by_phrase(lines, ["adjustments to income"], "10")
+    assert value is None
+
+
 UNCURATED_SCHEDULE_D_PAGE = [
     "SCHEDULE D  Capital Gains and Losses  OMB No. 1545-0074",
     "(Form 1040)  2023",
