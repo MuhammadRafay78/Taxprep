@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Understand Your Tax Return</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --border: #e3e1db; --text: #2b2a27;
+    --muted: #6b6a64; --accent: #1f6f5c; --accent-dim: #eef6f3; --warn: #b3541e; --warn-dim: #fbe9e0; --info: #2f5f8a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  header { padding: 28px 24px 8px; max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  header p { color: var(--muted); margin: 0; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px 24px 64px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .dropzone { border: 2px dashed var(--border); border-radius: 10px; padding: 32px; text-align: center; cursor: pointer; }
+  .dropzone.drag { border-color: var(--accent); background: var(--accent-dim); }
+  .dropzone input { display: none; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 11px 18px; font-size: 0.95rem; cursor: pointer; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .explain { color: var(--muted); font-size: 0.85rem; }
+  select, input[type=number].meta { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); font: inherit; }
+  .meta-row { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+  .meta-row label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+
+  /* Hero outcome */
+  .hero { text-align: center; padding: 20px 12px 24px; }
+  .hero .amount { font-size: 2.5rem; font-weight: 700; line-height: 1.1; }
+  .hero .amount.refund { color: var(--accent); }
+  .hero .amount.owed { color: var(--warn); }
+  .hero .caption { color: var(--muted); font-size: 0.95rem; margin-top: 4px; }
+
+  /* Compare dropdown */
+  details.dropdown { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+  details.dropdown summary { cursor: pointer; padding: 10px 14px; font-size: 0.9rem; color: var(--accent); font-weight: 600; list-style: none; display: flex; align-items: center; gap: 6px; }
+  details.dropdown summary::-webkit-details-marker { display: none; }
+  details.dropdown summary::before { content: '▸'; display: inline-block; transition: transform 0.15s ease; }
+  details.dropdown[open] summary::before { transform: rotate(90deg); }
+  details.dropdown .dropdown-body { padding: 4px 14px 16px; border-top: 1px solid var(--border); }
+
+  /* Category accordion */
+  .category { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .category summary { cursor: pointer; padding: 14px 16px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  .category summary::-webkit-details-marker { display: none; }
+  .category summary .cat-title { font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .category summary .cat-title::before { content: '▸'; color: var(--muted); font-size: 0.8rem; transition: transform 0.15s ease; }
+  .category[open] summary .cat-title::before { transform: rotate(90deg); }
+  .category summary .cat-amount { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .category summary .cat-amount.na { color: var(--muted); font-weight: 400; }
+  .category .cat-body { padding: 0 16px 14px; border-top: 1px solid var(--border); }
+  .category .narrative { font-size: 0.92rem; line-height: 1.5; margin: 14px 0; }
+  .numbers-toggle { margin-top: 4px; }
+  .numbers-toggle > summary { cursor: pointer; font-size: 0.82rem; color: var(--muted); padding: 4px 0; list-style: none; }
+  .numbers-toggle > summary::-webkit-details-marker { display: none; }
+  .numbers-toggle > summary::before { content: '▸ '; }
+  .numbers-toggle[open] > summary::before { content: '▾ '; }
+  .numbers-body { padding-top: 6px; }
+  .line-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0efe9; }
+  .line-row:last-child { border-bottom: none; }
+  .line-row .line-info { flex: 1; }
+  .line-row .line-label { font-size: 0.9rem; }
+  .line-row .line-explain { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+  .line-row .not-found { color: var(--warn); font-size: 0.78rem; margin-top: 2px; }
+  .line-row .uncertain { color: var(--info); font-size: 0.78rem; margin-top: 2px; }
+  .line-row input { width: 110px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 5px; font: inherit; text-align: right; flex: none; }
+  .line-row .static-value { width: 110px; flex: none; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; padding: 5px 7px; }
+  .banner { background: var(--warn-dim); color: var(--warn); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; margin-bottom: 16px; }
+  .category.extra summary .cat-title { color: var(--info); }
+  .extra-note { color: var(--info); font-size: 0.8rem; margin: 0 0 8px; }
+
+  .flag { padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.9rem; }
+  .flag.warning { background: var(--warn-dim); color: var(--warn); }
+  .flag.info { background: #e7eff6; color: var(--info); }
+  .flow-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.88rem; }
+  .flow-label { width: 180px; flex: none; color: var(--muted); }
+  .flow-bar-wrap { flex: 1; background: #eee; border-radius: 4px; overflow: hidden; height: 16px; }
+  .flow-bar { height: 100%; background: var(--accent); }
+  .flow-bar.negative { background: var(--warn); }
+  .flow-value { width: 100px; flex: none; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+
+  #status, #status-b { color: var(--muted); font-size: 0.9rem; }
+  .hidden { display: none; }
+  footer.note { color: var(--muted); font-size: 0.8rem; margin-top: 24px; }
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .compare-table th, .compare-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+  .compare-table td.delta.up { color: var(--warn); }
+  .compare-table td.delta.down { color: var(--accent); }
+  .compare-note { color: var(--muted); font-size: 0.85rem; margin-top: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Understand Your Tax Return</h1>
+  <p>Upload a Form 1040 PDF and get a clean summary — tap any category to see the detail behind it.</p>
+</header>
+<main>
+  <section class="panel" id="upload-panel">
+    <div class="dropzone" id="dropzone">
+      <p>Drop a Form 1040 PDF here, or click to choose a file.</p>
+      <p class="explain">Works best with text-based PDFs (fillable IRS form, or one exported from tax software). Scanned or photographed pages are read with OCR as a fallback — slower and less reliable, so anything recovered that way is clearly marked and worth double-checking.</p>
+      <input type="file" id="file-input" accept="application/pdf" />
+    </div>
+    <p id="status"></p>
+  </section>
+
+  <section class="panel hidden" id="summary-panel">
+    <div id="scanned-banner"></div>
+    <div class="meta-row">
+      <label>Filing status
+        <select id="filing-status">
+          <option value="">Unknown / not sure</option>
+          <option value="single">Single</option>
+          <option value="mfj">Married filing jointly</option>
+          <option value="mfs">Married filing separately</option>
+          <option value="hoh">Head of household</option>
+          <option value="qss">Qualifying surviving spouse</option>
+        </select>
+      </label>
+      <label>Tax year
+        <input type="number" class="meta" id="tax-year" placeholder="e.g. 2023" />
+      </label>
+    </div>
+
+    <details class="dropdown" id="compare-details">
+      <summary>Compare with another year</summary>
+      <div class="dropdown-body">
+        <p class="explain">Upload a second Form 1040 (a different tax year) to see what changed.</p>
+        <div class="dropzone" id="dropzone-b">
+          <p>Drop the other year's Form 1040 PDF here, or click to choose a file.</p>
+          <input type="file" id="file-input-b" accept="application/pdf" />
+        </div>
+        <p id="status-b"></p>
+        <button class="hidden secondary" id="compare-btn">Compare the two returns</button>
+        <div id="compare-results"></div>
+      </div>
+    </details>
+
+    <div class="hero" id="hero"></div>
+
+    <div id="story"></div>
+
+    <div id="categories"></div>
+
+    <p class="explain">Parsing a PDF form is best-effort — tap a category above to check and correct the numbers behind it. Categories with nothing found in the PDF stay collapsed.</p>
+    <button id="analyze-btn">Update explanation</button>
+
+    <div id="extra-forms"></div>
+  </section>
+
+  <section class="panel hidden" id="results-panel">
+    <h2>Red flags &amp; things worth double-checking</h2>
+    <div id="flags"></div>
+
+    <h2>How the money flows</h2>
+    <div id="flow"></div>
+  </section>
+
+  <footer class="note">
+    This tool gives general, educational explanations of Form 1040 line items — it is not tax advice and
+    does not file anything. Numbers are only as accurate as the PDF parsing and your review of them.
+  </footer>
+</main>
+
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+const status = document.getElementById('status');
+const summaryPanel = document.getElementById('summary-panel');
+const resultsPanel = document.getElementById('results-panel');
+const filingStatusSelect = document.getElementById('filing-status');
+const taxYearInput = document.getElementById('tax-year');
+const heroEl = document.getElementById('hero');
+const categoriesEl = document.getElementById('categories');
+
+// Every 1040/Schedule line id lands in exactly one category, either as the
+// headline number shown on the collapsed row, or as a child line revealed
+// when that category is expanded.
+const CATEGORIES = [
+  { key: 'income', title: 'Income', headline: '9',
+    ids: ['1z', '2b', '3a', '3b', '4b', '5b', '6b', '7', '8', 's1_1', 's1_3', 's1_7', 's1_9', 's1_10'] },
+  { key: 'agi', title: 'Adjustments & AGI', headline: '11',
+    ids: ['10', 's1_11', 's1_13', 's1_15', 's1_20', 's1_21', 's1_25'] },
+  { key: 'deductions', title: 'Deductions', headline: '14', ids: ['12', '13'] },
+  { key: 'tax', title: 'Taxable Income & Tax', headline: '18', ids: ['15', '16', '17'] },
+  { key: 'credits', title: 'Credits', headline: '21',
+    ids: ['19', '20', 's3_1', 's3_2', 's3_3', 's3_4', 's3_8'] },
+  { key: 'othertax', title: 'Other Taxes & Total Tax', headline: '24',
+    ids: ['22', '23', 's2_1', 's2_2', 's2_3', 's2_4', 's2_11', 's2_12', 's2_21'] },
+  { key: 'payments', title: 'Payments', headline: '33',
+    ids: ['25d', '26', '27', '28', 's3_9', '31', '32', '34', '35a', '37'] },
+];
+
+// Any line reported under a group outside this set came from a form we
+// don't have curated definitions for (Schedule D, Form 2441, etc., detected
+// generically from the PDF's own page headers) and gets its own drill-down
+// category, separate from the curated ones above.
+const KNOWN_GROUPS = new Set([
+  'Form 1040',
+  'Schedule 1 (Additional Income & Adjustments)',
+  'Schedule 2 (Additional Taxes)',
+  'Schedule 3 (Additional Credits & Payments)',
+]);
+
+let currentLinesById = {};
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) handleFile(fileInput.files[0]);
+});
+
+async function extractPdf(file) {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch('/api/extract', { method: 'POST', body: form });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Server error (${res.status})`);
+  }
+  return res.json();
+}
+
+async function handleFile(file) {
+  if (file.type !== 'application/pdf') {
+    status.textContent = 'Please choose a PDF file.';
+    return;
+  }
+  status.textContent = 'Reading the PDF...';
+  try {
+    const data = await extractPdf(file);
+    status.textContent = '';
+    renderSummary(data);
+  } catch (e) {
+    status.textContent = 'Error: ' + e.message;
+  }
+}
+
+function fmtMoney(n) {
+  return `$${Math.abs(n).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+}
+
+// Unlike fmtMoney (used where a separate +/- indicator already exists, like
+// the flow bars), this keeps the sign inline — needed anywhere a negative
+// number stands alone in a sentence, like "a $3 capital loss", so it doesn't
+// read as a gain.
+function fmtSignedMoney(n) {
+  return (n < 0 ? '-' : '') + fmtMoney(n);
+}
+
+function lineInputHtml(line) {
+  let caption = '';
+  if (line.confidence === 'not_found') {
+    caption = '<div class="not-found">Not found in PDF — enter manually if it applies to you.</div>';
+  } else if (line.confidence === 'uncertain' && line.via_ocr) {
+    caption = '<div class="uncertain">Read via OCR from a scanned page — double-check this number against your PDF, OCR can misread digits.</div>';
+  } else if (line.confidence === 'uncertain') {
+    caption = '<div class="uncertain">Auto-detected from this form\'s layout, not double-checked — verify against your PDF.</div>';
+  }
+  return `
+    <div class="line-row">
+      <div class="line-info">
+        <div class="line-label">${line.id.replace(/^s[123]_/, '')} — ${line.label}</div>
+        ${line.explanation ? `<div class="line-explain">${line.explanation}</div>` : ''}
+        ${caption}
+      </div>
+      <input type="number" step="0.01" data-id="${line.id}" value="${line.value ?? ''}" />
+    </div>
+  `;
+}
+
+function val(id) {
+  const line = currentLinesById[id];
+  return line && line.value !== null ? line.value : null;
+}
+
+// A shared way to turn "here's the total, and here's what feeds into it"
+// into one plain sentence fragment, used by every category narrative below.
+// Skips anything zero/missing so a simple return doesn't read like a
+// checklist of "$0 dividends, $0 capital gains, ...".
+function describeContributors(components) {
+  const nonzero = components.filter(c => c.value !== null && c.value !== 0);
+  if (nonzero.length === 0) return '';
+  nonzero.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+  if (nonzero.length === 1) {
+    return ` — all from ${nonzero[0].label} (${fmtSignedMoney(nonzero[0].value)})`;
+  }
+  const [first, ...rest] = nonzero;
+  return ` — mostly ${first.label} (${fmtSignedMoney(first.value)}), plus ${rest.map(c => `${c.label} (${fmtSignedMoney(c.value)})`).join(', ')}`;
+}
+
+// One plain-English sentence or two per category: what the number is, and
+// roughly where it came from. This is the first thing shown when a category
+// opens — the line-by-line IRS jargon is still there, just tucked behind a
+// "Show the numbers" toggle for anyone who wants to verify or correct it.
+const CATEGORY_NARRATIVES = {
+  income() {
+    const total = val('9');
+    if (total === null) return "This return's total income wasn't found — check the numbers below.";
+    const parts = describeContributors([
+      { label: 'wages', value: val('1z') },
+      { label: 'taxable interest', value: val('2b') },
+      { label: 'dividends', value: val('3b') },
+      { label: 'capital gains', value: val('7') },
+      { label: 'IRA/pension income', value: (val('4b') || 0) + (val('5b') || 0) || null },
+      { label: 'Social Security benefits', value: val('6b') },
+      { label: 'other income', value: val('8') },
+    ]);
+    return `Total income was ${fmtMoney(total)}${parts}.`;
+  },
+  agi() {
+    const agi = val('11');
+    const adjustments = val('10');
+    if (agi === null) return "Adjusted gross income (AGI) wasn't found — check the numbers below.";
+    if (adjustments) {
+      return `After ${fmtMoney(adjustments)} in adjustments (things like retirement or student loan interest deductions), adjusted gross income (AGI) came to ${fmtMoney(agi)}.`;
+    }
+    return `With no adjustments, AGI stayed at ${fmtMoney(agi)} — the number a lot of other limits on the return are based on.`;
+  },
+  deductions() {
+    const ded = val('12');
+    const qbi = val('13');
+    if (ded === null) return "The deduction amount wasn't found — check the numbers below.";
+    let s = `A ${fmtMoney(ded)} deduction was subtracted from income`;
+    return s + (qbi ? `, plus a ${fmtMoney(qbi)} deduction for qualified business income.` : '.');
+  },
+  tax() {
+    const taxable = val('15');
+    const tax = val('16');
+    if (taxable === null || tax === null) return "Taxable income and tax weren't both found — check the numbers below.";
+    const capGains = val('7');
+    const qualDiv = val('3a');
+    const preferential = Math.max(0, capGains || 0) + Math.max(0, qualDiv || 0);
+    let s = `Tax was calculated on ${fmtMoney(taxable)} of taxable income (income after deductions), coming to ${fmtMoney(tax)} before any credits.`;
+    if (preferential > 0) {
+      s += ` ${fmtMoney(preferential)} of that was long-term capital gains and/or qualified dividends, which get taxed at lower rates (0%/15%/20% depending on income) than the rest of the taxable income — that's why the total tax comes out lower than a plain bracket calculation would suggest.`;
+    }
+    return s;
+  },
+  credits() {
+    const total = val('21');
+    if (!total) return 'No credits were claimed that reduce the tax bill directly.';
+    const parts = describeContributors([
+      { label: 'the Child Tax Credit / credit for other dependents', value: val('19') },
+      { label: 'other credits', value: val('20') },
+    ]);
+    return `${fmtMoney(total)} in credits reduced the tax owed${parts}.`;
+  },
+  othertax() {
+    const total = val('24');
+    if (total === null) return "Total tax wasn't found — check the numbers below.";
+    const other = val('23');
+    let s = `Total tax for the year came to ${fmtMoney(total)}`;
+    return s + (other ? `, including ${fmtMoney(other)} in other taxes (e.g. self-employment tax or the alternative minimum tax).` : '.');
+  },
+  payments() {
+    const total = val('33');
+    if (total === null) return "Total payments weren't found — check the numbers below.";
+    const parts = describeContributors([
+      { label: 'paycheck withholding', value: val('25d') },
+      { label: 'estimated tax payments', value: val('26') },
+      { label: 'the Earned Income Credit', value: val('27') },
+      { label: 'the Additional Child Tax Credit', value: val('28') },
+    ]);
+    return `${fmtMoney(total)} was paid in over the year${parts}.`;
+  },
+};
+
+function renderCategories() {
+  categoriesEl.innerHTML = '';
+  for (const cat of CATEGORIES) {
+    const headlineLine = currentLinesById[cat.headline];
+    const childLines = cat.ids.map(id => currentLinesById[id]).filter(Boolean);
+    const hasData = l => l && l.confidence !== 'not_found';
+    const allLines = [headlineLine, ...childLines].filter(Boolean);
+    const foundLines = allLines.filter(hasData);
+    const missingLines = allLines.filter(l => !hasData(l));
+    const hasAnyData = foundLines.length > 0;
+
+    const details = document.createElement('details');
+    details.className = 'category';
+    const amountText = headlineLine && headlineLine.value !== null ? fmtMoney(headlineLine.value) : '—';
+    const ocrBadge = headlineLine && headlineLine.via_ocr ? ' <span class="uncertain" style="margin:0">(OCR)</span>' : '';
+    const narrativeFn = CATEGORY_NARRATIVES[cat.key];
+    const narrative = narrativeFn ? narrativeFn() : '';
+    // Only lines actually found on the return are shown by default — a
+    // return with no dividend income shouldn't display a "Dividends" field
+    // next to real numbers, as if that were part of the return too. Lines
+    // that weren't found stay available, just tucked behind their own
+    // toggle, in case one genuinely applies and was simply missed.
+    details.innerHTML = `
+      <summary>
+        <span class="cat-title">${cat.title}</span>
+        <span class="cat-amount ${headlineLine && headlineLine.value !== null ? '' : 'na'}">${amountText}${ocrBadge}</span>
+      </summary>
+      <div class="cat-body">
+        ${narrative ? `<p class="narrative">${narrative}</p>` : ''}
+        ${hasAnyData ? `
+        <details class="numbers-toggle">
+          <summary>Show the numbers</summary>
+          <div class="numbers-body">
+            ${foundLines.map(lineInputHtml).join('')}
+          </div>
+        </details>` : '<p class="narrative">Nothing in this category was found on this return.</p>'}
+        ${missingLines.length > 0 ? `
+        <details class="numbers-toggle">
+          <summary>${missingLines.length} more line${missingLines.length === 1 ? '' : 's'} not found — add manually if one applies to you</summary>
+          <div class="numbers-body">
+            ${missingLines.map(lineInputHtml).join('')}
+          </div>
+        </details>` : ''}
+      </div>
+    `;
+    // Categories with nothing found (e.g. no Schedule 2 in this return) stay
+    // collapsed and visually quieter.
+    if (!hasAnyData) details.style.opacity = '0.6';
+    categoriesEl.appendChild(details);
+  }
+}
+
+function renderScannedBanner(scannedPages, ocrPages) {
+  const el = document.getElementById('scanned-banner');
+  if (!scannedPages || scannedPages.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  ocrPages = ocrPages || [];
+  const pageWord = scannedPages.length === 1 ? 'page' : 'pages';
+  const failedPages = scannedPages.filter(p => !ocrPages.includes(p));
+
+  let html = `<div class="banner">${scannedPages.length} ${pageWord} of this PDF (${scannedPages.join(', ')}) `
+    + `${scannedPages.length === 1 ? 'has' : 'have'} no text layer — `;
+
+  if (ocrPages.length > 0) {
+    html += `so ${ocrPages.length === 1 ? 'it was' : 'they were'} run through OCR instead. `
+      + `Anything recovered that way is marked "Read via OCR" below and needs a closer look — `
+      + `OCR reads handwriting and small print well enough to be useful, but not perfectly, and it can misread digits.`;
+    if (failedPages.length > 0) {
+      html += ` OCR couldn't recover anything from ${failedPages.length === 1 ? 'page' : 'pages'} `
+        + `${failedPages.join(', ')} — those numbers still need to be entered by hand.`;
+    }
+  } else {
+    html += `and OCR wasn't able to read ${scannedPages.length === 1 ? 'it' : 'them'} either — `
+      + `those numbers will need to be entered by hand.`;
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderExtraForms(lines) {
+  const el = document.getElementById('extra-forms');
+  const byGroup = new Map();
+  for (const line of lines) {
+    if (KNOWN_GROUPS.has(line.group)) continue;
+    if (!byGroup.has(line.group)) byGroup.set(line.group, []);
+    byGroup.get(line.group).push(line);
+  }
+  if (byGroup.size === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  const sections = Array.from(byGroup.entries()).map(([title, groupLines]) => `
+    <details class="category extra">
+      <summary>
+        <span class="cat-title">${title}</span>
+        <span class="cat-amount na">${groupLines.length} value${groupLines.length === 1 ? '' : 's'} found</span>
+      </summary>
+      <div class="cat-body">
+        <p class="extra-note">This form was found in your PDF but isn't one we have detailed explanations for yet —
+        line numbers and raw labels are shown as printed, with the value auto-detected from the page layout.</p>
+        ${groupLines.map(lineInputHtml).join('')}
+      </div>
+    </details>
+  `).join('');
+  el.innerHTML = `
+    <h2>Additional forms attached to this return</h2>
+    <p class="explain">These are already reflected in the totals above — they're here in case you want to see
+    where a number originally came from. Skip this section if you're just after the overview.</p>
+    ${sections}`;
+}
+
+function renderHero() {
+  const refund = val('34');
+  const owed = val('37');
+  const totalTax = val('24');
+  const totalPayments = val('33');
+  const howCalculated = (totalTax !== null && totalPayments !== null)
+    ? `<div class="caption" style="margin-top:2px">You paid in ${fmtMoney(totalPayments)} against a ${fmtMoney(totalTax)} tax bill.</div>`
+    : '';
+  let html;
+  if (refund) {
+    html = `<div class="amount refund">${fmtMoney(refund)}</div><div class="caption">Estimated refund</div>${howCalculated}`;
+  } else if (owed) {
+    html = `<div class="amount owed">${fmtMoney(owed)}</div><div class="caption">Estimated amount you owe</div>${howCalculated}`;
+  } else {
+    html = `<div class="amount na" style="color:var(--muted)">—</div><div class="caption">Refund/amount owed not found — check the Payments category</div>`;
+  }
+  heroEl.innerHTML = html;
+}
+
+// A single, plain-English walkthrough of the whole return, income through
+// refund/owed — stitched together from the same per-category narratives
+// shown inside each collapsed section, so someone can read top to bottom
+// and understand the whole calculation without opening anything.
+function renderStory() {
+  const el = document.getElementById('story');
+  if (!el) return;
+  const order = ['income', 'agi', 'deductions', 'tax', 'credits', 'othertax', 'payments'];
+  const sentences = order
+    .map(key => CATEGORY_NARRATIVES[key] ? CATEGORY_NARRATIVES[key]() : '')
+    .filter(s => s && !s.includes("wasn't found"));
+  if (sentences.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = `
+    <h2 style="margin-bottom:8px">How this return works, step by step</h2>
+    <p class="narrative" style="font-size:0.95rem;line-height:1.6">${sentences.join(' ')}</p>
+  `;
+}
+
+function renderSummary(data) {
+  filingStatusSelect.value = data.filing_status || '';
+  taxYearInput.value = data.tax_year || '';
+  currentLinesById = {};
+  for (const line of data.lines) currentLinesById[line.id] = line;
+
+  renderScannedBanner(data.scanned_pages, data.ocr_pages);
+  renderHero();
+  renderStory();
+  renderCategories();
+  renderExtraForms(data.lines);
+
+  summaryPanel.classList.remove('hidden');
+  resultsPanel.classList.add('hidden');
+}
+
+function readAllOverrides() {
+  return Array.from(document.querySelectorAll('#categories input[data-id], #extra-forms input[data-id]')).map(input => ({
+    id: input.dataset.id,
+    value: input.value === '' ? null : parseFloat(input.value),
+  }));
+}
+
+function valuesFromOverrides(overrides) {
+  const values = {};
+  for (const o of overrides) if (o.value !== null) values[o.id] = o.value;
+  return values;
+}
+
+document.getElementById('analyze-btn').addEventListener('click', async () => {
+  const overrides = readAllOverrides();
+  // Pull any edits back into currentLinesById so the hero (and a later
+  // comparison) reflect corrections made inside the Payments category.
+  for (const o of overrides) {
+    if (currentLinesById[o.id]) currentLinesById[o.id].value = o.value;
+  }
+  renderHero();
+  renderStory();
+
+  const payload = {
+    filing_status: filingStatusSelect.value || null,
+    tax_year: taxYearInput.value ? parseInt(taxYearInput.value, 10) : null,
+    overrides,
+  };
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  renderResults(data);
+});
+
+function renderResults(data) {
+  const flagsEl = document.getElementById('flags');
+  flagsEl.innerHTML = '';
+  if (data.flags.length === 0) {
+    flagsEl.innerHTML = '<p class="explain">Nothing stood out from the numbers provided.</p>';
+  }
+  for (const flag of data.flags) {
+    const div = document.createElement('div');
+    div.className = 'flag ' + flag.severity;
+    div.textContent = flag.message;
+    flagsEl.appendChild(div);
+  }
+
+  const flowEl = document.getElementById('flow');
+  flowEl.innerHTML = '';
+  const maxAbs = Math.max(1, ...data.flow.map(s => Math.abs(s.value)));
+  for (const step of data.flow) {
+    const row = document.createElement('div');
+    row.className = 'flow-row';
+    const pct = Math.min(100, (Math.abs(step.value) / maxAbs) * 100);
+    row.innerHTML = `
+      <div class="flow-label">${step.label}</div>
+      <div class="flow-bar-wrap"><div class="flow-bar ${step.value < 0 ? 'negative' : ''}" style="width:${pct}%"></div></div>
+      <div class="flow-value">${step.value < 0 ? '-' : ''}${fmtMoney(step.value)}</div>
+    `;
+    flowEl.appendChild(row);
+  }
+
+  resultsPanel.classList.remove('hidden');
+  resultsPanel.scrollIntoView({ behavior: 'smooth' });
+}
+
+// --- Compare with another year (collapsed dropdown by default) ---
+const dropzoneB = document.getElementById('dropzone-b');
+const fileInputB = document.getElementById('file-input-b');
+const statusB = document.getElementById('status-b');
+const compareBtn = document.getElementById('compare-btn');
+let linesByIdB = null;
+let taxYearB = null;
+
+dropzoneB.addEventListener('click', () => fileInputB.click());
+dropzoneB.addEventListener('dragover', e => { e.preventDefault(); dropzoneB.classList.add('drag'); });
+dropzoneB.addEventListener('dragleave', () => dropzoneB.classList.remove('drag'));
+dropzoneB.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzoneB.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFileB(e.dataTransfer.files[0]);
+});
+fileInputB.addEventListener('change', () => {
+  if (fileInputB.files.length) handleFileB(fileInputB.files[0]);
+});
+
+async function handleFileB(file) {
+  if (file.type !== 'application/pdf') {
+    statusB.textContent = 'Please choose a PDF file.';
+    return;
+  }
+  statusB.textContent = 'Reading the PDF...';
+  try {
+    const data = await extractPdf(file);
+    statusB.textContent = `Loaded ${data.tax_year || 'return'} — ready to compare.`;
+    taxYearB = data.tax_year || null;
+    linesByIdB = {};
+    for (const line of data.lines) linesByIdB[line.id] = line;
+    compareBtn.classList.remove('hidden');
+  } catch (e) {
+    statusB.textContent = 'Error: ' + e.message;
+  }
+}
+
+const COMPARE_LINES = [
+  { id: '9', label: 'Total income' },
+  { id: '11', label: 'Adjusted gross income' },
+  { id: '15', label: 'Taxable income' },
+  { id: '24', label: 'Total tax' },
+  { id: '33', label: 'Total payments' },
+];
+
+function valueOf(linesById, id) {
+  return linesById[id]?.value ?? 0;
+}
+
+compareBtn.addEventListener('click', () => {
+  const valuesA = valuesFromOverrides(readAllOverrides());
+  const yearA = taxYearInput.value || 'Return A';
+  const yearB = taxYearB || 'Return B';
+
+  const rows = COMPARE_LINES.map(({ id, label }) => {
+    const a = valuesA[id] ?? valueOf(currentLinesById, id);
+    const b = valueOf(linesByIdB, id);
+    const delta = b - a;
+    const pct = a !== 0 ? (delta / a) * 100 : null;
+    return { label, a, b, delta, pct };
+  });
+
+  const refundOrOwed = (linesById) => {
+    const refund = valueOf(linesById, '34');
+    const owed = valueOf(linesById, '37');
+    return refund ? `${fmtMoney(refund)} refund` : owed ? `${fmtMoney(owed)} owed` : 'n/a';
+  };
+  const outcomeA = refundOrOwed(currentLinesById);
+  const outcomeB = refundOrOwed(linesByIdB);
+
+  const el = document.getElementById('compare-results');
+  el.innerHTML = `
+    <table class="compare-table">
+      <thead><tr><th></th><th>${yearA}</th><th>${yearB}</th><th>Change</th></tr></thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td>${r.label}</td>
+            <td>${fmtMoney(r.a)}</td>
+            <td>${fmtMoney(r.b)}</td>
+            <td class="delta ${r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : ''}">
+              ${r.delta >= 0 ? '+' : '-'}${fmtMoney(r.delta)}
+              ${r.pct !== null ? ` (${r.pct >= 0 ? '+' : ''}${r.pct.toFixed(1)}%)` : ''}
+            </td>
+          </tr>
+        `).join('')}
+        <tr>
+          <td>Outcome</td>
+          <td>${outcomeA}</td>
+          <td>${outcomeB}</td>
+          <td>-</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="compare-note">"Change" is simply Return B minus Return A — it doesn't account for inflation-adjusted
+    brackets/deductions changing year to year, so a change here reflects your actual numbers, not necessarily a
+    change in tax law.</p>
+  `;
+});
+</script>
+</body>
+</html>
