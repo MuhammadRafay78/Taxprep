@@ -207,7 +207,11 @@ const CATEGORIES = [
   { key: 'othertax', title: 'Other Taxes & Total Tax', headline: '24',
     ids: ['22', '23', 's2_1', 's2_2', 's2_3', 's2_4', 's2_11', 's2_12', 's2_21'] },
   { key: 'payments', title: 'Payments', headline: '33',
-    ids: ['25d', '26', '27', '28', 's3_9', '31', '32', '34', '35a', '37'] },
+    // 34/35a/37 (refund/amount owed) are the outcome derived from this
+    // total, not a component that feeds into it — shown in the hero and
+    // Computation walkthrough instead, so they don't show up here as if
+    // they were part of the sum.
+    ids: ['25d', '26', '27', '28', 's3_9', '31', '32'] },
 ];
 
 // Any line reported under a group outside this set came from a form we
@@ -456,6 +460,27 @@ const CATEGORY_NARRATIVES = {
   },
 };
 
+// A short item/amount table for a category's card — the found lines that
+// feed its headline, plus the headline itself as a bolded total row.
+function categoryTableHtml(cat, childLines, headlineLine, headlineAmount) {
+  const rows = childLines.filter(l => l.value !== null);
+  let html = '';
+  if (rows.length > 0) {
+    html += `<table class="comp-table"><tbody>`;
+    for (const line of rows) {
+      html += `<tr><td>${line.label}</td><td class="num">${fmtMoney(line.value)}</td></tr>`;
+    }
+    if (headlineAmount !== null) {
+      const totalLabel = headlineLine ? headlineLine.label : cat.title;
+      html += `<tr class="comp-total"><td>${totalLabel}</td><td class="num">${fmtMoney(headlineAmount)}</td></tr>`;
+    }
+    html += `</tbody></table>`;
+  } else if (headlineAmount !== null) {
+    html += `<table class="comp-table"><tbody><tr class="comp-total"><td>${headlineLine ? headlineLine.label : cat.title}</td><td class="num">${fmtMoney(headlineAmount)}</td></tr></tbody></table>`;
+  }
+  return html;
+}
+
 function renderCategories() {
   categoriesEl.innerHTML = '';
   for (const cat of CATEGORIES) {
@@ -474,17 +499,14 @@ function renderCategories() {
     }
     const amountText = headlineAmount !== null ? fmtMoney(headlineAmount) : '—';
     const ocrBadge = headlineLine && headlineLine.via_ocr ? ' <span class="uncertain" style="margin:0">(OCR)</span>' : '';
-    const narrativeFn = CATEGORY_NARRATIVES[cat.key];
-    const narrative = narrativeFn ? narrativeFn() : '';
-    // The line-by-line numbers behind this narrative live in the
-    // Computation walkthrough table below — no need to repeat them here.
+    const table = categoryTableHtml(cat, childLines.filter(hasData), headlineLine, headlineAmount);
     details.innerHTML = `
       <summary>
         <span class="cat-title">${cat.title}</span>
         <span class="cat-amount ${headlineAmount !== null ? '' : 'na'}">${amountText}${ocrBadge}</span>
       </summary>
       <div class="cat-body">
-        ${narrative ? `<p class="narrative">${narrative}</p>` : '<p class="narrative">Nothing in this category was found on this return.</p>'}
+        ${table || '<p class="narrative">Nothing in this category was found on this return.</p>'}
       </div>
     `;
     // Categories with nothing found (e.g. no Schedule 2 in this return) stay
