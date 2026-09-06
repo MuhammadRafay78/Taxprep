@@ -141,6 +141,8 @@
 
     <div class="hero" id="hero"></div>
 
+    <div id="story"></div>
+
     <div id="categories"></div>
 
     <p class="explain">Parsing a PDF form is best-effort — tap a category above to check and correct the numbers behind it. Categories with nothing found in the PDF stay collapsed.</p>
@@ -379,7 +381,10 @@ function renderCategories() {
     const headlineLine = currentLinesById[cat.headline];
     const childLines = cat.ids.map(id => currentLinesById[id]).filter(Boolean);
     const hasData = l => l && l.confidence !== 'not_found';
-    const hasAnyData = hasData(headlineLine) || childLines.some(hasData);
+    const allLines = [headlineLine, ...childLines].filter(Boolean);
+    const foundLines = allLines.filter(hasData);
+    const missingLines = allLines.filter(l => !hasData(l));
+    const hasAnyData = foundLines.length > 0;
 
     const details = document.createElement('details');
     details.className = 'category';
@@ -387,6 +392,11 @@ function renderCategories() {
     const ocrBadge = headlineLine && headlineLine.via_ocr ? ' <span class="uncertain" style="margin:0">(OCR)</span>' : '';
     const narrativeFn = CATEGORY_NARRATIVES[cat.key];
     const narrative = narrativeFn ? narrativeFn() : '';
+    // Only lines actually found on the return are shown by default — a
+    // return with no dividend income shouldn't display a "Dividends" field
+    // next to real numbers, as if that were part of the return too. Lines
+    // that weren't found stay available, just tucked behind their own
+    // toggle, in case one genuinely applies and was simply missed.
     details.innerHTML = `
       <summary>
         <span class="cat-title">${cat.title}</span>
@@ -394,18 +404,24 @@ function renderCategories() {
       </summary>
       <div class="cat-body">
         ${narrative ? `<p class="narrative">${narrative}</p>` : ''}
+        ${hasAnyData ? `
         <details class="numbers-toggle">
           <summary>Show the numbers</summary>
           <div class="numbers-body">
-            ${headlineLine ? lineInputHtml(headlineLine) : ''}
-            ${childLines.map(lineInputHtml).join('')}
+            ${foundLines.map(lineInputHtml).join('')}
           </div>
-        </details>
+        </details>` : '<p class="narrative">Nothing in this category was found on this return.</p>'}
+        ${missingLines.length > 0 ? `
+        <details class="numbers-toggle">
+          <summary>${missingLines.length} more line${missingLines.length === 1 ? '' : 's'} not found — add manually if one applies to you</summary>
+          <div class="numbers-body">
+            ${missingLines.map(lineInputHtml).join('')}
+          </div>
+        </details>` : ''}
       </div>
     `;
     // Categories with nothing found (e.g. no Schedule 2 in this return) stay
-    // collapsed and visually quieter, but the fields are still there to fill
-    // in by hand if they apply.
+    // collapsed and visually quieter.
     if (!hasAnyData) details.style.opacity = '0.6';
     categoriesEl.appendChild(details);
   }
@@ -491,6 +507,27 @@ function renderHero() {
   heroEl.innerHTML = html;
 }
 
+// A single, plain-English walkthrough of the whole return, income through
+// refund/owed — stitched together from the same per-category narratives
+// shown inside each collapsed section, so someone can read top to bottom
+// and understand the whole calculation without opening anything.
+function renderStory() {
+  const el = document.getElementById('story');
+  if (!el) return;
+  const order = ['income', 'agi', 'deductions', 'tax', 'credits', 'othertax', 'payments'];
+  const sentences = order
+    .map(key => CATEGORY_NARRATIVES[key] ? CATEGORY_NARRATIVES[key]() : '')
+    .filter(s => s && !s.includes("wasn't found"));
+  if (sentences.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = `
+    <h2 style="margin-bottom:8px">How this return works, step by step</h2>
+    <p class="narrative" style="font-size:0.95rem;line-height:1.6">${sentences.join(' ')}</p>
+  `;
+}
+
 function renderSummary(data) {
   filingStatusSelect.value = data.filing_status || '';
   taxYearInput.value = data.tax_year || '';
@@ -499,6 +536,7 @@ function renderSummary(data) {
 
   renderScannedBanner(data.scanned_pages, data.ocr_pages);
   renderHero();
+  renderStory();
   renderCategories();
   renderExtraForms(data.lines);
 
@@ -527,6 +565,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
     if (currentLinesById[o.id]) currentLinesById[o.id].value = o.value;
   }
   renderHero();
+  renderStory();
 
   const payload = {
     filing_status: filingStatusSelect.value || null,
