@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Understand Your Tax Return</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --border: #e3e1db; --text: #2b2a27;
+    --muted: #6b6a64; --accent: #1f6f5c; --warn: #b3541e; --info: #2f5f8a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  header { padding: 28px 24px 8px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  header p { color: var(--muted); margin: 0; }
+  main { max-width: 900px; margin: 0 auto; padding: 16px 24px 64px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  .dropzone { border: 2px dashed var(--border); border-radius: 10px; padding: 32px; text-align: center; cursor: pointer; }
+  .dropzone.drag { border-color: var(--accent); background: #eef6f3; }
+  .dropzone input { display: none; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 10px 16px; font-size: 0.95rem; cursor: pointer; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  td.value input { width: 110px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; font: inherit; text-align: right; }
+  tr.group-header td { background: #f2f1ec; font-weight: 600; font-size: 0.85rem; color: var(--muted); padding-top: 14px; }
+  .not-found { color: var(--warn); font-size: 0.8rem; }
+  .explain { color: var(--muted); font-size: 0.85rem; }
+  select, input[type=number].meta { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); font: inherit; }
+  .meta-row { display: flex; gap: 24px; margin-bottom: 12px; flex-wrap: wrap; }
+  .meta-row label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+  .flag { padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.9rem; }
+  .flag.warning { background: #fbe9e0; color: var(--warn); }
+  .flag.info { background: #e7eff6; color: var(--info); }
+  .flow-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.88rem; }
+  .flow-label { width: 200px; flex: none; color: var(--muted); }
+  .flow-bar-wrap { flex: 1; background: #eee; border-radius: 4px; overflow: hidden; height: 18px; }
+  .flow-bar { height: 100%; background: var(--accent); }
+  .flow-bar.negative { background: var(--warn); }
+  .flow-value { width: 110px; flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+  #status, #status-b { color: var(--muted); font-size: 0.9rem; }
+  .hidden { display: none; }
+  footer.note { color: var(--muted); font-size: 0.8rem; margin-top: 24px; }
+  .compare-table td.delta.up { color: var(--warn); }
+  .compare-table td.delta.down { color: var(--accent); }
+  .compare-note { color: var(--muted); font-size: 0.85rem; margin-top: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Understand Your Tax Return</h1>
+  <p>Upload a Form 1040 PDF, review the extracted numbers, then get a plain-language walkthrough.</p>
+</header>
+<main>
+  <section class="panel" id="upload-panel">
+    <div class="dropzone" id="dropzone">
+      <p>Drop a Form 1040 PDF here, or click to choose a file.</p>
+      <p class="explain">Works with text-based PDFs (fillable IRS form, or one exported from tax software). Scanned/photographed returns aren't supported — there's no OCR here.</p>
+      <input type="file" id="file-input" accept="application/pdf" />
+    </div>
+    <p id="status"></p>
+  </section>
+
+  <section class="panel hidden" id="review-panel">
+    <h2>Review the extracted numbers</h2>
+    <p class="explain">Parsing a PDF form is best-effort. Check every value below (and fix anything wrong) before generating the walkthrough — nothing here should be treated as filed-return-accurate without your review. Schedule sections only appear when something from that schedule was found in the PDF.</p>
+    <div class="meta-row">
+      <label>Filing status
+        <select id="filing-status">
+          <option value="">Unknown / not sure</option>
+          <option value="single">Single</option>
+          <option value="mfj">Married filing jointly</option>
+          <option value="mfs">Married filing separately</option>
+          <option value="hoh">Head of household</option>
+          <option value="qss">Qualifying surviving spouse</option>
+        </select>
+      </label>
+      <label>Tax year
+        <input type="number" class="meta" id="tax-year" placeholder="e.g. 2023" />
+      </label>
+    </div>
+    <table>
+      <thead><tr><th>Line</th><th>What it is</th><th>Value</th></tr></thead>
+      <tbody id="lines-body"></tbody>
+    </table>
+    <button id="analyze-btn">Explain this return</button>
+  </section>
+
+  <section class="panel hidden" id="results-panel">
+    <h2>Red flags &amp; things worth double-checking</h2>
+    <div id="flags"></div>
+
+    <h2>How the money flows</h2>
+    <div id="flow"></div>
+  </section>
+
+  <section class="panel hidden" id="compare-panel">
+    <h2>Compare with another year</h2>
+    <p class="explain">Upload a second Form 1040 (a different tax year) to see what changed.</p>
+    <div class="dropzone" id="dropzone-b">
+      <p>Drop the other year's Form 1040 PDF here, or click to choose a file.</p>
+      <input type="file" id="file-input-b" accept="application/pdf" />
+    </div>
+    <p id="status-b"></p>
+    <table class="hidden" id="review-table-b">
+      <thead><tr><th>Line</th><th>What it is</th><th>Value</th></tr></thead>
+      <tbody id="lines-body-b"></tbody>
+    </table>
+    <button class="hidden" id="compare-btn">Compare the two returns</button>
+    <div id="compare-results"></div>
+  </section>
+
+  <footer class="note">
+    This tool gives general, educational explanations of Form 1040 line items — it is not tax advice and
+    does not file anything. Numbers are only as accurate as the PDF parsing and your review of them.
+  </footer>
+</main>
+
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+const status = document.getElementById('status');
+const reviewPanel = document.getElementById('review-panel');
+const resultsPanel = document.getElementById('results-panel');
+const comparePanel = document.getElementById('compare-panel');
+const linesBody = document.getElementById('lines-body');
+const filingStatusSelect = document.getElementById('filing-status');
+const taxYearInput = document.getElementById('tax-year');
+
+const GROUP_ORDER = [
+  'Form 1040',
+  'Schedule 1 (Additional Income & Adjustments)',
+  'Schedule 2 (Additional Taxes)',
+  'Schedule 3 (Additional Credits & Payments)',
+];
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) handleFile(fileInput.files[0]);
+});
+
+async function extractPdf(file) {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch('/api/extract', { method: 'POST', body: form });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Server error (${res.status})`);
+  }
+  return res.json();
+}
+
+async function handleFile(file) {
+  if (file.type !== 'application/pdf') {
+    status.textContent = 'Please choose a PDF file.';
+    return;
+  }
+  status.textContent = 'Reading the PDF...';
+  try {
+    const data = await extractPdf(file);
+    status.textContent = '';
+    renderReview(data);
+  } catch (e) {
+    status.textContent = 'Error: ' + e.message;
+  }
+}
+
+function groupLines(lines) {
+  const byGroup = new Map();
+  for (const line of lines) {
+    if (!byGroup.has(line.group)) byGroup.set(line.group, []);
+    byGroup.get(line.group).push(line);
+  }
+  return byGroup;
+}
+
+function renderLineRows(tbody, lines, { skipEmptySchedules }) {
+  tbody.innerHTML = '';
+  const byGroup = groupLines(lines);
+  for (const groupName of GROUP_ORDER) {
+    const groupLinesList = byGroup.get(groupName);
+    if (!groupLinesList) continue;
+    const hasAnyMatch = groupLinesList.some(l => l.confidence === 'matched');
+    if (skipEmptySchedules && groupName !== 'Form 1040' && !hasAnyMatch) continue;
+
+    const headerRow = document.createElement('tr');
+    headerRow.className = 'group-header';
+    headerRow.innerHTML = `<td colspan="3">${groupName}</td>`;
+    tbody.appendChild(headerRow);
+
+    for (const line of groupLinesList) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${line.id.replace(/^s[123]_/, '')}</td>
+        <td>${line.label}<div class="explain">${line.explanation}</div>${line.confidence === 'not_found' ? '<div class="not-found">Not found in PDF — enter manually if it applies to you.</div>' : ''}</td>
+        <td class="value"><input type="number" step="0.01" data-id="${line.id}" value="${line.value ?? ''}" /></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+}
+
+function renderReview(data) {
+  filingStatusSelect.value = data.filing_status || '';
+  taxYearInput.value = data.tax_year || '';
+  renderLineRows(linesBody, data.lines, { skipEmptySchedules: true });
+  reviewPanel.classList.remove('hidden');
+  resultsPanel.classList.add('hidden');
+  comparePanel.classList.add('hidden');
+}
+
+function readOverrides(tbody) {
+  return Array.from(tbody.querySelectorAll('input[data-id]')).map(input => ({
+    id: input.dataset.id,
+    value: input.value === '' ? null : parseFloat(input.value),
+  }));
+}
+
+function valuesFromOverrides(overrides) {
+  const values = {};
+  for (const o of overrides) if (o.value !== null) values[o.id] = o.value;
+  return values;
+}
+
+document.getElementById('analyze-btn').addEventListener('click', async () => {
+  const overrides = readOverrides(linesBody);
+  const payload = {
+    filing_status: filingStatusSelect.value || null,
+    tax_year: taxYearInput.value ? parseInt(taxYearInput.value, 10) : null,
+    overrides,
+  };
+  const res = await fetch('/api/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  renderResults(data);
+});
+
+function renderResults(data) {
+  const flagsEl = document.getElementById('flags');
+  flagsEl.innerHTML = '';
+  if (data.flags.length === 0) {
+    flagsEl.innerHTML = '<p class="explain">Nothing stood out from the numbers provided.</p>';
+  }
+  for (const flag of data.flags) {
+    const div = document.createElement('div');
+    div.className = 'flag ' + flag.severity;
+    div.textContent = flag.message;
+    flagsEl.appendChild(div);
+  }
+
+  const flowEl = document.getElementById('flow');
+  flowEl.innerHTML = '';
+  const maxAbs = Math.max(1, ...data.flow.map(s => Math.abs(s.value)));
+  for (const step of data.flow) {
+    const row = document.createElement('div');
+    row.className = 'flow-row';
+    const pct = Math.min(100, (Math.abs(step.value) / maxAbs) * 100);
+    row.innerHTML = `
+      <div class="flow-label">${step.label}</div>
+      <div class="flow-bar-wrap"><div class="flow-bar ${step.value < 0 ? 'negative' : ''}" style="width:${pct}%"></div></div>
+      <div class="flow-value">${step.value < 0 ? '-' : ''}$${Math.abs(step.value).toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+    `;
+    flowEl.appendChild(row);
+  }
+
+  resultsPanel.classList.remove('hidden');
+  comparePanel.classList.remove('hidden');
+  resultsPanel.scrollIntoView({ behavior: 'smooth' });
+}
+
+// --- Compare with another year ---
+const dropzoneB = document.getElementById('dropzone-b');
+const fileInputB = document.getElementById('file-input-b');
+const statusB = document.getElementById('status-b');
+const reviewTableB = document.getElementById('review-table-b');
+const linesBodyB = document.getElementById('lines-body-b');
+const compareBtn = document.getElementById('compare-btn');
+let taxYearB = null;
+
+dropzoneB.addEventListener('click', () => fileInputB.click());
+dropzoneB.addEventListener('dragover', e => { e.preventDefault(); dropzoneB.classList.add('drag'); });
+dropzoneB.addEventListener('dragleave', () => dropzoneB.classList.remove('drag'));
+dropzoneB.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzoneB.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFileB(e.dataTransfer.files[0]);
+});
+fileInputB.addEventListener('change', () => {
+  if (fileInputB.files.length) handleFileB(fileInputB.files[0]);
+});
+
+async function handleFileB(file) {
+  if (file.type !== 'application/pdf') {
+    statusB.textContent = 'Please choose a PDF file.';
+    return;
+  }
+  statusB.textContent = 'Reading the PDF...';
+  try {
+    const data = await extractPdf(file);
+    statusB.textContent = '';
+    taxYearB = data.tax_year || null;
+    renderLineRows(linesBodyB, data.lines, { skipEmptySchedules: true });
+    reviewTableB.classList.remove('hidden');
+    compareBtn.classList.remove('hidden');
+  } catch (e) {
+    statusB.textContent = 'Error: ' + e.message;
+  }
+}
+
+const COMPARE_LINES = [
+  { id: '9', label: 'Total income' },
+  { id: '11', label: 'Adjusted gross income' },
+  { id: '15', label: 'Taxable income' },
+  { id: '24', label: 'Total tax' },
+  { id: '33', label: 'Total payments' },
+];
+
+compareBtn.addEventListener('click', () => {
+  const valuesA = valuesFromOverrides(readOverrides(linesBody));
+  const valuesB = valuesFromOverrides(readOverrides(linesBodyB));
+  const yearA = taxYearInput.value || 'Return A';
+  const yearB = taxYearB || 'Return B';
+
+  const rows = COMPARE_LINES.map(({ id, label }) => {
+    const a = valuesA[id] ?? 0;
+    const b = valuesB[id] ?? 0;
+    const delta = b - a;
+    const pct = a !== 0 ? (delta / a) * 100 : null;
+    return { label, a, b, delta, pct };
+  });
+
+  const outcomeA = (valuesA['34'] ? `$${valuesA['34'].toLocaleString()} refund` : valuesA['37'] ? `$${valuesA['37'].toLocaleString()} owed` : 'n/a');
+  const outcomeB = (valuesB['34'] ? `$${valuesB['34'].toLocaleString()} refund` : valuesB['37'] ? `$${valuesB['37'].toLocaleString()} owed` : 'n/a');
+
+  const el = document.getElementById('compare-results');
+  el.innerHTML = `
+    <table class="compare-table">
+      <thead><tr><th></th><th>${yearA}</th><th>${yearB}</th><th>Change</th></tr></thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td>${r.label}</td>
+            <td>$${r.a.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+            <td>$${r.b.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+            <td class="delta ${r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : ''}">
+              ${r.delta >= 0 ? '+' : '-'}$${Math.abs(r.delta).toLocaleString(undefined, {maximumFractionDigits: 0})}
+              ${r.pct !== null ? ` (${r.pct >= 0 ? '+' : ''}${r.pct.toFixed(1)}%)` : ''}
+            </td>
+          </tr>
+        `).join('')}
+        <tr>
+          <td>Outcome</td>
+          <td>${outcomeA}</td>
+          <td>${outcomeB}</td>
+          <td>-</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="compare-note">"Change" is simply Return B minus Return A — it doesn't account for inflation-adjusted
+    brackets/deductions changing year to year, so a change here reflects your actual numbers, not necessarily a
+    change in tax law.</p>
+  `;
+});
+</script>
+</body>
+</html>
