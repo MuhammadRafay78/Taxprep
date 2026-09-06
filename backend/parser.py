@@ -26,13 +26,19 @@ from dataclasses import dataclass, field
 
 import pdfplumber
 
-AMOUNT_RE = re.compile(r"^\(?\$?-?[\d,]+(?:\.\d{1,2})?\)?$")
+# Requires proper thousands-grouping (",ddd" in groups of exactly 3) when a
+# comma is present, and allows 0-2 digits after a decimal point (real IRS
+# forms print whole-dollar amounts as e.g. "1,200." with an empty cents
+# spot). This is deliberately stricter than "any digits and commas" so it
+# doesn't accidentally match a form/line cross-reference embedded in prose,
+# like the "2441" in "...from Form 2441," or "line 11.".
+AMOUNT_RE = re.compile(r"^\(?\$?-?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{0,2})?\)?$")
 
 
 def _parse_amount(token: str) -> float | None:
     negative = token.startswith("(") and token.endswith(")")
     cleaned = token.strip("()$").replace(",", "")
-    if not cleaned:
+    if not cleaned or cleaned == ".":
         return None
     try:
         value = float(cleaned)
@@ -41,21 +47,51 @@ def _parse_amount(token: str) -> float | None:
     return -value if negative else value
 
 
-def _last_amount_in_line(line: str) -> float | None:
-    tokens = line.split()
-    for token in reversed(tokens):
-        if AMOUNT_RE.fullmatch(token):
-            amount = _parse_amount(token)
-            if amount is not None:
-                return amount
+def _is_bare_integer(token: str) -> bool:
+    core = token.strip("()$")
+    return "," not in core and "." not in core
+
+
+def _scan_from_anchor(lines: list[str], idx: int, reject_number: str | None, lookahead: int = 2) -> float | None:
+    """Checks the anchor row at `idx`, then up to `lookahead` rows after it,
+    for a valid trailing amount — long labels often wrap, leaving the
+    actual entered value alone on a following row.
+
+    We deliberately don't scan backward past other tokens on a row: a
+    genuine amount is always the very last thing printed on its row.
+    Anything else numeric-looking earlier is typically a form/line
+    cross-reference embedded in prose ("...from Form 2441, line 11.") that
+    happens to satisfy a naive number pattern but isn't in the amount
+    column at all.
+
+    A row's last token falls into exactly one of three buckets, each
+    handled differently:
+      - not amount-shaped at all (e.g. ends in "Attach") -> the label is
+        still wrapping onto the next row, so keep looking ahead.
+      - a bare integer equal to `reject_number` (e.g. "...taxes . . . 1"
+        when the anchor row itself was line 1's own label, printed with
+        nothing else after it) -> an unfilled line reprints its own number
+        with nothing after it; this row IS the answer, and the answer is
+        "nothing was entered" - stop here, don't peek at a later, unrelated
+        line's row. `reject_number` is derived from the anchor row's own
+        leading number, not assumed from our line definitions, since a
+        schedule's line numbering can shift between tax years.
+      - anything else amount-shaped -> a real value; return it.
+    """
+    for offset in range(lookahead + 1):
+        j = idx + offset
+        if j >= len(lines):
+            break
+        tokens = lines[j].split()
+        if not tokens:
+            continue
+        last = tokens[-1]
+        if not AMOUNT_RE.fullmatch(last):
+            continue
+        if reject_number is not None and _is_bare_integer(last) and last.strip("()$") == reject_number:
+            return None
+        return _parse_amount(last)
     return None
-
-
-def _starts_with_number(row_lower: str, number: str) -> bool:
-    tokens = row_lower.split()
-    if not tokens:
-        return False
-    return tokens[0].strip(".:") == number.lower()
 
 
 # Each entry: (id, display label, phrases to find the row, fallback line
@@ -106,14 +142,6 @@ LINE_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
     ("35a", "Refund amount", ["amount of line 34 you want refunded"], "35a"),
     ("37", "Amount you owe", ["subtract line 33 from line 24", "amount you owe"], "37"),
 ]
-
-# Title text that appears at the top of each schedule's page(s), used to
-# find where each schedule's fallback-scope starts.
-SCHEDULE_TITLE_MARKERS = {
-    "s1": ["additional income and adjustments to income"],
-    "s2": ["additional taxes"],
-    "s3": ["additional credits and payments"],
-}
 
 SCHEDULE1_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
     ("s1_1", "Taxable refunds of state/local taxes", ["taxable refunds, credits"], "1"),
@@ -168,7 +196,15 @@ class ExtractedLine:
     id: str
     label: str
     value: float | None
-    confidence: str  # "matched" or "not_found"
+    # "matched" / "not_found": a curated line (Form 1040, Schedule 1/2/3) -
+    # phrase-anchored, validated against real returns. "uncertain": a
+    # generically-detected line on a form we have no curated definitions
+    # for - position-based only, with no phrase anchor to confirm it's
+    # reading the right cell. Dense multi-column worksheets (Form 2441,
+    # Schedule 8812) in particular can misattribute a neighboring column's
+    # number, so these should be shown with a visible "verify this" caveat
+    # rather than the same confidence as a curated field.
+    confidence: str
     group: str = "Form 1040"
 
 
@@ -178,6 +214,10 @@ class ExtractionResult:
     filing_status: str | None = None
     tax_year: int | None = None
     raw_text: str = ""
+    # 1-indexed page numbers with zero extractable text — almost always a
+    # scanned/rasterized page (an image with no text layer at all). Nothing
+    # on that page could have been read, with or without OCR support.
+    scanned_pages: list[int] = field(default_factory=list)
 
     def as_value_map(self) -> dict[str, float]:
         return {ln.id: ln.value for ln in self.lines if ln.value is not None}
@@ -213,36 +253,105 @@ def detect_tax_year(text: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
-def _find_schedule_page_starts(pages: list[str]) -> dict[str, int | None]:
-    starts: dict[str, int | None] = {"s1": None, "s2": None, "s3": None}
-    for key, markers in SCHEDULE_TITLE_MARKERS.items():
-        for i, page in enumerate(pages):
-            page_lower = page.lower()
-            if any(marker in page_lower for marker in markers):
-                starts[key] = i
-                break
-    return starts
+# Every official IRS form/schedule prints an "OMB No. 1545-nnnn" control
+# number on its own first page, and not on continuation pages of the same
+# form. That makes it a reliable, form-agnostic way to find where each
+# attachment starts — Schedule D, Form 8949, Schedule E, Form 2441,
+# Schedule 8812, and anything else, not just the schedules we have curated
+# line definitions for. Bounding every section this way (rather than only
+# looking for Schedule 1/2/3's own titles) prevents one schedule's scope
+# from silently swallowing whatever comes after it in the PDF when there's
+# no next *known* schedule to stop at.
+_OMB_RE = re.compile(r"omb no\.?\s*1545", re.IGNORECASE)
+_SCHEDULE_TITLE_RE = re.compile(r"^schedule\s+([a-z0-9]+)\b", re.IGNORECASE)
+_BARE_FORM_NUMBER_RE = re.compile(r"^(\d{3,4}[a-z]{0,2})$", re.IGNORECASE)
+
+
+@dataclass
+class FormSection:
+    title: str
+    start_page: int  # 0-indexed, inclusive
+    end_page: int  # 0-indexed, exclusive
+
+
+def _section_title(page_lines: list[str]) -> str:
+    non_blank = [line.strip() for line in page_lines if line.strip()]
+    for i, line in enumerate(non_blank[:3]):
+        m = _SCHEDULE_TITLE_RE.match(line)
+        if m:
+            rest = re.split(r"omb no\.?", line[m.end():].strip(), flags=re.IGNORECASE)[0].strip()
+            return f"Schedule {m.group(1).upper()}" + (f" — {rest}" if rest else "")
+        first_token = line.split()[0] if line.split() else ""
+        if _BARE_FORM_NUMBER_RE.match(first_token):
+            # The title may follow the number on this same line ("8889
+            # Health Savings Accounts (HSAs)") or sit alone on the next line
+            # ("2441" then "Child and Dependent Care Expenses" below it).
+            rest = re.split(r"omb no\.?", line[len(first_token):].strip(), flags=re.IGNORECASE)[0].strip()
+            if not rest and i + 1 < len(non_blank):
+                rest = re.split(r"omb no\.?", non_blank[i + 1], flags=re.IGNORECASE)[0].strip()
+            return f"Form {first_token.upper()}" + (f" — {rest}" if rest else "")
+    return "Additional form"
+
+
+def _detect_form_sections(pages: list[str], page_lines: list[list[str]]) -> list[FormSection]:
+    boundaries: list[tuple[int, str]] = []
+    for i, page in enumerate(pages):
+        if not _OMB_RE.search(page):
+            continue
+        boundaries.append((i, _section_title(page_lines[i])))
+
+    # Consecutive pages with the same detected title (e.g. two properties on
+    # separate Schedule E "page 1"s) are one logical section, not two.
+    merged: list[tuple[int, str]] = []
+    for start, title in boundaries:
+        if merged and merged[-1][1] == title:
+            continue
+        merged.append((start, title))
+
+    sections = []
+    for idx, (start, title) in enumerate(merged):
+        end = merged[idx + 1][0] if idx + 1 < len(merged) else len(pages)
+        sections.append(FormSection(title=title, start_page=start, end_page=end))
+    return sections
 
 
 def _match_by_phrase(lines: list[str], phrases: list[str]) -> float | None:
-    for row in lines:
-        row_lower = row.strip().lower()
-        if any(phrase in row_lower for phrase in phrases):
-            candidate = _last_amount_in_line(row)
-            if candidate is not None:
-                return candidate
+    """Locates a row by a distinctive label phrase, then reads the value off
+    it (or a wrapped continuation row). The "is this bare number actually
+    just this line's own echoed number" check is derived from the anchor
+    row's own leading token — not a hardcoded expectation of which number
+    this line "should" be — since a schedule's line numbering genuinely
+    shifts between tax years (e.g. Schedule 1's adjustments total moved
+    from line 25 to line 26 between recent years). Using a fixed number
+    here would fail to recognize the echo in a year where the label we
+    found isn't at the line number our own definitions assumed."""
+    for i, row in enumerate(lines):
+        if any(phrase in row.strip().lower() for phrase in phrases):
+            tokens = row.split()
+            anchor_number = tokens[0].strip(".:").lower() if tokens else None
+            value = _scan_from_anchor(lines, i, anchor_number)
+            if value is not None:
+                return value
     return None
 
 
 def _match_by_number(lines: list[str] | None, number: str) -> float | None:
+    """Only used once phrase matching has already failed. Anchors strictly
+    on the number being the row's *first* token — a genuine "this is line
+    N's own label" signal — rather than the number appearing anywhere in
+    the row. The looser "anywhere" check used to match a schedule's own
+    title header (e.g. "SCHEDULE 1 ..." contains the token "1"), and would
+    then grab whatever else was printed nearby (like the tax year) as if
+    it were that line's value."""
     if lines is None:
         return None
-    for row in lines:
-        row_lower = row.strip().lower()
-        if _starts_with_number(row_lower, number):
-            candidate = _last_amount_in_line(row)
-            if candidate is not None:
-                return candidate
+    target = number.lower()
+    for i, row in enumerate(lines):
+        tokens = row.split()
+        if tokens and tokens[0].strip(".:").lower() == target:
+            value = _scan_from_anchor(lines, i, number)
+            if value is not None:
+                return value
     return None
 
 
@@ -267,42 +376,105 @@ def _extract_group(
     return results
 
 
+_GENERIC_LINE_NUMBER_RE = re.compile(r"^\d{1,2}[a-z]?$", re.IGNORECASE)
+_DOTTED_LEADER_RE = re.compile(r"(?:\.\s*){2,}")
+
+
+def _slugify(title: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")
+    return slug or "form"
+
+
+def _extract_generic_lines(lines: list[str]) -> list[tuple[str, str, float]]:
+    """For a form we don't have curated line definitions for: surface any
+    row that looks like its own numbered line and has a genuine trailing
+    amount. Unlike the curated groups, blank/not-entered lines aren't
+    reported at all here — without hand-written labels for every line on
+    every possible attachment, listing dozens of blank boxes would be noise
+    rather than useful detail."""
+    results: list[tuple[str, str, float]] = []
+    seen_numbers: set[str] = set()
+    for i, row in enumerate(lines):
+        tokens = row.split()
+        if len(tokens) < 2:
+            continue
+        first_raw = tokens[0].strip(".:")
+        if not _GENERIC_LINE_NUMBER_RE.match(first_raw):
+            continue
+        number = first_raw.lower()
+        if number in seen_numbers:
+            continue
+        value = _scan_from_anchor(lines, i, number)
+        if value is None:
+            continue
+        label = _DOTTED_LEADER_RE.split(row.strip(), maxsplit=1)[0]
+        label = re.sub(r"^\S+\s*", "", label, count=1).strip()
+        if not label:
+            label = f"Line {first_raw}"
+        seen_numbers.add(number)
+        results.append((first_raw, label[:120], value))
+    return results
+
+
+_CURATED_SCHEDULES: dict[str, tuple[list[tuple[str, str, list[str], str]], str]] = {
+    "schedule 1": (SCHEDULE1_DEFINITIONS, "Schedule 1 (Additional Income & Adjustments)"),
+    "schedule 2": (SCHEDULE2_DEFINITIONS, "Schedule 2 (Additional Taxes)"),
+    "schedule 3": (SCHEDULE3_DEFINITIONS, "Schedule 3 (Additional Credits & Payments)"),
+}
+
+
 def parse_1040(pdf_bytes: bytes) -> ExtractionResult:
     pages = _page_texts(pdf_bytes)
     text = "\n".join(pages)
     page_lines = [p.splitlines() for p in pages]
+    total_pages = len(pages)
 
     result = ExtractionResult(raw_text=text)
     result.filing_status = detect_filing_status(text)
     result.tax_year = detect_tax_year(text)
-
-    starts = _find_schedule_page_starts(pages)
-    total_pages = len(pages)
-    schedule_starts = [s for s in starts.values() if s is not None]
-    first_schedule_page = min(schedule_starts) if schedule_starts else total_pages
+    result.scanned_pages = [i + 1 for i, rows in enumerate(page_lines) if not any(row.strip() for row in rows)]
 
     def flatten(a: int, b: int) -> list[str]:
         return [line for page in page_lines[a:b] for line in page]
 
-    def scope_for(key: str) -> list[str] | None:
-        start = starts[key]
-        if start is None:
-            return None
-        later_starts = [s for k, s in starts.items() if k != key and s is not None and s > start]
-        end = min(later_starts) if later_starts else total_pages
-        return flatten(start, end)
-
-    main_scope = flatten(0, first_schedule_page)
-    all_lines = flatten(0, total_pages)
-    s1_scope = scope_for("s1")
-    s2_scope = scope_for("s2")
-    s3_scope = scope_for("s3")
-
+    # Every attached form/schedule (curated or not) is bounded by the next
+    # one's own first page, found generically via its OMB control number —
+    # see _detect_form_sections. This is what keeps e.g. Schedule 3's scope
+    # from silently running into Schedule D/Form 8949/etc. that follow it in
+    # the PDF when there's no next *known* schedule to stop at.
+    sections = _detect_form_sections(pages, page_lines)
+    main_end = sections[0].start_page if sections else total_pages
+    main_scope = flatten(0, main_end)
     result.lines.extend(_extract_group(main_scope, main_scope, LINE_DEFINITIONS, "Form 1040"))
-    result.lines.extend(_extract_group(s1_scope or all_lines, s1_scope, SCHEDULE1_DEFINITIONS,
-                                        "Schedule 1 (Additional Income & Adjustments)"))
-    result.lines.extend(_extract_group(s2_scope or all_lines, s2_scope, SCHEDULE2_DEFINITIONS,
-                                        "Schedule 2 (Additional Taxes)"))
-    result.lines.extend(_extract_group(s3_scope or all_lines, s3_scope, SCHEDULE3_DEFINITIONS,
-                                        "Schedule 3 (Additional Credits & Payments)"))
+
+    curated_found: set[str] = set()
+    for section in sections:
+        scope = flatten(section.start_page, section.end_page)
+        curated_key = next((k for k in _CURATED_SCHEDULES if section.title.lower().startswith(k)), None)
+        if curated_key:
+            curated_found.add(curated_key)
+            definitions, group_name = _CURATED_SCHEDULES[curated_key]
+            result.lines.extend(_extract_group(scope, scope, definitions, group_name))
+        else:
+            # No hand-written line definitions for this form (Schedule D,
+            # Form 8949, Schedule E, Form 2441, etc.) — surface whatever
+            # numbered lines it actually has values on generically, under
+            # its own detected title, rather than not showing it at all.
+            for number, label, value in _extract_generic_lines(scope):
+                result.lines.append(ExtractedLine(
+                    id=f"{_slugify(section.title)}_{number}",
+                    label=label,
+                    value=value,
+                    confidence="uncertain",
+                    group=section.title,
+                ))
+
+    # A curated schedule with no detected page at all is simply absent from
+    # this return (e.g. no Schedule 2 needed this year) — report its lines
+    # as not_found rather than silently omitting them, so the review UI
+    # still shows the option to fill them in by hand.
+    for key, (definitions, group_name) in _CURATED_SCHEDULES.items():
+        if key not in curated_found:
+            result.lines.extend(_extract_group([], None, definitions, group_name))
+
     return result

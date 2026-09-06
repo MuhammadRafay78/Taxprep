@@ -1,40 +1,71 @@
 /**
  * Best-effort extraction of key line values from a Form 1040 PDF (plus
- * Schedules 1, 2, and 3). Ported from backend/parser.py — see that file's
- * module docstring for the full rationale; the short version: match each
- * row first by a distinctive label phrase (several variants per line, to
- * survive wording differences across tax years/software), then fall back to
- * a row simply starting with the line's own number, scoped to that
- * schedule's own pages so bare numbers don't collide across schedules.
+ * Schedules 1, 2, 3, and any other attached form/schedule). Ported from
+ * backend/parser.py — see that file's module docstring and inline comments
+ * for the full rationale of each design choice; kept in lockstep here.
  */
 import { extractPdfPages } from "./pdfText";
 
-const AMOUNT_RE = /^\(?\$?-?[\d,]+(?:\.\d{1,2})?\)?$/;
+// Requires proper thousands-grouping (",ddd" in groups of exactly 3) when a
+// comma is present, and allows 0-2 digits after a decimal point (real IRS
+// forms print whole-dollar amounts as e.g. "1,200." with an empty cents
+// spot). This is deliberately stricter than "any digits and commas" so it
+// doesn't accidentally match a form/line cross-reference embedded in prose,
+// like the "2441" in "...from Form 2441," or "line 11.".
+const AMOUNT_RE = /^\(?\$?-?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{0,2})?\)?$/;
 
 function parseAmount(token: string): number | null {
   const negative = token.startsWith("(") && token.endsWith(")");
   const cleaned = token.replace(/[()$]/g, "").replace(/,/g, "");
-  if (!cleaned) return null;
+  if (!cleaned || cleaned === ".") return null;
   const value = Number(cleaned);
   if (Number.isNaN(value)) return null;
   return negative ? -value : value;
 }
 
-function lastAmountInLine(line: string): number | null {
-  const tokens = line.split(/\s+/).filter(Boolean);
-  for (let i = tokens.length - 1; i >= 0; i--) {
-    if (AMOUNT_RE.test(tokens[i])) {
-      const amount = parseAmount(tokens[i]);
-      if (amount !== null) return amount;
-    }
-  }
-  return null;
+function isBareInteger(token: string): boolean {
+  const core = token.replace(/[()$]/g, "");
+  return !core.includes(",") && !core.includes(".");
 }
 
-function startsWithNumber(rowLower: string, number: string): boolean {
-  const tokens = rowLower.split(/\s+/).filter(Boolean);
-  if (tokens.length === 0) return false;
-  return tokens[0].replace(/[.:]+$/, "") === number.toLowerCase();
+/**
+ * Checks the anchor row at `idx`, then up to `lookahead` rows after it, for
+ * a valid trailing amount — long labels often wrap, leaving the actual
+ * entered value alone on a following row.
+ *
+ * We deliberately don't scan backward past other tokens on a row: a genuine
+ * amount is always the very last thing printed on its row. Anything else
+ * numeric-looking earlier is typically a form/line cross-reference embedded
+ * in prose ("...from Form 2441, line 11.") that happens to satisfy a naive
+ * number pattern but isn't in the amount column at all.
+ *
+ * A row's last token falls into exactly one of three buckets:
+ *   - not amount-shaped at all (e.g. ends in "Attach") -> the label is
+ *     still wrapping onto the next row, so keep looking ahead.
+ *   - a bare integer equal to `rejectNumber` (e.g. "...taxes . . . 1" when
+ *     the anchor row itself was line 1's own label, printed with nothing
+ *     else after it) -> an unfilled line reprints its own number with
+ *     nothing after it; this row IS the answer, and the answer is "nothing
+ *     was entered" - stop here, don't peek at a later, unrelated line's
+ *     row. `rejectNumber` is derived from the anchor row's own leading
+ *     number, not assumed from our line definitions, since a schedule's
+ *     line numbering can shift between tax years.
+ *   - anything else amount-shaped -> a real value; return it.
+ */
+function scanFromAnchor(lines: string[], idx: number, rejectNumber: string | null, lookahead = 2): number | null {
+  for (let offset = 0; offset <= lookahead; offset++) {
+    const j = idx + offset;
+    if (j >= lines.length) break;
+    const tokens = lines[j].split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) continue;
+    const last = tokens[tokens.length - 1];
+    if (!AMOUNT_RE.test(last)) continue;
+    if (rejectNumber !== null && isBareInteger(last) && last.replace(/[()$]/g, "") === rejectNumber) {
+      return null;
+    }
+    return parseAmount(last);
+  }
+  return null;
 }
 
 export type LineDefinition = [id: string, label: string, phrases: string[], fallbackNumber: string];
@@ -82,12 +113,6 @@ export const LINE_DEFINITIONS: LineDefinition[] = [
   ["35a", "Refund amount", ["amount of line 34 you want refunded"], "35a"],
   ["37", "Amount you owe", ["subtract line 33 from line 24", "amount you owe"], "37"],
 ];
-
-const SCHEDULE_TITLE_MARKERS: Record<"s1" | "s2" | "s3", string[]> = {
-  s1: ["additional income and adjustments to income"],
-  s2: ["additional taxes"],
-  s3: ["additional credits and payments"],
-};
 
 export const SCHEDULE1_DEFINITIONS: LineDefinition[] = [
   ["s1_1", "Taxable refunds of state/local taxes", ["taxable refunds, credits"], "1"],
@@ -140,7 +165,12 @@ export interface ExtractedLine {
   id: string;
   label: string;
   value: number | null;
-  confidence: "matched" | "not_found";
+  // "matched" / "not_found": a curated line (Form 1040, Schedule 1/2/3) -
+  // phrase-anchored, validated against real returns. "uncertain": a
+  // generically-detected line on a form we have no curated definitions
+  // for - position-based only, with no phrase anchor to confirm it's
+  // reading the right cell.
+  confidence: "matched" | "not_found" | "uncertain";
   group: string;
 }
 
@@ -149,6 +179,9 @@ export interface ExtractionResult {
   filingStatus: string | null;
   taxYear: number | null;
   rawText: string;
+  // 1-indexed page numbers with zero extractable text - almost always a
+  // scanned/rasterized page. Nothing on that page could have been read.
+  scannedPages: number[];
 }
 
 export function asValueMap(lines: ExtractedLine[]): Record<string, number> {
@@ -171,39 +204,112 @@ function detectTaxYear(text: string): number | null {
   return match ? parseInt(match[1], 10) : null;
 }
 
-function findSchedulePageStarts(pages: string[]): Record<"s1" | "s2" | "s3", number | null> {
-  const starts: Record<"s1" | "s2" | "s3", number | null> = { s1: null, s2: null, s3: null };
-  for (const key of Object.keys(SCHEDULE_TITLE_MARKERS) as ("s1" | "s2" | "s3")[]) {
-    const markers = SCHEDULE_TITLE_MARKERS[key];
-    for (let i = 0; i < pages.length; i++) {
-      const pageLower = pages[i].toLowerCase();
-      if (markers.some((marker) => pageLower.includes(marker))) {
-        starts[key] = i;
-        break;
-      }
-    }
-  }
-  return starts;
+// Every official IRS form/schedule prints an "OMB No. 1545-nnnn" control
+// number on its own first page, and not on continuation pages of the same
+// form. That makes it a reliable, form-agnostic way to find where each
+// attachment starts — Schedule D, Form 8949, Schedule E, Form 2441,
+// Schedule 8812, and anything else, not just the schedules we have curated
+// line definitions for. Bounding every section this way (rather than only
+// looking for Schedule 1/2/3's own titles) prevents one schedule's scope
+// from silently swallowing whatever comes after it in the PDF when there's
+// no next *known* schedule to stop at.
+const OMB_RE = /omb no\.?\s*1545/i;
+const SCHEDULE_TITLE_RE = /^schedule\s+([a-z0-9]+)\b/i;
+const BARE_FORM_NUMBER_RE = /^(\d{3,4}[a-z]{0,2})$/i;
+
+export interface FormSection {
+  title: string;
+  startPage: number; // 0-indexed, inclusive
+  endPage: number; // 0-indexed, exclusive
 }
 
+function splitBeforeOmb(text: string): string {
+  return text.split(/omb no\.?/i)[0].trim();
+}
+
+function sectionTitle(pageLines: string[]): string {
+  const nonBlank = pageLines.map((l) => l.trim()).filter(Boolean);
+  for (let i = 0; i < Math.min(3, nonBlank.length); i++) {
+    const line = nonBlank[i];
+    const m = SCHEDULE_TITLE_RE.exec(line);
+    if (m) {
+      const rest = splitBeforeOmb(line.slice(m[0].length).trim());
+      return `Schedule ${m[1].toUpperCase()}` + (rest ? ` — ${rest}` : "");
+    }
+    const firstToken = line.split(/\s+/)[0] ?? "";
+    if (BARE_FORM_NUMBER_RE.test(firstToken)) {
+      // The title may follow the number on this same line ("8889 Health
+      // Savings Accounts (HSAs)") or sit alone on the next line ("2441"
+      // then "Child and Dependent Care Expenses" below it).
+      let rest = splitBeforeOmb(line.slice(firstToken.length).trim());
+      if (!rest && i + 1 < nonBlank.length) {
+        rest = splitBeforeOmb(nonBlank[i + 1]);
+      }
+      return `Form ${firstToken.toUpperCase()}` + (rest ? ` — ${rest}` : "");
+    }
+  }
+  return "Additional form";
+}
+
+function detectFormSections(pages: string[], pageLines: string[][]): FormSection[] {
+  const boundaries: [number, string][] = [];
+  for (let i = 0; i < pages.length; i++) {
+    if (!OMB_RE.test(pages[i])) continue;
+    boundaries.push([i, sectionTitle(pageLines[i])]);
+  }
+
+  // Consecutive pages with the same detected title (e.g. two properties on
+  // separate Schedule E "page 1"s) are one logical section, not two.
+  const merged: [number, string][] = [];
+  for (const [start, title] of boundaries) {
+    if (merged.length > 0 && merged[merged.length - 1][1] === title) continue;
+    merged.push([start, title]);
+  }
+
+  return merged.map(([start, title], idx) => ({
+    title,
+    startPage: start,
+    endPage: idx + 1 < merged.length ? merged[idx + 1][0] : pages.length,
+  }));
+}
+
+/**
+ * Locates a row by a distinctive label phrase, then reads the value off it
+ * (or a wrapped continuation row). The "is this bare number actually just
+ * this line's own echoed number" check is derived from the anchor row's
+ * own leading token — not a hardcoded expectation of which number this
+ * line "should" be — since a schedule's line numbering genuinely shifts
+ * between tax years (e.g. Schedule 1's adjustments total moved from line
+ * 25 to line 26 between recent years).
+ */
 function matchByPhrase(lines: string[], phrases: string[]): number | null {
-  for (const row of lines) {
-    const rowLower = row.trim().toLowerCase();
+  for (let i = 0; i < lines.length; i++) {
+    const rowLower = lines[i].trim().toLowerCase();
     if (phrases.some((phrase) => rowLower.includes(phrase))) {
-      const candidate = lastAmountInLine(row);
-      if (candidate !== null) return candidate;
+      const tokens = lines[i].split(/\s+/).filter(Boolean);
+      const anchorNumber = tokens.length > 0 ? tokens[0].replace(/[.:]+$/, "").toLowerCase() : null;
+      const value = scanFromAnchor(lines, i, anchorNumber);
+      if (value !== null) return value;
     }
   }
   return null;
 }
 
+/**
+ * Only used once phrase matching has already failed. Anchors strictly on
+ * the number being the row's *first* token — a genuine "this is line N's
+ * own label" signal — rather than the number appearing anywhere in the
+ * row, which used to match a schedule's own title header (e.g. "SCHEDULE 1
+ * ..." contains the token "1") and grab whatever was printed nearby.
+ */
 function matchByNumber(lines: string[] | null, number: string): number | null {
   if (lines === null) return null;
-  for (const row of lines) {
-    const rowLower = row.trim().toLowerCase();
-    if (startsWithNumber(rowLower, number)) {
-      const candidate = lastAmountInLine(row);
-      if (candidate !== null) return candidate;
+  const target = number.toLowerCase();
+  for (let i = 0; i < lines.length; i++) {
+    const tokens = lines[i].split(/\s+/).filter(Boolean);
+    if (tokens.length > 0 && tokens[0].replace(/[.:]+$/, "").toLowerCase() === target) {
+      const value = scanFromAnchor(lines, i, number);
+      if (value !== null) return value;
     }
   }
   return null;
@@ -228,48 +334,109 @@ function extractGroup(
   });
 }
 
+const GENERIC_LINE_NUMBER_RE = /^\d{1,2}[a-z]?$/i;
+const DOTTED_LEADER_RE = /(?:\.\s*){2,}/;
+
+function slugify(title: string): string {
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return slug || "form";
+}
+
+/**
+ * For a form we don't have curated line definitions for: surface any row
+ * that looks like its own numbered line and has a genuine trailing amount.
+ * Unlike the curated groups, blank/not-entered lines aren't reported at
+ * all here — without hand-written labels for every line on every possible
+ * attachment, listing dozens of blank boxes would be noise rather than
+ * useful detail.
+ */
+function extractGenericLines(lines: string[]): [string, string, number][] {
+  const results: [string, string, number][] = [];
+  const seenNumbers = new Set<string>();
+  for (let i = 0; i < lines.length; i++) {
+    const row = lines[i];
+    const tokens = row.split(/\s+/).filter(Boolean);
+    if (tokens.length < 2) continue;
+    const firstRaw = tokens[0].replace(/[.:]+$/, "");
+    if (!GENERIC_LINE_NUMBER_RE.test(firstRaw)) continue;
+    const number = firstRaw.toLowerCase();
+    if (seenNumbers.has(number)) continue;
+    const value = scanFromAnchor(lines, i, number);
+    if (value === null) continue;
+    let label = row.trim().split(DOTTED_LEADER_RE)[0];
+    label = label.replace(/^\S+\s*/, "").trim();
+    if (!label) label = `Line ${firstRaw}`;
+    seenNumbers.add(number);
+    results.push([firstRaw, label.slice(0, 120), value]);
+  }
+  return results;
+}
+
+const CURATED_SCHEDULES: Record<string, [LineDefinition[], string]> = {
+  "schedule 1": [SCHEDULE1_DEFINITIONS, "Schedule 1 (Additional Income & Adjustments)"],
+  "schedule 2": [SCHEDULE2_DEFINITIONS, "Schedule 2 (Additional Taxes)"],
+  "schedule 3": [SCHEDULE3_DEFINITIONS, "Schedule 3 (Additional Credits & Payments)"],
+};
+
 export async function parse1040(bytes: Uint8Array): Promise<ExtractionResult> {
   const pageLines = await extractPdfPages(bytes);
   const pageTexts = pageLines.map((rows) => rows.join("\n"));
   const text = pageTexts.join("\n");
-
-  const starts = findSchedulePageStarts(pageTexts);
   const totalPages = pageLines.length;
-  const scheduleStarts = Object.values(starts).filter((s): s is number => s !== null);
-  const firstSchedulePage = scheduleStarts.length > 0 ? Math.min(...scheduleStarts) : totalPages;
+
+  const scannedPages = pageLines
+    .map((rows, i) => (rows.some((r) => r.trim().length > 0) ? -1 : i + 1))
+    .filter((p) => p !== -1);
 
   const flatten = (a: number, b: number): string[] => pageLines.slice(a, b).flat();
 
-  const scopeFor = (key: "s1" | "s2" | "s3"): string[] | null => {
-    const start = starts[key];
-    if (start === null) return null;
-    const laterStarts = (Object.keys(starts) as ("s1" | "s2" | "s3")[])
-      .filter((k) => k !== key && starts[k] !== null && (starts[k] as number) > start)
-      .map((k) => starts[k] as number);
-    const end = laterStarts.length > 0 ? Math.min(...laterStarts) : totalPages;
-    return flatten(start, end);
-  };
+  // Every attached form/schedule (curated or not) is bounded by the next
+  // one's own first page, found generically via its OMB control number.
+  const sections = detectFormSections(pageTexts, pageLines);
+  const mainEnd = sections.length > 0 ? sections[0].startPage : totalPages;
+  const mainScope = flatten(0, mainEnd);
 
-  const mainScope = flatten(0, firstSchedulePage);
-  const allLines = flatten(0, totalPages);
-  const s1Scope = scopeFor("s1");
-  const s2Scope = scopeFor("s2");
-  const s3Scope = scopeFor("s3");
+  const lines: ExtractedLine[] = [...extractGroup(mainScope, mainScope, LINE_DEFINITIONS, "Form 1040")];
 
-  const lines: ExtractedLine[] = [
-    ...extractGroup(mainScope, mainScope, LINE_DEFINITIONS, "Form 1040"),
-    ...extractGroup(s1Scope ?? allLines, s1Scope, SCHEDULE1_DEFINITIONS,
-      "Schedule 1 (Additional Income & Adjustments)"),
-    ...extractGroup(s2Scope ?? allLines, s2Scope, SCHEDULE2_DEFINITIONS,
-      "Schedule 2 (Additional Taxes)"),
-    ...extractGroup(s3Scope ?? allLines, s3Scope, SCHEDULE3_DEFINITIONS,
-      "Schedule 3 (Additional Credits & Payments)"),
-  ];
+  const curatedFound = new Set<string>();
+  for (const section of sections) {
+    const scope = flatten(section.startPage, section.endPage);
+    const curatedKey = Object.keys(CURATED_SCHEDULES).find((k) => section.title.toLowerCase().startsWith(k));
+    if (curatedKey) {
+      curatedFound.add(curatedKey);
+      const [definitions, groupName] = CURATED_SCHEDULES[curatedKey];
+      lines.push(...extractGroup(scope, scope, definitions, groupName));
+    } else {
+      // No hand-written line definitions for this form (Schedule D, Form
+      // 8949, Schedule E, Form 2441, etc.) — surface whatever numbered
+      // lines it actually has values on generically, under its own
+      // detected title, rather than not showing it at all.
+      for (const [number, label, value] of extractGenericLines(scope)) {
+        lines.push({
+          id: `${slugify(section.title)}_${number}`,
+          label,
+          value,
+          confidence: "uncertain",
+          group: section.title,
+        });
+      }
+    }
+  }
+
+  // A curated schedule with no detected page at all is simply absent from
+  // this return (e.g. no Schedule 2 needed this year) — report its lines
+  // as not_found rather than silently omitting them.
+  for (const [key, [definitions, groupName]] of Object.entries(CURATED_SCHEDULES)) {
+    if (!curatedFound.has(key)) {
+      lines.push(...extractGroup([], null, definitions, groupName));
+    }
+  }
 
   return {
     lines,
     filingStatus: detectFilingStatus(text),
     taxYear: detectTaxYear(text),
     rawText: text,
+    scannedPages,
   };
 }

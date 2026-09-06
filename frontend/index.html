@@ -58,7 +58,12 @@
   .line-row .line-label { font-size: 0.9rem; }
   .line-row .line-explain { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
   .line-row .not-found { color: var(--warn); font-size: 0.78rem; margin-top: 2px; }
+  .line-row .uncertain { color: var(--info); font-size: 0.78rem; margin-top: 2px; }
   .line-row input { width: 110px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 5px; font: inherit; text-align: right; flex: none; }
+  .line-row .static-value { width: 110px; flex: none; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; padding: 5px 7px; }
+  .banner { background: var(--warn-dim); color: var(--warn); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; margin-bottom: 16px; }
+  .category.extra summary .cat-title { color: var(--info); }
+  .extra-note { color: var(--info); font-size: 0.8rem; margin: 0 0 8px; }
 
   .flag { padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.9rem; }
   .flag.warning { background: var(--warn-dim); color: var(--warn); }
@@ -96,6 +101,7 @@
   </section>
 
   <section class="panel hidden" id="summary-panel">
+    <div id="scanned-banner"></div>
     <div class="meta-row">
       <label>Filing status
         <select id="filing-status">
@@ -132,6 +138,8 @@
 
     <p class="explain">Parsing a PDF form is best-effort — tap a category above to check and correct the numbers behind it. Categories with nothing found in the PDF stay collapsed.</p>
     <button id="analyze-btn">Update explanation</button>
+
+    <div id="extra-forms"></div>
   </section>
 
   <section class="panel hidden" id="results-panel">
@@ -176,6 +184,17 @@ const CATEGORIES = [
   { key: 'payments', title: 'Payments', headline: '33',
     ids: ['25d', '26', '27', '28', 's3_9', '31', '32', '34', '35a', '37'] },
 ];
+
+// Any line reported under a group outside this set came from a form we
+// don't have curated definitions for (Schedule D, Form 2441, etc., detected
+// generically from the PDF's own page headers) and gets its own drill-down
+// category, separate from the curated ones above.
+const KNOWN_GROUPS = new Set([
+  'Form 1040',
+  'Schedule 1 (Additional Income & Adjustments)',
+  'Schedule 2 (Additional Taxes)',
+  'Schedule 3 (Additional Credits & Payments)',
+]);
 
 let currentLinesById = {};
 
@@ -222,12 +241,18 @@ function fmtMoney(n) {
 }
 
 function lineInputHtml(line) {
+  let caption = '';
+  if (line.confidence === 'not_found') {
+    caption = '<div class="not-found">Not found in PDF — enter manually if it applies to you.</div>';
+  } else if (line.confidence === 'uncertain') {
+    caption = '<div class="uncertain">Auto-detected from this form\'s layout, not double-checked — verify against your PDF.</div>';
+  }
   return `
     <div class="line-row">
       <div class="line-info">
         <div class="line-label">${line.id.replace(/^s[123]_/, '')} — ${line.label}</div>
-        <div class="line-explain">${line.explanation}</div>
-        ${line.confidence === 'not_found' ? '<div class="not-found">Not found in PDF — enter manually if it applies to you.</div>' : ''}
+        ${line.explanation ? `<div class="line-explain">${line.explanation}</div>` : ''}
+        ${caption}
       </div>
       <input type="number" step="0.01" data-id="${line.id}" value="${line.value ?? ''}" />
     </div>
@@ -263,6 +288,47 @@ function renderCategories() {
   }
 }
 
+function renderScannedBanner(scannedPages) {
+  const el = document.getElementById('scanned-banner');
+  if (!scannedPages || scannedPages.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  const pageWord = scannedPages.length === 1 ? 'Page' : 'Pages';
+  el.innerHTML = `<div class="banner">${pageWord} ${scannedPages.join(', ')} of this PDF ${scannedPages.length === 1 ? 'is' : 'are'}
+    a scanned image with no extractable text — nothing on ${scannedPages.length === 1 ? 'it' : 'them'} could be read
+    automatically (this tool doesn't do OCR). If that's your Form 1040 summary page, its numbers below will need
+    to be entered by hand.</div>`;
+}
+
+function renderExtraForms(lines) {
+  const el = document.getElementById('extra-forms');
+  const byGroup = new Map();
+  for (const line of lines) {
+    if (KNOWN_GROUPS.has(line.group)) continue;
+    if (!byGroup.has(line.group)) byGroup.set(line.group, []);
+    byGroup.get(line.group).push(line);
+  }
+  if (byGroup.size === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  const sections = Array.from(byGroup.entries()).map(([title, groupLines]) => `
+    <details class="category extra">
+      <summary>
+        <span class="cat-title">${title}</span>
+        <span class="cat-amount na">${groupLines.length} value${groupLines.length === 1 ? '' : 's'} found</span>
+      </summary>
+      <div class="cat-body">
+        <p class="extra-note">This form was found in your PDF but isn't one we have detailed explanations for yet —
+        line numbers and raw labels are shown as printed, with the value auto-detected from the page layout.</p>
+        ${groupLines.map(lineInputHtml).join('')}
+      </div>
+    </details>
+  `).join('');
+  el.innerHTML = `<h2>Other forms found in this PDF</h2>${sections}`;
+}
+
 function renderHero() {
   const refund = currentLinesById['34']?.value;
   const owed = currentLinesById['37']?.value;
@@ -283,15 +349,17 @@ function renderSummary(data) {
   currentLinesById = {};
   for (const line of data.lines) currentLinesById[line.id] = line;
 
+  renderScannedBanner(data.scanned_pages);
   renderHero();
   renderCategories();
+  renderExtraForms(data.lines);
 
   summaryPanel.classList.remove('hidden');
   resultsPanel.classList.add('hidden');
 }
 
 function readAllOverrides() {
-  return Array.from(document.querySelectorAll('#categories input[data-id]')).map(input => ({
+  return Array.from(document.querySelectorAll('#categories input[data-id], #extra-forms input[data-id]')).map(input => ({
     id: input.dataset.id,
     value: input.value === '' ? null : parseFloat(input.value),
   }));

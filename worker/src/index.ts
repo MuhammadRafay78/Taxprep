@@ -48,6 +48,7 @@ async function handleExtract(request: Request): Promise<Response> {
   return Response.json({
     filing_status: result.filingStatus,
     tax_year: result.taxYear,
+    scanned_pages: result.scannedPages,
     lines: result.lines.map((ln) => ({
       id: ln.id,
       label: ln.label,

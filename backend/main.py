@@ -44,6 +44,7 @@ async def extract(file: UploadFile = File(...)):
     return {
         "filing_status": result.filing_status,
         "tax_year": result.tax_year,
+        "scanned_pages": result.scanned_pages,
         "lines": [
             {
                 "id": ln.id,
