@@ -31,6 +31,8 @@
   select, input[type=number].meta { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); font: inherit; }
   .meta-row { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
   .meta-row label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+  .meta-label { display: block; font-size: 0.85rem; color: var(--muted); }
+  .meta-value { font-size: 1rem; font-weight: 600; margin-top: 2px; }
 
   /* Hero outcome */
   .hero { text-align: center; padding: 20px 12px 24px; }
@@ -58,12 +60,6 @@
   .category summary .cat-amount.na { color: var(--muted); font-weight: 400; }
   .category .cat-body { padding: 0 16px 14px; border-top: 1px solid var(--border); }
   .category .narrative { font-size: 0.92rem; line-height: 1.5; margin: 14px 0; }
-  .numbers-toggle { margin-top: 4px; }
-  .numbers-toggle > summary { cursor: pointer; font-size: 0.82rem; color: var(--muted); padding: 4px 0; list-style: none; }
-  .numbers-toggle > summary::-webkit-details-marker { display: none; }
-  .numbers-toggle > summary::before { content: '▸ '; }
-  .numbers-toggle[open] > summary::before { content: '▾ '; }
-  .numbers-body { padding-top: 6px; }
   .numbers-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
   .line-row td { padding: 10px 0; border-bottom: 1px solid #f0efe9; vertical-align: top; }
   .line-row:last-child td { border-bottom: none; }
@@ -72,8 +68,7 @@
   .line-row .line-explain { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
   .line-row .not-found { color: var(--warn); font-size: 0.78rem; margin-top: 2px; }
   .line-row .uncertain { color: var(--info); font-size: 0.78rem; margin-top: 2px; }
-  .line-row .line-value { width: 120px; text-align: right; padding-left: 12px; }
-  .line-row .line-value input { width: 110px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 5px; font: inherit; text-align: right; }
+  .line-row .line-value { width: 120px; text-align: right; padding-left: 12px; font-variant-numeric: tabular-nums; font-weight: 600; }
   .banner { background: var(--warn-dim); color: var(--warn); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; margin-bottom: 16px; }
   .category.extra summary .cat-title { color: var(--info); }
   .extra-note { color: var(--info); font-size: 0.8rem; margin: 0 0 8px; }
@@ -127,19 +122,8 @@
   <section class="panel hidden" id="summary-panel">
     <div id="scanned-banner"></div>
     <div class="meta-row">
-      <label>Filing status
-        <select id="filing-status">
-          <option value="">Unknown / not sure</option>
-          <option value="single">Single</option>
-          <option value="mfj">Married filing jointly</option>
-          <option value="mfs">Married filing separately</option>
-          <option value="hoh">Head of household</option>
-          <option value="qss">Qualifying surviving spouse</option>
-        </select>
-      </label>
-      <label>Tax year
-        <input type="number" class="meta" id="tax-year" placeholder="e.g. 2023" />
-      </label>
+      <div><span class="meta-label">Filing status</span><div id="filing-status-display" class="meta-value">—</div></div>
+      <div><span class="meta-label">Tax year</span><div id="tax-year-display" class="meta-value">—</div></div>
     </div>
 
     <details class="dropdown" id="compare-details">
@@ -162,7 +146,7 @@
 
     <div id="categories"></div>
 
-    <p class="explain">Parsing a PDF form is best-effort — tap a category above to check and correct the numbers behind it. Categories with nothing found in the PDF stay collapsed.</p>
+    <p class="explain">Tap a category above for the plain-language explanation behind it. Categories with nothing found in the PDF stay collapsed.</p>
     <button id="analyze-btn">Update explanation</button>
 
     <div id="extra-forms"></div>
@@ -188,8 +172,18 @@ const fileInput = document.getElementById('file-input');
 const status = document.getElementById('status');
 const summaryPanel = document.getElementById('summary-panel');
 const resultsPanel = document.getElementById('results-panel');
-const filingStatusSelect = document.getElementById('filing-status');
-const taxYearInput = document.getElementById('tax-year');
+const filingStatusDisplay = document.getElementById('filing-status-display');
+const taxYearDisplay = document.getElementById('tax-year-display');
+const FILING_STATUS_NAMES = {
+  single: 'Single', mfj: 'Married filing jointly', mfs: 'Married filing separately',
+  hoh: 'Head of household', qss: 'Qualifying surviving spouse',
+};
+// The return's filing status/tax year, as auto-detected from the PDF (or a
+// sample) — shown read-only rather than editable, since nothing downstream
+// (the narrative, the categories, the computation walkthrough) actually
+// reacts to a manual change here; the walkthrough already states both.
+let currentFilingStatus = null;
+let currentTaxYear = null;
 const heroEl = document.getElementById('hero');
 const categoriesEl = document.getElementById('categories');
 
@@ -199,10 +193,15 @@ const categoriesEl = document.getElementById('categories');
 const CATEGORIES = [
   { key: 'income', title: 'Income', headline: '9',
     ids: ['1z', '2b', '3a', '3b', '4b', '5b', '6b', '7', '8', 's1_1', 's1_3', 's1_7', 's1_9', 's1_10'] },
-  { key: 'agi', title: 'Adjustments & AGI', headline: '11',
-    ids: ['10', 's1_11', 's1_13', 's1_15', 's1_20', 's1_21', 's1_25'] },
-  { key: 'deductions', title: 'Deductions', headline: '14', ids: ['12', '13'] },
-  { key: 'tax', title: 'Taxable Income & Tax', headline: '18', ids: ['15', '16', '17'] },
+  { key: 'adjustments', title: 'Adjustments', headline: '10',
+    ids: ['s1_11', 's1_13', 's1_15', 's1_20', 's1_21', 's1_25'] },
+  { key: 'agi', title: 'AGI', headline: '11', ids: [] },
+  // Line 14 ("total deductions") isn't always printed as its own distinct
+  // line on the form, so it's often not_found even when 12/13 individually
+  // are — fall back to summing the parts rather than showing "—".
+  { key: 'deductions', title: 'Deductions', headline: '14', ids: ['12', '13'], fallbackIds: ['12', '13'] },
+  { key: 'taxableincome', title: 'Taxable Income', headline: '15', ids: [] },
+  { key: 'tax', title: 'Tax', headline: '18', ids: ['16', '17'] },
   { key: 'credits', title: 'Credits', headline: '21',
     ids: ['19', '20', 's3_1', 's3_2', 's3_3', 's3_4', 's3_8'] },
   { key: 'othertax', title: 'Other Taxes & Total Tax', headline: '24',
@@ -233,14 +232,14 @@ let currentLinesById = {};
 const SAMPLE_SCENARIOS = [
   {
     id: 'sample-2022-mfj',
-    title: 'Married filing jointly, 2022',
-    description: 'W-2 wages, some dividends and a small capital loss, Child Tax Credit and a dependent care credit.',
+    title: 'Simple wage-earner return',
+    description: 'Married filing jointly, 2022 — W-2 wages, some dividends and a small capital loss, Child Tax Credit and a dependent care credit.',
     data: {"filing_status":"mfj","tax_year":2022,"scanned_pages":[],"ocr_pages":[],"lines":[{"id":"1z","label":"Total wages (Form W-2 box 1)","value":204766.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Wages from your W-2s (box 1 of every W-2 you received), added together."},{"id":"2b","label":"Taxable interest","value":18.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Interest income that's taxed at your regular rate (bank interest, bond interest, etc)."},{"id":"3a","label":"Qualified dividends","value":313.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"The portion of your dividends that qualifies for lower long-term capital gains tax rates instead of your regular rate."},{"id":"3b","label":"Ordinary dividends","value":313.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Dividend income from stocks or funds you own."},{"id":"7","label":"Capital gain or (loss)","value":-3.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Net capital gain or loss from selling investments, property, etc."},{"id":"9","label":"Total income","value":205094.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Total income: everything above, added together, before any adjustments."},{"id":"11","label":"Adjusted gross income (AGI)","value":205094.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Adjusted Gross Income (AGI) \u2014 total income minus adjustments. Many other limits (like IRA deduction phase-outs) key off this number."},{"id":"12","label":"Standard deduction or itemized deductions","value":25900.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Your deduction \u2014 either the standard deduction for your filing status, or your itemized deductions (Schedule A), whichever you claimed."},{"id":"15","label":"Taxable income","value":179194.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Taxable income: AGI minus your total deductions. This is the number the tax tables/brackets actually apply to."},{"id":"16","label":"Tax","value":30649.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Tax computed on your taxable income, using the tax tables or a tax computation worksheet/schedule."},{"id":"18","label":"Add lines 16 and 17","value":30649.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Line 16 plus line 17 \u2014 tax before credits."},{"id":"19","label":"Child tax credit / credit for other dependents","value":4000.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Child Tax Credit and/or Credit for Other Dependents."},{"id":"20","label":"Schedule 3, line 8","value":1200.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Other credits from Schedule 3, line 8 (e.g. education credits, foreign tax credit, retirement savings credit)."},{"id":"21","label":"Add lines 19 and 20","value":5200.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Lines 19 and 20 added together \u2014 your total nonrefundable credits."},{"id":"22","label":"Subtract line 21 from line 18","value":25449.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Tax after nonrefundable credits are applied (line 18 minus line 21)."},{"id":"24","label":"Total tax","value":25449.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Total tax: your actual tax bill for the year, before counting what you've already paid in."},{"id":"31","label":"Schedule 3, line 13","value":3.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Other refundable credits from Schedule 3, line 13."},{"id":"33","label":"Total payments","value":26312.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Total payments: withholding, estimated payments, and refundable credits, all added together."},{"id":"34","label":"Overpayment (refund)","value":863.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Overpayment: how much more you paid in than your total tax \u2014 this is your refund before you decide how to receive/apply it."},{"id":"35a","label":"Refund amount","value":863.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"The amount of your overpayment you're asking the IRS to refund to you."}]},
   },
   {
     id: 'sample-2023-mfj',
-    title: 'Married filing jointly, 2023',
-    description: 'W-2 wages plus Schedule 1 income, capital gains taxed at the lower long-term rate, and a QBI deduction.',
+    title: 'Investment income + business deduction return',
+    description: 'Married filing jointly, 2023 — W-2 wages plus Schedule 1 income, capital gains taxed at the lower long-term rate, and a QBI deduction.',
     data: {"filing_status":"mfj","tax_year":2023,"scanned_pages":[],"ocr_pages":[],"lines":[{"id":"1z","label":"Total wages (Form W-2 box 1)","value":156589.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Wages from your W-2s (box 1 of every W-2 you received), added together."},{"id":"2b","label":"Taxable interest","value":497.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Interest income that's taxed at your regular rate (bank interest, bond interest, etc)."},{"id":"3a","label":"Qualified dividends","value":1066.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"The portion of your dividends that qualifies for lower long-term capital gains tax rates instead of your regular rate."},{"id":"3b","label":"Ordinary dividends","value":1180.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Dividend income from stocks or funds you own."},{"id":"7","label":"Capital gain or (loss)","value":16396.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Net capital gain or loss from selling investments, property, etc."},{"id":"8","label":"Additional income (Schedule 1)","value":51808.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Other income reported on Schedule 1 \u2014 things like unemployment, gambling winnings, or business income."},{"id":"9","label":"Total income","value":226470.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Total income: everything above, added together, before any adjustments."},{"id":"11","label":"Adjusted gross income (AGI)","value":226470.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Adjusted Gross Income (AGI) \u2014 total income minus adjustments. Many other limits (like IRA deduction phase-outs) key off this number."},{"id":"12","label":"Standard deduction or itemized deductions","value":27700.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Your deduction \u2014 either the standard deduction for your filing status, or your itemized deductions (Schedule A), whichever you claimed."},{"id":"13","label":"Qualified business income deduction","value":10362.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Qualified Business Income (QBI) deduction, for income from a pass-through business (sole proprietorship, partnership, S-corp)."},{"id":"15","label":"Taxable income","value":188408.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Taxable income: AGI minus your total deductions. This is the number the tax tables/brackets actually apply to."},{"id":"16","label":"Tax","value":30847.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Tax computed on your taxable income, using the tax tables or a tax computation worksheet/schedule."},{"id":"17","label":"Schedule 2, line 3 (AMT / excess APTC)","value":0.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Additional tax from Schedule 2, line 3 \u2014 commonly Alternative Minimum Tax (AMT) or repayment of excess advance premium tax credit."},{"id":"18","label":"Add lines 16 and 17","value":30847.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Line 16 plus line 17 \u2014 tax before credits."},{"id":"19","label":"Child tax credit / credit for other dependents","value":4000.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Child Tax Credit and/or Credit for Other Dependents."},{"id":"20","label":"Schedule 3, line 8","value":2450.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Other credits from Schedule 3, line 8 (e.g. education credits, foreign tax credit, retirement savings credit)."},{"id":"21","label":"Add lines 19 and 20","value":6450.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Lines 19 and 20 added together \u2014 your total nonrefundable credits."},{"id":"22","label":"Subtract line 21 from line 18","value":24397.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Tax after nonrefundable credits are applied (line 18 minus line 21)."},{"id":"24","label":"Total tax","value":24397.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Total tax: your actual tax bill for the year, before counting what you've already paid in."},{"id":"25d","label":"Federal income tax withheld","value":10359.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Federal income tax already withheld from your paychecks, 1099s, etc."},{"id":"31","label":"Schedule 3, line 13","value":13000.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Other refundable credits from Schedule 3, line 13."},{"id":"32","label":"Total other payments and refundable credits","value":13000.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Total of the refundable credits above (27, 28, 31, and similar)."},{"id":"33","label":"Total payments","value":23359.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Total payments: withholding, estimated payments, and refundable credits, all added together."},{"id":"34","label":"Overpayment (refund)","value":0.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Overpayment: how much more you paid in than your total tax \u2014 this is your refund before you decide how to receive/apply it."},{"id":"35a","label":"Refund amount","value":0.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"The amount of your overpayment you're asking the IRS to refund to you."},{"id":"37","label":"Amount you owe","value":1635.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Amount you owe: your total tax minus your total payments, when payments fall short."}]},
   },
 ];
@@ -325,11 +324,11 @@ function fmtSignedMoney(n) {
 function lineInputHtml(line) {
   let caption = '';
   if (line.confidence === 'not_found') {
-    caption = '<div class="not-found">Not found in PDF — enter manually if it applies to you.</div>';
+    caption = '<div class="not-found">Not found in this PDF.</div>';
   } else if (line.confidence === 'uncertain' && line.via_ocr) {
-    caption = '<div class="uncertain">Read via OCR from a scanned page — double-check this number against your PDF, OCR can misread digits.</div>';
+    caption = '<div class="uncertain">Read via OCR from a scanned page — OCR can misread digits.</div>';
   } else if (line.confidence === 'uncertain') {
-    caption = '<div class="uncertain">Auto-detected from this form\'s layout, not double-checked — verify against your PDF.</div>';
+    caption = '<div class="uncertain">Auto-detected from this form\'s layout, not double-checked.</div>';
   }
   return `
     <tr class="line-row">
@@ -338,7 +337,7 @@ function lineInputHtml(line) {
         ${line.explanation ? `<div class="line-explain">${line.explanation}</div>` : ''}
         ${caption}
       </td>
-      <td class="line-value"><input type="number" step="0.01" data-id="${line.id}" value="${line.value ?? ''}" /></td>
+      <td class="line-value">${line.value !== null ? fmtMoney(line.value) : '—'}</td>
     </tr>
   `;
 }
@@ -382,12 +381,24 @@ const CATEGORY_NARRATIVES = {
     ]);
     return `Total income was ${fmtMoney(total)}${parts}.`;
   },
+  adjustments() {
+    const adjustments = val('10');
+    if (!adjustments) return "No adjustments to income were claimed on this return.";
+    const parts = describeContributors([
+      { label: 'educator expenses', value: val('s1_11') },
+      { label: 'HSA contributions', value: val('s1_13') },
+      { label: 'the deductible half of self-employment tax', value: val('s1_15') },
+      { label: 'IRA contributions', value: val('s1_20') },
+      { label: 'student loan interest', value: val('s1_21') },
+    ]);
+    return `${fmtMoney(adjustments)} in adjustments reduced income before AGI was calculated${parts}.`;
+  },
   agi() {
     const agi = val('11');
     const adjustments = val('10');
     if (agi === null) return "Adjusted gross income (AGI) wasn't found — check the numbers below.";
     if (adjustments) {
-      return `After ${fmtMoney(adjustments)} in adjustments (things like retirement or student loan interest deductions), adjusted gross income (AGI) came to ${fmtMoney(agi)}.`;
+      return `After ${fmtMoney(adjustments)} in adjustments, adjusted gross income (AGI) came to ${fmtMoney(agi)} — the number a lot of other limits on the return are based on.`;
     }
     return `With no adjustments, AGI stayed at ${fmtMoney(agi)} — the number a lot of other limits on the return are based on.`;
   },
@@ -398,6 +409,11 @@ const CATEGORY_NARRATIVES = {
     let s = `A ${fmtMoney(ded)} deduction was subtracted from income`;
     return s + (qbi ? `, plus a ${fmtMoney(qbi)} deduction for qualified business income.` : '.');
   },
+  taxableincome() {
+    const taxable = val('15');
+    if (taxable === null) return "Taxable income wasn't found — check the numbers below.";
+    return `Taxable income (AGI minus deductions) came to ${fmtMoney(taxable)} — this is the number the tax brackets actually apply to.`;
+  },
   tax() {
     const taxable = val('15');
     const tax = val('16');
@@ -405,7 +421,7 @@ const CATEGORY_NARRATIVES = {
     const capGains = val('7');
     const qualDiv = val('3a');
     const preferential = Math.max(0, capGains || 0) + Math.max(0, qualDiv || 0);
-    let s = `Tax was calculated on ${fmtMoney(taxable)} of taxable income (income after deductions), coming to ${fmtMoney(tax)} before any credits.`;
+    let s = `Tax was calculated on ${fmtMoney(taxable)} of taxable income, coming to ${fmtMoney(tax)} before any credits.`;
     if (preferential > 0) {
       s += ` ${fmtMoney(preferential)} of that was long-term capital gains and/or qualified dividends, which get taxed at lower rates (0%/15%/20% depending on income) than the rest of the taxable income — that's why the total tax comes out lower than a plain bracket calculation would suggest.`;
     }
@@ -447,42 +463,28 @@ function renderCategories() {
     const childLines = cat.ids.map(id => currentLinesById[id]).filter(Boolean);
     const hasData = l => l && l.confidence !== 'not_found';
     const allLines = [headlineLine, ...childLines].filter(Boolean);
-    const foundLines = allLines.filter(hasData);
-    const missingLines = allLines.filter(l => !hasData(l));
-    const hasAnyData = foundLines.length > 0;
+    const hasAnyData = allLines.some(hasData);
 
     const details = document.createElement('details');
     details.className = 'category';
-    const amountText = headlineLine && headlineLine.value !== null ? fmtMoney(headlineLine.value) : '—';
+    let headlineAmount = headlineLine && headlineLine.value !== null ? headlineLine.value : null;
+    if (headlineAmount === null && cat.fallbackIds) {
+      const parts = cat.fallbackIds.map(id => val(id)).filter(v => v !== null);
+      if (parts.length > 0) headlineAmount = parts.reduce((a, b) => a + b, 0);
+    }
+    const amountText = headlineAmount !== null ? fmtMoney(headlineAmount) : '—';
     const ocrBadge = headlineLine && headlineLine.via_ocr ? ' <span class="uncertain" style="margin:0">(OCR)</span>' : '';
     const narrativeFn = CATEGORY_NARRATIVES[cat.key];
     const narrative = narrativeFn ? narrativeFn() : '';
-    // Only lines actually found on the return are shown by default — a
-    // return with no dividend income shouldn't display a "Dividends" field
-    // next to real numbers, as if that were part of the return too. Lines
-    // that weren't found stay available, just tucked behind their own
-    // toggle, in case one genuinely applies and was simply missed.
+    // The line-by-line numbers behind this narrative live in the
+    // Computation walkthrough table below — no need to repeat them here.
     details.innerHTML = `
       <summary>
         <span class="cat-title">${cat.title}</span>
-        <span class="cat-amount ${headlineLine && headlineLine.value !== null ? '' : 'na'}">${amountText}${ocrBadge}</span>
+        <span class="cat-amount ${headlineAmount !== null ? '' : 'na'}">${amountText}${ocrBadge}</span>
       </summary>
       <div class="cat-body">
-        ${narrative ? `<p class="narrative">${narrative}</p>` : ''}
-        ${hasAnyData ? `
-        <details class="numbers-toggle">
-          <summary>Show the numbers</summary>
-          <table class="numbers-table"><tbody>
-            ${foundLines.map(lineInputHtml).join('')}
-          </tbody></table>
-        </details>` : '<p class="narrative">Nothing in this category was found on this return.</p>'}
-        ${missingLines.length > 0 ? `
-        <details class="numbers-toggle">
-          <summary>${missingLines.length} more line${missingLines.length === 1 ? '' : 's'} not found — add manually if one applies to you</summary>
-          <table class="numbers-table"><tbody>
-            ${missingLines.map(lineInputHtml).join('')}
-          </tbody></table>
-        </details>` : ''}
+        ${narrative ? `<p class="narrative">${narrative}</p>` : '<p class="narrative">Nothing in this category was found on this return.</p>'}
       </div>
     `;
     // Categories with nothing found (e.g. no Schedule 2 in this return) stay
@@ -581,7 +583,7 @@ function renderHero() {
 function renderStory() {
   const el = document.getElementById('story');
   if (!el) return;
-  const order = ['income', 'agi', 'deductions', 'tax', 'credits', 'othertax', 'payments'];
+  const order = ['income', 'adjustments', 'agi', 'deductions', 'taxableincome', 'tax', 'credits', 'othertax', 'payments'];
   const sentences = order
     .map(key => CATEGORY_NARRATIVES[key] ? CATEGORY_NARRATIVES[key]() : '')
     .filter(s => s && !s.includes("wasn't found"));
@@ -596,8 +598,10 @@ function renderStory() {
 }
 
 function renderSummary(data) {
-  filingStatusSelect.value = data.filing_status || '';
-  taxYearInput.value = data.tax_year || '';
+  currentFilingStatus = data.filing_status || null;
+  currentTaxYear = data.tax_year || null;
+  filingStatusDisplay.textContent = currentFilingStatus ? (FILING_STATUS_NAMES[currentFilingStatus] || currentFilingStatus) : 'Unknown / not sure';
+  taxYearDisplay.textContent = currentTaxYear || 'Unknown';
   currentLinesById = {};
   for (const line of data.lines) currentLinesById[line.id] = line;
 
@@ -611,11 +615,13 @@ function renderSummary(data) {
   resultsPanel.classList.add('hidden');
 }
 
+// No manual correction step anymore — the numbers shown are exactly what
+// was auto-detected (from the PDF, or a sample), and this just turns
+// currentLinesById back into the {id, value} shape /api/analyze expects.
 function readAllOverrides() {
-  return Array.from(document.querySelectorAll('#categories input[data-id], #extra-forms input[data-id]')).map(input => ({
-    id: input.dataset.id,
-    value: input.value === '' ? null : parseFloat(input.value),
-  }));
+  return Object.values(currentLinesById)
+    .filter(line => line.value !== null)
+    .map(line => ({ id: line.id, value: line.value }));
 }
 
 function valuesFromOverrides(overrides) {
@@ -626,17 +632,9 @@ function valuesFromOverrides(overrides) {
 
 document.getElementById('analyze-btn').addEventListener('click', async () => {
   const overrides = readAllOverrides();
-  // Pull any edits back into currentLinesById so the hero (and a later
-  // comparison) reflect corrections made inside the Payments category.
-  for (const o of overrides) {
-    if (currentLinesById[o.id]) currentLinesById[o.id].value = o.value;
-  }
-  renderHero();
-  renderStory();
-
   const payload = {
-    filing_status: filingStatusSelect.value || null,
-    tax_year: taxYearInput.value ? parseInt(taxYearInput.value, 10) : null,
+    filing_status: currentFilingStatus,
+    tax_year: currentTaxYear,
     overrides,
   };
   const res = await fetch('/api/analyze', {
@@ -838,7 +836,7 @@ function valueOf(linesById, id) {
 
 compareBtn.addEventListener('click', () => {
   const valuesA = valuesFromOverrides(readAllOverrides());
-  const yearA = taxYearInput.value || 'Return A';
+  const yearA = currentTaxYear || 'Return A';
   const yearB = taxYearB || 'Return B';
 
   const rows = COMPARE_LINES.map(({ id, label }) => {
