@@ -250,8 +250,9 @@ const SAMPLE_SCENARIOS = [
 
 function renderSampleScenarios() {
   const el = document.getElementById('sample-scenarios');
+  const heading = dropzone ? 'Or try a sample return:' : 'Try a sample return:';
   el.innerHTML = `
-    <p class="scenario-heading">Or try a sample return:</p>
+    <p class="scenario-heading">${heading}</p>
     ${SAMPLE_SCENARIOS.map(s => `
       <button type="button" class="secondary scenario-btn" data-scenario-id="${s.id}">
         <span class="scenario-title">${s.title}</span>
@@ -268,17 +269,23 @@ function renderSampleScenarios() {
 }
 renderSampleScenarios();
 
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropzone.classList.remove('drag');
-  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-});
-fileInput.addEventListener('change', () => {
-  if (fileInput.files.length) handleFile(fileInput.files[0]);
-});
+// dropzone/fileInput are absent on deployments that don't offer PDF
+// upload at all (e.g. the Cloudflare Worker, with no OCR to fall back on
+// for scanned returns) — guard so the rest of this shared script still
+// runs fine without them.
+if (dropzone && fileInput) {
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) handleFile(fileInput.files[0]);
+  });
+}
 
 async function extractPdf(file) {
   const form = new FormData();
