@@ -4,7 +4,6 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -26,6 +25,7 @@ class LineOverride(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     filing_status: str | None = None
+    tax_year: int | None = None
     overrides: list[LineOverride] = []
 
 
@@ -43,12 +43,14 @@ async def extract(file: UploadFile = File(...)):
 
     return {
         "filing_status": result.filing_status,
+        "tax_year": result.tax_year,
         "lines": [
             {
                 "id": ln.id,
                 "label": ln.label,
                 "value": ln.value,
                 "confidence": ln.confidence,
+                "group": ln.group,
                 "explanation": LINE_EXPLANATIONS.get(ln.id, ""),
             }
             for ln in result.lines
@@ -63,7 +65,7 @@ async def analyze(payload: AnalyzeRequest):
         if override.value is not None:
             values[override.id] = override.value
 
-    flags = build_flags(values, payload.filing_status)
+    flags = build_flags(values, payload.filing_status, payload.tax_year)
     flow = build_flow(values)
 
     return {

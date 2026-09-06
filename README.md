@@ -14,18 +14,38 @@ extracted number before it explains anything.
 1. Upload a Form 1040 PDF (a fillable/text-based one — a real, printed IRS
    form or one exported from tax software). `POST /api/extract` pulls out
    values for the standard 1040 lines (wages, AGI, taxable income, tax,
-   payments, refund/owed, etc.) using pdfplumber's layout-aware text
-   extraction.
+   payments, refund/owed, tax year, filing status, etc.) plus **Schedules 1,
+   2, and 3** (extra income/adjustments, AMT/self-employment tax, extra
+   credits) using pdfplumber's layout-aware text extraction. Matching first
+   tries a distinctive phrase from the official line label (with several
+   wording variants per line, to survive differences across tax years and
+   tax-software exports), then falls back to a row simply starting with the
+   line's own number — scoped to that schedule's own pages, so a bare "line
+   1" in Schedule 2 is never confused with "line 1" in Schedule 1 or 3.
 2. You review the extracted numbers in the browser and fix anything that
    didn't parse correctly (parsing a form's text layout is inherently
-   heuristic — line label wording shifts between tax years).
+   heuristic). Schedule sections only show up if something from that
+   schedule was actually found.
 3. `POST /api/analyze` takes your (possibly corrected) numbers and returns:
-   - Plain-English explanations for each line (see `backend/explain.py`).
+   - Plain-English explanations for each line (see `backend/explain.py`),
+     across the main form and all three schedules.
    - Red flags — inconsistencies (e.g. tax exceeding total income) and
-     "worth a second look" notes (e.g. heavy over-withholding, a deduction
-     that doesn't match the standard amount for your filing status).
+     "worth a second look" notes: heavy over-withholding, a deduction that
+     doesn't match the standard amount for your filing status and tax year,
+     a reported tax that's noticeably off from a plain bracket calculation
+     on your taxable income (suppressed when capital gains/dividends are
+     present, since those get preferential rates), a hint that you might
+     qualify for the Earned Income Credit but didn't claim it, and a note
+     when self-employment tax shows up (with the deduction it entitles you
+     to). Bracket/EIC/standard-deduction figures live in `backend/tax_data.py`
+     for 2023–2025 and degrade gracefully for years outside that table.
    - A step-by-step money-flow breakdown from total income down to your
      refund or amount owed, rendered as a simple bar-based waterfall.
+4. Optionally, upload a **second year's** Form 1040 to compare against the
+   first — a side-by-side table of income, AGI, taxable income, tax,
+   payments, and refund/owed, with the dollar and percent change between
+   the two (computed client-side from whatever you've reviewed/corrected in
+   both review tables).
 
 ## What it deliberately doesn't do
 
@@ -53,19 +73,23 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-`tests/test_parser.py` builds a synthetic Form-1040-shaped PDF (via
-`reportlab`) to verify the line-matching and amount-extraction logic without
-needing a real tax return on disk.
+`tests/test_parser.py` builds synthetic Form-1040/Schedule-shaped PDFs (via
+`reportlab`) to verify the line-matching, schedule-scoping, and
+amount-extraction logic without needing a real tax return on disk.
+`tests/test_explain.py` covers the bracket-based tax check, the EIC hint,
+and the self-employment tax note.
 
 ## Project layout
 
 ```
 backend/
-  parser.py   PDF -> extracted line values (pdfplumber-based)
-  explain.py  line explanations, anomaly flags, money-flow breakdown
-  main.py     FastAPI app (/api/extract, /api/analyze) + serves frontend/
+  parser.py     PDF -> extracted line values, incl. Schedules 1-3 (pdfplumber-based)
+  tax_data.py   reference standard deductions / brackets / EIC limits for sanity checks
+  explain.py    line explanations, anomaly flags, money-flow breakdown
+  main.py       FastAPI app (/api/extract, /api/analyze) + serves frontend/
 frontend/
-  index.html  single-page upload/review/results UI (vanilla JS, no build step)
+  index.html    single-page upload/review/results/compare UI (vanilla JS, no build step)
 tests/
   test_parser.py
+  test_explain.py
 ```
