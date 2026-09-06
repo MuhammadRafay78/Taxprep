@@ -18,7 +18,20 @@ rewritten in TypeScript:
 | `explain.py` | `explain.ts` | Same flags and money-flow logic. |
 | `tax_data.py` | `taxData.ts` | Same reference brackets/deductions/EIC limits. |
 | `pdfplumber` (`layout=True` text) | `pdfText.ts` + [`unpdf`](https://github.com/unjs/unpdf) | `unpdf` ships PDF.js built specifically for edge runtimes (worker thread inlined, no separate `pdf.worker.js` to load). It hands back individual positioned text runs (`extractTextItems`) rather than pre-assembled lines, so `pdfText.ts` groups runs sharing a y-coordinate into rows and sorts them left-to-right — reconstructing the same "label ... amount" row shape `parser.ts` expects. |
-| FastAPI routes + `StaticFiles` | `index.ts` fetch handler + Workers Assets | `/api/extract` and `/api/analyze` are handled in the Worker; everything else falls through to the static `public/` directory (which is `frontend/index.html`, copied as-is — same relative `/api/...` calls work since it's now same-origin). |
+| FastAPI routes + `StaticFiles` | `index.ts` fetch handler + Workers Assets | `/api/extract` and `/api/analyze` are handled in the Worker; everything else falls through to the static `public/` directory. |
+
+`public/index.html` is **not** a byte-for-byte copy of `../frontend/index.html`
+— it's copied over, then two spots are deliberately changed to reflect this
+deployment having no OCR (see "No OCR" below):
+1. The upload panel's explainer text (`Works with text-based PDFs...` instead
+   of the Python version's OCR-fallback sentence).
+2. A warning banner above the dropzone, absent from the Python frontend
+   entirely, telling users upfront that a scanned/photographed return will
+   come back blank or wrong here.
+
+When porting a UI change from `../frontend/index.html`, copy it over first,
+then re-apply both of those changes — they should never make it back
+verbatim from a plain copy.
 
 Verified to produce byte-identical extraction results against the same test
 PDFs used for the Python backend's test suite (see the parent repo's
