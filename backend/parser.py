@@ -289,6 +289,12 @@ def _section_title(page_lines: list[str]) -> str:
             rest = re.split(r"omb no\.?", line[len(first_token):].strip(), flags=re.IGNORECASE)[0].strip()
             if not rest and i + 1 < len(non_blank):
                 rest = re.split(r"omb no\.?", non_blank[i + 1], flags=re.IGNORECASE)[0].strip()
+                # Some forms print a lone "Form" word ahead of the title's
+                # second half on this line (the rest of the title having
+                # spilled onto the line *before* the number, an unusual
+                # layout — e.g. Form 7203); drop the redundant word rather
+                # than showing "Form 7203 — Form Debt Basis Limitations".
+                rest = re.sub(r"^form\s+", "", rest, flags=re.IGNORECASE)
             return f"Form {first_token.upper()}" + (f" — {rest}" if rest else "")
     return "Additional form"
 

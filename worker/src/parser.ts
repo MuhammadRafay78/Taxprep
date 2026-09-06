@@ -244,6 +244,12 @@ function sectionTitle(pageLines: string[]): string {
       let rest = splitBeforeOmb(line.slice(firstToken.length).trim());
       if (!rest && i + 1 < nonBlank.length) {
         rest = splitBeforeOmb(nonBlank[i + 1]);
+        // Some forms print a lone "Form" word ahead of the title's second
+        // half on this line (the rest of the title having spilled onto the
+        // line *before* the number, an unusual layout — e.g. Form 7203);
+        // drop the redundant word rather than showing "Form 7203 — Form
+        // Debt Basis Limitations".
+        rest = rest.replace(/^form\s+/i, "");
       }
       return `Form ${firstToken.toUpperCase()}` + (rest ? ` — ${rest}` : "");
     }
