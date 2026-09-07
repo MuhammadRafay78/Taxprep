@@ -1028,10 +1028,21 @@ function renderComputation(comp) {
     html += `<div class="comp-section"><h3>How the tax figure is built</h3>`;
     if (tc.method === 'qdcgt') {
       html += `
+        <p class="explain" style="margin-top:0">Ordinary income (${fmtMoney(tc.ordinary_income)}) is taxed through the regular
+        brackets below; qualified dividends and long-term capital gains are stacked on top and taxed separately at the
+        lower preferential rates.</p>
         <table class="comp-table">
+          <thead><tr><th>Bracket</th><th>Rate</th><th class="num">Amount taxed</th><th class="num">Tax</th></tr></thead>
+          <tbody>
+            ${tc.ordinary_bracket_rows.map(r => `
+              <tr><td>${r.range}</td><td>${(r.rate * 100).toFixed(0)}%</td><td class="num">${fmtMoney(r.amount)}</td><td class="num">${fmtMoney(r.tax)}</td></tr>
+            `).join('')}
+            <tr class="comp-total"><td colspan="3">Tax on ordinary income</td><td class="num">${fmtMoney(tc.ordinary_tax)}</td></tr>
+          </tbody>
+        </table>
+        <table class="comp-table" style="margin-top:12px">
           <thead><tr><th>Portion</th><th>Rate basis</th><th class="num">Amount</th><th class="num">Tax</th></tr></thead>
           <tbody>
-            <tr><td>Ordinary income</td><td>Regular brackets</td><td class="num">${fmtMoney(tc.ordinary_income)}</td><td class="num">${fmtMoney(tc.ordinary_tax)}</td></tr>
             ${tc.preferential_rows.map(r => `
               <tr><td>Qualified dividends / LTCG</td><td>${(r.rate * 100).toFixed(0)}%</td><td class="num">${fmtMoney(r.amount)}</td><td class="num">${fmtMoney(r.tax)}</td></tr>
             `).join('')}
@@ -1068,6 +1079,22 @@ function renderComputation(comp) {
       </table>
     </div>
   `;
+
+  // Line 23 lumps several very different taxes (self-employment tax, AMT,
+  // NIIT, Additional Medicare Tax) into one number — broken out here so
+  // it's clear which of those actually apply to this return, not just
+  // that "other taxes" added up to some total.
+  if (comp.other_tax_rows && comp.other_tax_rows.length > 0) {
+    html += `
+      <div class="comp-section">
+        <h3>Other taxes (Schedule 2), broken down</h3>
+        <table class="comp-table">
+          <thead><tr><th>Line</th><th>Item</th><th class="num">Amount</th></tr></thead>
+          <tbody>${computationRowsHtml(comp.other_tax_rows)}</tbody>
+        </table>
+      </div>
+    `;
+  }
 
   if (comp.reviewer_notes.length > 0) {
     html += `
