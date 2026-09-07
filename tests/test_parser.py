@@ -68,6 +68,19 @@ SCHEDULE2_PAGE = [
     ("21 Add lines 4 through 18. These are your total other taxes", "1,695"),
 ]
 
+SCHEDULE_A_PAGE = [
+    ("SCHEDULE A  Itemized Deductions  OMB No. 1545-0074", ""),
+    ("(Form 1040)  2023", ""),
+    ("1  Medical and dental expenses", "5,000"),
+    ("4  Subtract line 3 from line 1", "0"),
+    ("5e Smaller of line 5d or $10,000", "10,000"),
+    ("7  Total taxes. Add lines 5e and 6", "10,000"),
+    ("8e Add lines 8a through 8c", "18,000"),
+    ("10 Total interest. Add lines 8e and 9", "18,000"),
+    ("14 Gifts to charity. Add lines 11 through 13", "4,000"),
+    ("17 Total itemized deductions", "32,000"),
+]
+
 
 def test_parses_main_form_lines_and_metadata():
     pdf_bytes = make_pdf([MAIN_PAGE])
@@ -116,6 +129,30 @@ def test_schedules_are_extracted_and_scoped_by_page():
     groups = {ln.id: ln.group for ln in result.lines}
     assert groups["s1_3"] == "Schedule 1 (Additional Income & Adjustments)"
     assert groups["s2_4"] == "Schedule 2 (Additional Taxes)"
+
+
+def test_schedule_a_itemized_deductions_are_extracted_and_scoped():
+    pdf_bytes = make_pdf([MAIN_PAGE, SCHEDULE_A_PAGE])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+
+    assert by_id["sa_1"].value == 5000
+    assert by_id["sa_5e"].value == 10000
+    assert by_id["sa_8e"].value == 18000
+    assert by_id["sa_14"].value == 4000
+    assert by_id["sa_17"].value == 32000
+    assert by_id["sa_15"].confidence == "not_found"  # no casualty loss on this return
+    assert by_id["sa_1"].group == "Schedule A (Itemized Deductions)"
+
+
+def test_schedule_a_not_present_is_not_found_when_standard_deduction_used():
+    # No Schedule A page at all -> every sa_* line should be not_found,
+    # the same graceful-degradation behavior as Schedule 1/2/3.
+    pdf_bytes = make_pdf([MAIN_PAGE])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+    assert by_id["sa_17"].confidence == "not_found"
+    assert by_id["sa_17"].value is None
 
 
 def test_schedule_lines_not_present_are_not_found_not_guessed():
