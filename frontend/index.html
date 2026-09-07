@@ -125,7 +125,7 @@
   <section class="panel hidden" id="summary-panel">
     <div id="scanned-banner"></div>
     <div class="meta-row">
-      <div><span class="meta-label">Filing status</span><div id="filing-status-display" class="meta-value">—</div></div>
+      <div><span class="meta-label" id="filing-status-label">Filing status</span><div id="filing-status-display" class="meta-value">—</div></div>
       <div><span class="meta-label">Tax year</span><div id="tax-year-display" class="meta-value">—</div></div>
     </div>
 
@@ -176,6 +176,7 @@ const status = document.getElementById('status');
 const summaryPanel = document.getElementById('summary-panel');
 const resultsPanel = document.getElementById('results-panel');
 const filingStatusDisplay = document.getElementById('filing-status-display');
+const filingStatusLabel = document.getElementById('filing-status-label');
 const taxYearDisplay = document.getElementById('tax-year-display');
 const FILING_STATUS_NAMES = {
   single: 'Single', mfj: 'Married filing jointly', mfs: 'Married filing separately',
@@ -228,6 +229,54 @@ const KNOWN_GROUPS = new Set([
   'Schedule 3 (Additional Credits & Payments)',
 ]);
 
+// Business/exempt-org return types (990, 1065, 1120-S) reuse every generic
+// piece of this page — renderCategories, renderExtraForms, the flow bars,
+// renderComputation's non-1040 branch — but each needs its own category
+// layout (their line ids are completely different from 1040's) and its own
+// "known groups" set (so an uncurated attachment like Schedule L still
+// falls into "Additional forms" instead of vanishing). FORM_CONFIGS is the
+// one place a new return type's UI shape is declared; CATEGORIES/
+// KNOWN_GROUPS above are just the 1040 entry, kept as their own top-level
+// constants since so much 1040-specific code (CATEGORY_NARRATIVES,
+// renderStory, the compare-a-second-year feature) already reads them
+// directly.
+const FORM_CONFIGS = {
+  '1040': { displayName: 'Form 1040', categories: CATEGORIES, knownGroups: KNOWN_GROUPS },
+  '990': {
+    displayName: 'Form 990-EZ',
+    categories: [
+      { key: 'revenue', title: 'Revenue', headline: '9', ids: ['1', '2', '3', '4', '8'] },
+      { key: 'expenses', title: 'Expenses', headline: '17', ids: ['10', '12', '13', '14', '16'] },
+      { key: 'changeinassets', title: 'Change in Net Assets', headline: '21', ids: ['18', '19', '20'] },
+    ],
+    knownGroups: new Set(['Form 990']),
+  },
+  '1065': {
+    displayName: 'Form 1065',
+    categories: [
+      { key: 'income', title: 'Income & Deductions', headline: 'p1_22', fallbackIds: ['k_1'],
+        ids: ['p1_1c', 'p1_2', 'p1_3', 'p1_7', 'p1_9', 'p1_10', 'p1_13', 'p1_16c', 'p1_20'] },
+      { key: 'schedulek', title: 'Schedule K — Other Partnership Items', headline: '',
+        ids: ['k_2', 'k_4c', 'k_5', 'k_6a', 'k_8', 'k_9a', 'k_14a'] },
+      { key: 'distributions', title: 'Distributions to Partners', headline: '', ids: ['k_19a', 'k_19b'] },
+    ],
+    knownGroups: new Set(['Form 1065', "Schedule K (Partners' Distributive Share Items)"]),
+  },
+  '1120s': {
+    displayName: 'Form 1120-S',
+    categories: [
+      { key: 'income', title: 'Income & Deductions', headline: 'p1_21', fallbackIds: ['k_1'],
+        ids: ['p1_1c', 'p1_2', 'p1_3', 'p1_5', 'p1_7', 'p1_8', 'p1_12', 'p1_14', 'p1_19'] },
+      { key: 'schedulek', title: 'Schedule K — Other Corporate Items', headline: '',
+        ids: ['k_2', 'k_4', 'k_5a', 'k_6', 'k_7', 'k_8a', 'k_12a'] },
+      { key: 'distributions', title: 'Distributions to Shareholders', headline: 'k_16d', ids: [] },
+      { key: 'entitytax', title: 'Entity-Level Tax', headline: 'p1_22c', ids: ['p1_23e'] },
+    ],
+    knownGroups: new Set(['Form 1120-S', "Schedule K (Shareholders' Pro Rata Share Items)"]),
+  },
+};
+
+let currentFormType = '1040';
 let currentLinesById = {};
 
 // Built-in sample returns for anyone trying the app without a PDF on hand.
@@ -302,6 +351,24 @@ const SAMPLE_SCENARIOS = [
     title: 'Pension rollover and a large balance due',
     description: 'Married filing jointly, 2024 — wages plus a $177,523 pension distribution (mostly a non-taxable rollover), a capital loss, Schedule 1 income, and a $26,526 balance due after underpaying estimated tax.',
     data: {"filing_status":"mfj","tax_year":2024,"scanned_pages":[],"ocr_pages":[],"lines":[{"id":"1z","label":"Total wages (Form W-2 box 1)","value":165929.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Wages from your W-2s (box 1 of every W-2 you received), added together."},{"id":"2b","label":"Taxable interest","value":1379.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Interest income that's taxed at your regular rate (bank interest, bond interest, etc)."},{"id":"3a","label":"Qualified dividends","value":15.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"The portion of your dividends that qualifies for lower long-term capital gains tax rates instead of your regular rate."},{"id":"3b","label":"Ordinary dividends","value":46.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Dividend income from stocks or funds you own."},{"id":"5b","label":"Taxable pensions and annuities","value":0.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"The taxable portion of pension or annuity payments you received."},{"id":"7","label":"Capital gain or (loss)","value":-3000.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Net capital gain or loss from selling investments, property, etc."},{"id":"8","label":"Additional income (Schedule 1)","value":147768.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Other income reported on Schedule 1 \u2014 things like unemployment, gambling winnings, or business income."},{"id":"9","label":"Total income","value":312122.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Total income: everything above, added together, before any adjustments."},{"id":"10","label":"Adjustments to income","value":0.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Adjustments that reduce income before AGI is calculated \u2014 e.g. IRA contributions, student loan interest."},{"id":"11","label":"Adjusted gross income (AGI)","value":312122.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Adjusted Gross Income (AGI) \u2014 total income minus adjustments. Many other limits (like IRA deduction phase-outs) key off this number."},{"id":"12","label":"Standard deduction or itemized deductions","value":29200.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Your deduction \u2014 either the standard deduction for your filing status, or your itemized deductions (Schedule A), whichever you claimed."},{"id":"13","label":"Qualified business income deduction","value":29554.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Qualified Business Income (QBI) deduction, for income from a pass-through business (sole proprietorship, partnership, S-corp)."},{"id":"14","label":"Total deductions","value":58754.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Lines 12 and 13 added together \u2014 your total deductions."},{"id":"15","label":"Taxable income","value":253368.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Taxable income: AGI minus your total deductions. This is the number the tax tables/brackets actually apply to."},{"id":"16","label":"Tax","value":46892.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Tax computed on your taxable income, using the tax tables or a tax computation worksheet/schedule."},{"id":"18","label":"Add lines 16 and 17","value":46892.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Line 16 plus line 17 \u2014 tax before credits."},{"id":"19","label":"Child tax credit / credit for other dependents","value":4000.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Child Tax Credit and/or Credit for Other Dependents."},{"id":"20","label":"Schedule 3, line 8","value":1.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Other credits from Schedule 3, line 8 (e.g. education credits, foreign tax credit, retirement savings credit)."},{"id":"21","label":"Add lines 19 and 20","value":4001.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Lines 19 and 20 added together \u2014 your total nonrefundable credits."},{"id":"22","label":"Subtract line 21 from line 18","value":42891.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Tax after nonrefundable credits are applied (line 18 minus line 21)."},{"id":"24","label":"Total tax","value":42891.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Total tax: your actual tax bill for the year, before counting what you've already paid in."},{"id":"25d","label":"Federal income tax withheld","value":16750.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Federal income tax already withheld from your paychecks, 1099s, etc."},{"id":"33","label":"Total payments","value":16750.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Total payments: withholding, estimated payments, and refundable credits, all added together."},{"id":"37","label":"Amount you owe","value":26526.0,"confidence":"matched","group":"Form 1040","via_ocr":false,"explanation":"Amount you owe: your total tax minus your total payments, when payments fall short."}]},
+  },
+  {
+    id: 'sample-990ez-small-nonprofit',
+    title: 'Small nonprofit, all-volunteer operations',
+    description: 'Form 990-EZ, 2024 — a small exempt organization funded entirely by contributions, modest operating expenses, and a healthy surplus added to net assets.',
+    data: {"form_type":"990","filing_status":null,"tax_year":2024,"scanned_pages":[],"ocr_pages":[],"lines":[{"id":"1","label":"Contributions, gifts, and grants received","value":26957.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Contributions, gifts, and grants the organization received during the year."},{"id":"9","label":"Total revenue","value":26957.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Total revenue: everything above, added together."},{"id":"16","label":"Other expenses","value":2621.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Other expenses not captured by the lines above."},{"id":"17","label":"Total expenses","value":2621.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Total expenses: everything spent during the year, added together."},{"id":"18","label":"Excess or (deficit) for the year","value":24336.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Excess or deficit for the year: total revenue minus total expenses."},{"id":"19","label":"Net assets or fund balances at beginning of year","value":0.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Net assets or fund balances the organization had at the start of the year."},{"id":"21","label":"Net assets or fund balances at end of year","value":24336.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Net assets or fund balances at the end of the year \u2014 what the organization is carrying forward."}]},
+  },
+  {
+    id: 'sample-1065-small-llc-loss',
+    title: 'Small LLC\'s first-year operating loss',
+    description: 'Form 1065, 2024 — a small partnership/LLC with a modest ordinary business loss and a bit of interest income, restated on Schedule K for each partner\'s own K-1.',
+    data: {"form_type":"1065","filing_status":null,"tax_year":2024,"scanned_pages":[],"ocr_pages":[],"lines":[{"id":"k_1","label":"Ordinary business income (loss)","value":-4577.0,"confidence":"matched","group":"Schedule K (Partners' Distributive Share Items)","via_ocr":false,"explanation":"Ordinary business income (loss), restated from page 1 \u2014 the starting point for what each partner reports on their own return via Schedule K-1."},{"id":"k_5","label":"Interest income","value":2.0,"confidence":"matched","group":"Schedule K (Partners' Distributive Share Items)","via_ocr":false,"explanation":"Interest income earned by the partnership."},{"id":"k_14a","label":"Net earnings (loss) from self-employment","value":-4577.0,"confidence":"matched","group":"Schedule K (Partners' Distributive Share Items)","via_ocr":false,"explanation":"Net earnings (loss) from self-employment \u2014 what self-employment tax, if any, is based on for the partners."}]},
+  },
+  {
+    id: 'sample-1120s-profitable-scorp',
+    title: 'Profitable S-corp with shareholder distributions',
+    description: 'Form 1120-S, 2024 — a profitable S-corporation passing ordinary business income through to its shareholder, with a charitable contribution and a sizable cash distribution.',
+    data: {"form_type":"1120s","filing_status":null,"tax_year":2024,"scanned_pages":[],"ocr_pages":[],"lines":[{"id":"k_1","label":"Ordinary business income (loss)","value":150972.0,"confidence":"matched","group":"Schedule K (Shareholders' Pro Rata Share Items)","via_ocr":false,"explanation":"Ordinary business income (loss), restated from page 1 \u2014 the starting point for what each shareholder reports on their own return via Schedule K-1."},{"id":"k_12a","label":"Cash charitable contributions","value":835.0,"confidence":"matched","group":"Schedule K (Shareholders' Pro Rata Share Items)","via_ocr":false,"explanation":"Cash charitable contributions made by the corporation."},{"id":"k_16d","label":"Distributions","value":65225.0,"confidence":"matched","group":"Schedule K (Shareholders' Pro Rata Share Items)","via_ocr":false,"explanation":"Cash and property distributed to shareholders during the year."}]},
   },
 ];
 
@@ -540,7 +607,8 @@ function categoryTableHtml(cat, childLines, headlineLine, headlineAmount) {
 
 function renderCategories() {
   categoriesEl.innerHTML = '';
-  for (const cat of CATEGORIES) {
+  const categories = (FORM_CONFIGS[currentFormType] || FORM_CONFIGS['1040']).categories;
+  for (const cat of categories) {
     const headlineLine = currentLinesById[cat.headline];
     const childLines = cat.ids.map(id => currentLinesById[id]).filter(Boolean);
     const hasData = l => l && l.confidence !== 'not_found';
@@ -604,9 +672,10 @@ function renderScannedBanner(scannedPages, ocrPages) {
 
 function renderExtraForms(lines) {
   const el = document.getElementById('extra-forms');
+  const knownGroups = (FORM_CONFIGS[currentFormType] || FORM_CONFIGS['1040']).knownGroups;
   const byGroup = new Map();
   for (const line of lines) {
-    if (KNOWN_GROUPS.has(line.group)) continue;
+    if (knownGroups.has(line.group)) continue;
     if (!byGroup.has(line.group)) byGroup.set(line.group, []);
     byGroup.get(line.group).push(line);
   }
@@ -636,7 +705,7 @@ function renderExtraForms(lines) {
     ${sections}`;
 }
 
-function renderHero() {
+function renderHero1040() {
   const refund = val('34');
   const owed = val('37');
   const totalTax = val('24');
@@ -644,14 +713,53 @@ function renderHero() {
   const howCalculated = (totalTax !== null && totalPayments !== null)
     ? `<div class="caption" style="margin-top:2px">You paid in ${fmtMoney(totalPayments)} against a ${fmtMoney(totalTax)} tax bill.</div>`
     : '';
-  let html;
   if (refund) {
-    html = `<div class="amount refund">${fmtMoney(refund)}</div><div class="caption">Estimated refund</div>${howCalculated}`;
+    return `<div class="amount refund">${fmtMoney(refund)}</div><div class="caption">Estimated refund</div>${howCalculated}`;
   } else if (owed) {
-    html = `<div class="amount owed">${fmtMoney(owed)}</div><div class="caption">Estimated amount you owe</div>${howCalculated}`;
-  } else {
-    html = `<div class="amount na" style="color:var(--muted)">—</div><div class="caption">Refund/amount owed not found — check the Payments category</div>`;
+    return `<div class="amount owed">${fmtMoney(owed)}</div><div class="caption">Estimated amount you owe</div>${howCalculated}`;
   }
+  return `<div class="amount na" style="color:var(--muted)">—</div><div class="caption">Refund/amount owed not found — check the Payments category</div>`;
+}
+
+function renderHero990() {
+  const netAssetsEnd = val('21');
+  const revenue = val('9');
+  const expenses = val('17');
+  const detail = (revenue !== null && expenses !== null)
+    ? `<div class="caption" style="margin-top:2px">${fmtMoney(revenue)} in revenue against ${fmtMoney(expenses)} in expenses this year.</div>`
+    : '';
+  if (netAssetsEnd === null) {
+    return `<div class="amount na" style="color:var(--muted)">—</div><div class="caption">Net assets, end of year not found — check the Change in Net Assets category</div>`;
+  }
+  const cssClass = netAssetsEnd < 0 ? 'owed' : 'refund';
+  return `<div class="amount ${cssClass}">${fmtMoney(netAssetsEnd)}</div><div class="caption">Net assets, end of year</div>${detail}`;
+}
+
+function renderHeroPassThrough(ordinaryIncomeId, fallbackId, distributionIds) {
+  let ordinaryIncome = val(ordinaryIncomeId);
+  if (ordinaryIncome === null && fallbackId) ordinaryIncome = val(fallbackId);
+  const distributions = distributionIds.reduce((sum, id) => sum + (val(id) || 0), 0);
+  const detail = distributions
+    ? `<div class="caption" style="margin-top:2px">${fmtMoney(distributions)} distributed this year.</div>`
+    : '';
+  if (ordinaryIncome === null) {
+    return `<div class="amount na" style="color:var(--muted)">—</div><div class="caption">Ordinary business income not found — check the Income &amp; Deductions category</div>`;
+  }
+  const cssClass = ordinaryIncome < 0 ? 'owed' : 'refund';
+  return `<div class="amount ${cssClass}">${fmtSignedMoney(ordinaryIncome)}</div><div class="caption">Ordinary business income (loss)</div>${detail}`;
+}
+
+// Each return type shows a different "bottom line" up top — a refund/amount
+// owed for an individual, net assets for an exempt org, or ordinary
+// business income (the figure that flows out to each owner's K-1) for a
+// pass-through entity — since none of those concepts line up with each
+// other closely enough to share one hero renderer.
+function renderHero() {
+  let html;
+  if (currentFormType === '990') html = renderHero990();
+  else if (currentFormType === '1065') html = renderHeroPassThrough('p1_22', 'k_1', ['k_19a', 'k_19b']);
+  else if (currentFormType === '1120s') html = renderHeroPassThrough('p1_21', 'k_1', ['k_16d']);
+  else html = renderHero1040();
   heroEl.innerHTML = html;
 }
 
@@ -662,6 +770,15 @@ function renderHero() {
 function renderStory() {
   const el = document.getElementById('story');
   if (!el) return;
+  // The step-by-step walkthrough paragraph only exists for Form 1040 today
+  // (CATEGORY_NARRATIVES is written entirely in terms of its line ids) —
+  // business/exempt-org returns still get the categories accordion, hero,
+  // and (via the Analyze button) a full computation walkthrough, just not
+  // this particular prose summary yet.
+  if (currentFormType !== '1040') {
+    el.innerHTML = '';
+    return;
+  }
   const order = ['income', 'adjustments', 'agi', 'deductions', 'taxableincome', 'tax', 'credits', 'othertax', 'payments'];
   const sentences = order
     .map(key => CATEGORY_NARRATIVES[key] ? CATEGORY_NARRATIVES[key]() : '')
@@ -677,9 +794,15 @@ function renderStory() {
 }
 
 function renderSummary(data) {
+  currentFormType = data.form_type || '1040';
   currentFilingStatus = data.filing_status || null;
   currentTaxYear = data.tax_year || null;
-  filingStatusDisplay.textContent = currentFilingStatus ? (FILING_STATUS_NAMES[currentFilingStatus] || currentFilingStatus) : 'Unknown / not sure';
+  // Filing status is a personal-return concept only — business/exempt-org
+  // returns don't have one, so that row shows the form type instead.
+  filingStatusLabel.textContent = currentFormType === '1040' ? 'Filing status' : 'Return type';
+  filingStatusDisplay.textContent = currentFormType === '1040'
+    ? (currentFilingStatus ? (FILING_STATUS_NAMES[currentFilingStatus] || currentFilingStatus) : 'Unknown / not sure')
+    : (FORM_CONFIGS[currentFormType] || {}).displayName || currentFormType;
   taxYearDisplay.textContent = currentTaxYear || 'Unknown';
   currentLinesById = {};
   for (const line of data.lines) currentLinesById[line.id] = line;
@@ -714,6 +837,7 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
   const payload = {
     filing_status: currentFilingStatus,
     tax_year: currentTaxYear,
+    form_type: currentFormType,
     overrides,
   };
   const res = await fetch('/api/analyze', {
@@ -735,9 +859,58 @@ function computationRowsHtml(rows, { signed = false } = {}) {
   `).join('');
 }
 
+// Business/exempt-org form types (990, 1065, 1120-S) return a generic
+// {header, sections: [{title, rows}], reviewer_notes} shape from
+// build_computation_<type> instead of 1040's fixed income_to_agi/
+// agi_to_taxable/tax_computation/tax_to_outcome keys — there's no shared
+// "AGI"/"taxable income" concept across all four return types to hang a
+// single fixed template on, but an arbitrary list of titled row-tables
+// covers all of them. Detected by the presence of `comp.sections` rather
+// than a form-type check here, so this stays correct even if a future
+// form type reuses it.
+function renderComputationGeneric(comp) {
+  const el = document.getElementById('computation');
+  const h = comp.header;
+  let html = `
+    <div class="comp-section">
+      <div class="comp-header-facts"><strong>Return type:</strong> ${h.label || '—'}</div>
+      <div class="comp-header-facts"><strong>Tax year:</strong> ${h.tax_year || '—'}</div>
+      <div class="comp-header-facts"><strong>${h.result_label || 'Result'}:</strong> ${h.result_amount !== null && h.result_amount !== undefined ? fmtSignedMoney(h.result_amount) : '—'}</div>
+    </div>
+  `;
+  for (const section of comp.sections) {
+    html += `
+      <div class="comp-section">
+        <h3>${section.title}</h3>
+        <table class="comp-table">
+          <thead><tr><th>Line</th><th>Item</th><th class="num">Amount</th></tr></thead>
+          <tbody>${computationRowsHtml(section.rows, { signed: true })}</tbody>
+        </table>
+      </div>
+    `;
+  }
+  if (comp.reviewer_notes.length > 0) {
+    html += `
+      <div class="comp-section">
+        <h3>Reviewer notes</h3>
+        ${comp.reviewer_notes.map(n => `<div class="flag ${n.severity}">${n.message}</div>`).join('')}
+      </div>
+    `;
+  } else {
+    html += `
+      <div class="comp-section">
+        <h3>Reviewer notes</h3>
+        <p class="explain">Nothing stood out from the numbers provided.</p>
+      </div>
+    `;
+  }
+  el.innerHTML = html;
+}
+
 function renderComputation(comp) {
   const el = document.getElementById('computation');
   if (!comp) { el.innerHTML = ''; return; }
+  if (comp.sections) { renderComputationGeneric(comp); return; }
 
   const h = comp.header;
   const resultLine = h.result_type === 'refund'

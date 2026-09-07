@@ -361,17 +361,17 @@ def detect_filing_status(text: str) -> str | None:
 _FORM_1040_OMB_RE = re.compile(r"1545-0074")
 
 
-def detect_tax_year(text: str) -> int | None:
-    """Look for the tax year printed right next to Form 1040's own title
-    (e.g. "Form 1040 (2023)" or "U.S. Individual Income Tax Return | 2023"),
-    which sits immediately before Form 1040's own OMB control number
-    (1545-0074, distinct from every other form/schedule's own number).
-    Anchoring there, rather than just the first N characters of the whole
-    document, avoids two failure modes seen on real returns: missing the
-    year entirely on a return with blank cover pages ahead of the actual
-    form, and picking up an unrelated year from a tax-preparer's cover
-    letter (e.g. a payment due date) that can precede the form itself."""
-    omb_match = _FORM_1040_OMB_RE.search(text)
+def detect_tax_year_near_omb(text: str, omb_re: re.Pattern[str]) -> int | None:
+    """Look for the tax year printed right next to a form's own title (e.g.
+    "Form 1040 (2023)" or "U.S. Individual Income Tax Return | 2023"), which
+    sits immediately before that form's own OMB control number — distinct
+    from every other form/schedule's own number, so anchoring there (rather
+    than just the first N characters of the whole document) avoids two
+    failure modes seen on real returns: missing the year entirely on a
+    return with blank cover pages ahead of the actual form, and picking up
+    an unrelated year from a tax-preparer's cover letter (e.g. a payment
+    due date) that can precede the form itself."""
+    omb_match = omb_re.search(text)
     if omb_match:
         window = text[max(0, omb_match.start() - 200):omb_match.start()]
         matches = TAX_YEAR_RE.findall(window)
@@ -379,6 +379,43 @@ def detect_tax_year(text: str) -> int | None:
             return int(matches[-1])
     match = TAX_YEAR_RE.search(text[:600])
     return int(match.group(1)) if match else None
+
+
+def detect_tax_year(text: str) -> int | None:
+    return detect_tax_year_near_omb(text, _FORM_1040_OMB_RE)
+
+
+# Telltale phrases from each form's own title, checked in this order
+# against a handful of leading pages (cheap — no need to read the whole PDF
+# to tell what kind of return it is). Form 1040 is the fallback rather than
+# something matched here, since its title text ("U.S. Individual Income Tax
+# Return") is the one already handled by the rest of this module.
+_FORM_TYPE_SNIFFS: list[tuple[str, list[str]]] = [
+    ("990", ["return of organization exempt from income tax"]),
+    ("1120s", ["u.s. income tax return for an s corporation", "form 1120-s", "form 1120s"]),
+    ("1065", ["u.s. return of partnership income", "form 1065"]),
+]
+
+
+def detect_form_type(pdf_bytes: bytes, page_limit: int = 10) -> str:
+    """Sniffs which kind of return this PDF is, from a handful of leading
+    pages only, so the caller can dispatch to the right parser before
+    running a full (and more expensive) extraction pass. Defaults to
+    "1040" when nothing else matches, since that's the form this module
+    was built for first and the one most returns in practice will be.
+
+    10 pages (rather than just the first 1-2) because a real return is
+    often preceded by several cover pages of its own — an e-file signature
+    authorization, an extension application — each printing their own OMB
+    number and form title before the actual return's title ever appears; a
+    return seen with this exact pattern needed 6 pages of cover material
+    before its own Form 990-EZ title showed up."""
+    with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+        text = "\n".join((p.extract_text() or "") for p in pdf.pages[:page_limit]).lower()
+    for form_type, phrases in _FORM_TYPE_SNIFFS:
+        if any(phrase in text for phrase in phrases):
+            return form_type
+    return "1040"
 
 
 # Every official IRS form/schedule prints an "OMB No. 1545-nnnn" control
@@ -392,7 +429,9 @@ def detect_tax_year(text: str) -> int | None:
 # no next *known* schedule to stop at.
 _OMB_RE = re.compile(r"omb no\.?\s*1545", re.IGNORECASE)
 _SCHEDULE_TITLE_RE = re.compile(r"^schedule\s+([a-z0-9]+)\b", re.IGNORECASE)
-_BARE_FORM_NUMBER_RE = re.compile(r"^(\d{3,4}[a-z]{0,2})$", re.IGNORECASE)
+# A trailing suffix can be plain ("990T", "8889") or hyphenated ("990-EZ",
+# "1120-S") — both styles appear across real tax-software PDF exports.
+_BARE_FORM_NUMBER_RE = re.compile(r"^(\d{3,4}-?[a-z]{0,3})$", re.IGNORECASE)
 
 
 @dataclass
@@ -400,6 +439,26 @@ class FormSection:
     title: str
     start_page: int  # 0-indexed, inclusive
     end_page: int  # 0-indexed, exclusive
+
+
+# Schedule L (balance sheet), M-1, M-2, and M-3 never get their own
+# OMB-numbered section boundary on a 1065/1120-S — they share the main
+# form's own OMB number, same as Schedule B and K do — and unlike those,
+# they can start midway down the *same physical page* Schedule K's own
+# continuation is printed on, so a page-level boundary can't separate them
+# either. Used to truncate a schedule's own flattened line list right
+# before one of these starts, so its number-based line-matching fallback
+# can't wander into e.g. Schedule M-1's own "line 2" and mistake it for
+# Schedule K's "line 2" (a real bug: both share that bare number, and nothing
+# but position tells them apart).
+_NEXT_LETTERED_SCHEDULE_TITLE_RE = re.compile(r"^\s*schedule\s+(l\b|m-1\b|m-2\b|m-3\b)", re.IGNORECASE)
+
+
+def truncate_before_next_lettered_schedule(lines: list[str]) -> list[str]:
+    for i, line in enumerate(lines):
+        if _NEXT_LETTERED_SCHEDULE_TITLE_RE.match(line):
+            return lines[:i]
+    return lines
 
 
 def _section_title(page_lines: list[str]) -> str:
