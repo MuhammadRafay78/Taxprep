@@ -447,6 +447,8 @@ def build_computation(
             note = "includes foreign tax credit"
         elif line_id == "23" and any(v(t) for t in _OTHER_TAX_LINE_IDS):
             note = "see the breakdown below"
+        elif line_id == "33" and v("25d") is None and v("26") is None:
+            note = "withholding (line 25d) and estimated payments (line 26) weren't found separately in this PDF, so only the combined total could be shown"
         outcome_rows.append({"line": line_id, "item": ITEM_LABELS[line_id], "amount": amount, "note": note})
     if refund:
         outcome_rows.append({"line": "34", "item": "Overpayment (refund)", "amount": refund, "note": None})

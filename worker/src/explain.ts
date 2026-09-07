@@ -456,7 +456,11 @@ export function buildComputation(
   for (const lineId of OUTCOME_LINE_IDS) {
     const amount = v(lineId);
     if (amount === undefined) continue;
-    const note = lineId === "23" && hasOtherTax ? "see the breakdown below" : null;
+    const note = lineId === "23" && hasOtherTax
+      ? "see the breakdown below"
+      : lineId === "33" && v("25d") === undefined && v("26") === undefined
+      ? "withholding (line 25d) and estimated payments (line 26) weren't found separately in this PDF, so only the combined total could be shown"
+      : null;
     taxToOutcome.push({ line: lineId, item: ITEM_LABELS[lineId], amount, note });
   }
   if (refund) taxToOutcome.push({ line: "34", item: "Overpayment (refund)", amount: refund, note: null });
