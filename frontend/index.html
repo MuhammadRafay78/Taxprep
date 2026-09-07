@@ -242,7 +242,7 @@ const CATEGORIES = [
   // (like line 10, which never appears as its own row here), where a
   // per-row link would have nothing to attach to.
   { key: 'income', title: 'Income', headline: '9',
-    ids: ['1z', '2b', '3b', '4b', '5b', '6b', '7', '8', 's1_1', 's1_3', 's1_5', 's1_7', 's1_9', 's1_10'] },
+    ids: ['1z', '2b', '3b', '4b', '5b', '6b', '7', '8', 's1_1', 's1_3', 's1_5', 's1_6', 's1_7', 's1_9', 's1_10'] },
   { key: 'adjustments', title: 'Adjustments', headline: '10', scheduleTriggers: ['10'],
     ids: ['s1_11', 's1_13', 's1_15', 's1_20', 's1_21', 's1_25'] },
   { key: 'agi', title: 'AGI', headline: '11', ids: [] },
@@ -279,7 +279,7 @@ const CATEGORIES = [
 // own sub-breakdown rows use.
 const SCHEDULE_DETAILS = {
   '8': { title: 'Schedule 1, Part I — Additional Income', totalId: 's1_10',
-         rowIds: ['s1_1', 's1_3', 's1_5', 's1_7', 's1_9'] },
+         rowIds: ['s1_1', 's1_3', 's1_5', 's1_6', 's1_7', 's1_9'] },
   '10': { title: 'Schedule 1, Part II — Adjustments to Income', totalId: 's1_25',
           rowIds: ['s1_11', 's1_13', 's1_15', 's1_20', 's1_21'] },
   '17': { title: 'Schedule 2, Part I — Tax', totalId: 's2_3',
@@ -296,11 +296,19 @@ const SCHEDULE_DETAILS = {
   '7': { title: 'Schedule D — Capital Gains & Losses', totalId: 'sd_16',
          rowIds: ['sd_7', 'sd_15'] },
   's1_3': { title: 'Schedule C — Profit or Loss From Business', totalId: 'sc_31',
-            rowIds: ['sc_1', 'sc_4', 'sc_5', 'sc_7', 'sc_28'] },
+            rowIds: ['sc_1', 'sc_4', 'sc_5', 'sc_7', 'sc_13', 'sc_28'] },
   's1_5': { title: 'Schedule E — Rental, Royalty & Passthrough Income', totalId: 'se_41',
             rowIds: ['se_26', 'se_32'] },
   's2_4': { title: 'Schedule SE — Self-Employment Tax', totalId: 'sse_12',
             rowIds: ['sse_2', 'sse_3', 'sse_6', 'sse_10', 'sse_11'] },
+  's1_6': { title: 'Schedule F — Profit or Loss From Farming', totalId: 'sf_35',
+            rowIds: ['sf_9', 'sf_14'] },
+  // Doubly nested: reached from *within* the Schedule C detail page (its
+  // sc_13 row), not from a category card directly — Form 4562 supports
+  // whichever schedule (C, E, or F) actually claimed the depreciation,
+  // so it has no 1040/Schedule-1 line of its own to key off.
+  'sc_13': { title: 'Form 4562 — Depreciation and Amortization', totalId: 'f4562_22',
+             rowIds: ['f4562_12', 'f4562_14', 'f4562_17'] },
 };
 
 // Any line reported under a group outside this set came from a form we
@@ -1014,10 +1022,14 @@ function showUploadPanel() {
 }
 backBtn.addEventListener('click', showUploadPanel);
 
-// Which panel (categories, or the computation walkthrough) opened the
-// current schedule detail page, so its own back button returns there
-// instead of always landing back on the category view.
-let detailReturnPanel = null;
+// Some schedule details nest inside another (e.g. Schedule C's own
+// depreciation line drills further into Form 4562), so "back" needs to
+// unwind one step at a time rather than always landing on the category
+// view. Each entry is a function that restores exactly the view that was
+// visible right before that navigation — either flipping back to the
+// summary/results panel, or (for a nested detail-to-detail hop)
+// re-rendering the previous detail page's own saved HTML.
+let navStack = [];
 
 function renderScheduleDetail(triggerId) {
   const detail = SCHEDULE_DETAILS[triggerId];
@@ -1028,12 +1040,13 @@ function renderScheduleDetail(triggerId) {
   const totalAmount = totalLine && totalLine.value !== null ? totalLine.value
     : (triggerLine && triggerLine.value !== null ? triggerLine.value : null);
   const formName = (FORM_CONFIGS[currentFormType] || FORM_CONFIGS['1040']).displayName;
-  // Most trigger ids are a plain 1040 line number, but a few (s1_3, s1_5,
-  // s2_4) are themselves a line on Schedule 1/2 — describe the parent
-  // correctly instead of always saying "Form 1040, line s1_3".
-  const parentMatch = /^s(\d)_(.+)$/.exec(triggerId);
+  // Most trigger ids are a plain 1040 line number, but some (s1_3, s1_5,
+  // s2_4, sc_13, ...) are themselves a line on another schedule — describe
+  // the actual parent correctly instead of always saying "Form 1040, line
+  // s1_3", and note which schedule a doubly-nested one (like sc_13) is on.
+  const parentMatch = /^s([a-z0-9]{1,2})_(.+)$/.exec(triggerId);
   const parentDescription = parentMatch
-    ? `Schedule ${parentMatch[1]}, line ${parentMatch[2]}`
+    ? `Schedule ${parentMatch[1].toUpperCase()}, line ${parentMatch[2]}`
     : `${formName}, line ${triggerId}`;
 
   let html = `<h2>${detail.title}</h2>`;
@@ -1044,7 +1057,11 @@ function renderScheduleDetail(triggerId) {
   if (rows.length > 0) {
     html += `<table class="comp-table"><tbody>`;
     for (const line of rows) {
-      html += `<tr><td>${line.label}${line.explanation ? `<div class="comp-note">${line.explanation}</div>` : ''}</td><td class="num">${fmtMoney(line.value)}</td></tr>`;
+      // A row that's itself the lumped total of yet another schedule (e.g.
+      // Schedule C's sc_13 depreciation line, backed by Form 4562) gets its
+      // own further drill-down link, same as a category card row would.
+      const nestedLink = scheduleDetailAvailable(line.id) ? scheduleDetailLinkHtml(line.id) : '';
+      html += `<tr><td>${line.label}${line.explanation ? `<div class="comp-note">${line.explanation}</div>` : ''}${nestedLink}</td><td class="num">${fmtMoney(line.value)}</td></tr>`;
     }
     if (totalAmount !== null) {
       html += `<tr class="comp-total"><td>${totalLine ? totalLine.label : detail.title}</td><td class="num">${fmtMoney(totalAmount)}</td></tr>`;
@@ -1056,21 +1073,39 @@ function renderScheduleDetail(triggerId) {
       html += `<table class="comp-table"><tbody><tr class="comp-total"><td>${totalLine ? totalLine.label : detail.title}</td><td class="num">${fmtMoney(totalAmount)}</td></tr></tbody></table>`;
     }
   }
-  detailContent.innerHTML = html;
 
-  detailReturnPanel = !resultsPanel.classList.contains('hidden') ? resultsPanel : summaryPanel;
+  // Snapshot how to undo *this* navigation before changing anything, so an
+  // arbitrarily deep chain of drill-downs unwinds one screen at a time.
+  if (!detailPanel.classList.contains('hidden')) {
+    const previousHtml = detailContent.innerHTML;
+    navStack.push(() => { detailContent.innerHTML = previousHtml; window.scrollTo({ top: 0, behavior: 'instant' }); });
+  } else if (!resultsPanel.classList.contains('hidden')) {
+    navStack.push(() => {
+      detailPanel.classList.add('hidden');
+      resultsPanel.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    });
+  } else {
+    navStack.push(() => {
+      detailPanel.classList.add('hidden');
+      summaryPanel.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    });
+  }
+
+  detailContent.innerHTML = html;
   summaryPanel.classList.add('hidden');
   resultsPanel.classList.add('hidden');
   detailPanel.classList.remove('hidden');
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
-function showDetailReturnPanel() {
-  detailPanel.classList.add('hidden');
-  (detailReturnPanel || summaryPanel).classList.remove('hidden');
-  window.scrollTo({ top: 0, behavior: 'instant' });
+function goBackFromDetail() {
+  const restore = navStack.pop();
+  if (restore) restore();
+  else { detailPanel.classList.add('hidden'); summaryPanel.classList.remove('hidden'); }
 }
-detailBackBtn.addEventListener('click', showDetailReturnPanel);
+detailBackBtn.addEventListener('click', goBackFromDetail);
 
 // Delegated click handling for every "View full ... breakdown" link, since
 // they're generated as innerHTML strings inside category cards and the
