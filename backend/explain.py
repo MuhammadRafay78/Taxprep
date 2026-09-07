@@ -65,6 +65,8 @@ LINE_EXPLANATIONS: dict[str, str] = {
     "s1_1": "Taxable refunds of state or local income tax you got back — usually only taxable if you "
             "itemized deductions the year you paid that tax.",
     "s1_3": "Net profit or loss from a sole-proprietor business, reported on Schedule C.",
+    "s1_5": "Income (or loss) from rental real estate, royalties, partnerships, S corporations, trusts, "
+            "and estates, reported on Schedule E.",
     "s1_7": "Unemployment compensation you received during the year — fully taxable at the federal level.",
     "s1_9": "Other income not covered elsewhere — jury duty pay, gambling winnings, hobby income, etc.",
     "s1_10": "Total additional income from this schedule, which flows into Form 1040, line 8.",
@@ -100,6 +102,44 @@ LINE_EXPLANATIONS: dict[str, str] = {
     "s3_9": "Net premium tax credit, if you're owed more ACA marketplace subsidy than you already received "
             "in advance.",
     "s3_13": "Total other payments/refundable credits from this schedule, which flows into Form 1040, line 31.",
+    # Schedule B — Interest and Ordinary Dividends
+    "sb_4": "Total taxable interest across every payer listed on this schedule — flows to Form 1040, line 2b.",
+    "sb_6": "Total ordinary dividends across every payer listed on this schedule — flows to Form 1040, line 3b.",
+    # Schedule C — Profit or Loss From Business
+    "sc_1": "Gross receipts or sales from the business before any expenses are subtracted.",
+    "sc_4": "Cost of goods sold — the direct cost of whatever inventory or product was actually sold.",
+    "sc_5": "Gross profit: gross receipts minus cost of goods sold.",
+    "sc_7": "Gross income: gross profit plus any other business income.",
+    "sc_28": "Total business expenses (advertising, supplies, rent, and everything else on Part II) before "
+             "the home-office deduction.",
+    "sc_31": "Net profit or loss from the business — flows to Schedule 1, line 3, and to Schedule SE if "
+             "there's a profit.",
+    # Schedule D — Capital Gains and Losses
+    "sd_7": "Net short-term capital gain or loss — investments held one year or less, taxed at your regular "
+            "rate.",
+    "sd_15": "Net long-term capital gain or loss — investments held more than a year, eligible for the "
+             "lower 0%/15%/20% preferential rates.",
+    "sd_16": "Total capital gain or loss (short-term plus long-term combined) — flows to Form 1040, line 7.",
+    # Schedule E — Supplemental Income and Loss
+    "se_26": "Total income or loss from rental real estate and royalties, after expenses.",
+    "se_32": "Total income or loss passed through from partnerships and S corporations (from each K-1).",
+    "se_41": "Total income or loss from this schedule (rentals, royalties, partnerships, S corps, trusts, "
+             "estates combined) — flows to Schedule 1, line 5.",
+    # Schedule SE — Self-Employment Tax
+    "sse_2": "Net profit from Schedule C, carried over as the starting point for the self-employment tax "
+             "calculation.",
+    "sse_3": "Net self-employment earnings before the 92.35% adjustment.",
+    "sse_6": "Net earnings from self-employment (92.35% of net profit) — the base the Social Security and "
+             "Medicare portions below are actually calculated on, since self-employment tax isn't computed "
+             "on the full net profit.",
+    "sse_10": "The Social Security portion of self-employment tax (12.4%), capped at the Social Security "
+              "wage base for the year.",
+    "sse_11": "The Medicare portion of self-employment tax (2.9%, uncapped).",
+    "sse_12": "Total self-employment tax (Social Security portion plus Medicare portion) — flows to "
+              "Schedule 2, line 4.",
+    "sse_13": "Deduction for half of the self-employment tax above — flows to Schedule 1, line 15, since "
+              "self-employment tax otherwise covers both the employer and employee share with no employer "
+              "to split it with.",
 }
 
 

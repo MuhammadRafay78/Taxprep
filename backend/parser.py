@@ -229,6 +229,8 @@ LINE_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
 SCHEDULE1_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
     ("s1_1", "Taxable refunds of state/local taxes", ["taxable refunds, credits"], "1"),
     ("s1_3", "Business income or (loss) (Schedule C)", ["business income or (loss)"], "3"),
+    ("s1_5", "Rental, royalty, partnership, S corp, trust income (Schedule E)",
+     ["rental real estate, royalties, partnerships"], "5"),
     ("s1_7", "Unemployment compensation", ["unemployment compensation"], "7"),
     ("s1_9", "Total other income", ["add lines 1 through 8", "total other income"], "9"),
     ("s1_10", "Total additional income", ["combine lines 1 through 7 and 9", "add lines 1, 2c",
@@ -279,6 +281,54 @@ SCHEDULE_A_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
     ("sa_16", "Other itemized deductions", ["other—from list in instructions", "other itemized deductions"], "16"),
     ("sa_17", "Total itemized deductions",
      ["add the amounts in the far right column", "total itemized deductions"], "17"),
+]
+
+# Only the schedule's own totals are curated here, not its payer-by-payer
+# list (Schedule B's Part I/II are a repeating table of payer name + amount,
+# a genuinely different extraction shape than every other curated schedule's
+# fixed line numbers — capturing that would need table extraction, not the
+# phrase/line-number matching this parser is built around). These totals
+# are already what flows to 1040 lines 2b/3b, so curating them is mainly
+# about moving Schedule B out of the generic/"uncertain" bucket into a
+# properly labeled, explained one, not adding new numbers.
+SCHEDULE_B_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
+    ("sb_4", "Total taxable interest", ["subtract line 3 from line 2"], "4"),
+    ("sb_6", "Total ordinary dividends", ["add the amounts on line 5"], "6"),
+]
+
+SCHEDULE_C_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
+    ("sc_1", "Gross receipts or sales", ["gross receipts or sales"], "1"),
+    ("sc_4", "Cost of goods sold", ["cost of goods sold"], "4"),
+    ("sc_5", "Gross profit", ["gross profit. subtract line 4"], "5"),
+    ("sc_7", "Gross income", ["gross income. add lines 5 and 6"], "7"),
+    ("sc_28", "Total expenses", ["total expenses before expenses for business use of home"], "28"),
+    ("sc_31", "Net profit or (loss)", ["net profit or (loss). subtract line 30"], "31"),
+]
+
+SCHEDULE_D_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
+    ("sd_7", "Net short-term capital gain or (loss)", ["net short-term capital gain or (loss)"], "7"),
+    ("sd_15", "Net long-term capital gain or (loss)", ["net long-term capital gain or (loss)"], "15"),
+    ("sd_16", "Total capital gain or (loss)", ["combine lines 7 and 15"], "16"),
+]
+
+SCHEDULE_E_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
+    ("se_26", "Total rental real estate and royalty income or (loss)",
+     ["total rental real estate and royalty income or (loss)"], "26"),
+    ("se_32", "Total partnership and S corporation income or (loss)",
+     ["total partnership and s corporation income or (loss)"], "32"),
+    ("se_41", "Total income or (loss)", ["total income or (loss). combine lines 26"], "41"),
+]
+
+SCHEDULE_SE_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
+    ("sse_2", "Net profit from Schedule C", ["net profit or (loss) from schedule c"], "2"),
+    ("sse_3", "Combine lines 1a, 1b, and 2", ["combine lines 1a, 1b, and 2"], "3"),
+    ("sse_6", "Net earnings from self-employment", ["combine lines 4c and 5b"], "6"),
+    ("sse_10", "Social Security portion of SE tax",
+     ["multiply the smaller of line 6 or line 9"], "10"),
+    ("sse_11", "Medicare portion of SE tax", ["multiply line 6 by 2.9%"], "11"),
+    ("sse_12", "Self-employment tax", ["self-employment tax. add lines 10 and 11"], "12"),
+    ("sse_13", "Deduction for one-half of self-employment tax",
+     ["deduction for one-half of self-employment tax"], "13"),
 ]
 
 FILING_STATUS_PATTERNS = [
@@ -679,6 +729,11 @@ _CURATED_SCHEDULES: dict[str, tuple[list[tuple[str, str, list[str], str]], str]]
     "schedule 1": (SCHEDULE1_DEFINITIONS, "Schedule 1 (Additional Income & Adjustments)"),
     "schedule 2": (SCHEDULE2_DEFINITIONS, "Schedule 2 (Additional Taxes)"),
     "schedule 3": (SCHEDULE3_DEFINITIONS, "Schedule 3 (Additional Credits & Payments)"),
+    "schedule b": (SCHEDULE_B_DEFINITIONS, "Schedule B (Interest & Ordinary Dividends)"),
+    "schedule c": (SCHEDULE_C_DEFINITIONS, "Schedule C (Profit or Loss From Business)"),
+    "schedule d": (SCHEDULE_D_DEFINITIONS, "Schedule D (Capital Gains & Losses)"),
+    "schedule e": (SCHEDULE_E_DEFINITIONS, "Schedule E (Rental, Royalty & Passthrough Income)"),
+    "schedule se": (SCHEDULE_SE_DEFINITIONS, "Schedule SE (Self-Employment Tax)"),
 }
 
 

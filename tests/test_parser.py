@@ -254,20 +254,20 @@ def test_ocr_misread_leading_digit_still_recognizes_blank_echo():
     assert value is None
 
 
-UNCURATED_SCHEDULE_D_PAGE = [
-    "SCHEDULE D  Capital Gains and Losses  OMB No. 1545-0074",
+UNCURATED_SCHEDULE_F_PAGE = [
+    "SCHEDULE F  Profit or Loss From Farming  OMB No. 1545-0074",
     "(Form 1040)  2023",
-    "7  Net short-term capital gain or (loss) . . . . . . . . . . . . . . . . . . . . . . . . . . . 7 500.",
-    "16 Combine lines 7 and 15 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16 500.",
+    "9  Gross income . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9 500.",
+    "34 Net farm profit or (loss) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 34 500.",
 ]
 
 
-def test_uncurated_schedule_d_is_surfaced_as_uncertain():
-    # We have no hand-written line definitions for Schedule D, but it
+def test_uncurated_schedule_f_is_surfaced_as_uncertain():
+    # We have no hand-written line definitions for Schedule F, but it
     # should still show up (per the user's request that every attached
     # form be visible), marked as lower-confidence "uncertain" rather than
     # silently omitted or claimed with full confidence. MAIN_PAGE uses
-    # (label, amount) tuples while the Schedule D page uses raw dotted-
+    # (label, amount) tuples while the Schedule F page uses raw dotted-
     # leader rows, so this builds the PDF directly rather than reusing
     # make_pdf/make_raw_pdf.
     buf = io.BytesIO()
@@ -281,7 +281,7 @@ def test_uncurated_schedule_d_is_surfaced_as_uncertain():
         y -= 20
     c.showPage()
     y = 750
-    for row in UNCURATED_SCHEDULE_D_PAGE:
+    for row in UNCURATED_SCHEDULE_F_PAGE:
         c.setFont("Helvetica", 9)
         c.drawString(50, y, row)
         y -= 20
@@ -290,11 +290,108 @@ def test_uncurated_schedule_d_is_surfaced_as_uncertain():
     pdf_bytes = buf.getvalue()
 
     result = parse_1040(pdf_bytes)
-    schedule_d_lines = [ln for ln in result.lines if ln.group.startswith("Schedule D")]
-    assert schedule_d_lines, "Schedule D should be detected even without curated definitions"
-    assert all(ln.confidence == "uncertain" for ln in schedule_d_lines)
-    values = {ln.id: ln.value for ln in schedule_d_lines}
+    schedule_f_lines = [ln for ln in result.lines if ln.group.startswith("Schedule F")]
+    assert schedule_f_lines, "Schedule F should be detected even without curated definitions"
+    assert all(ln.confidence == "uncertain" for ln in schedule_f_lines)
+    values = {ln.id: ln.value for ln in schedule_f_lines}
     assert 500 in values.values()
+
+
+SCHEDULE_B_PAGE = [
+    ("SCHEDULE B  Interest and Ordinary Dividends  OMB No. 1545-0074", ""),
+    ("(Form 1040)  2023", ""),
+    ("4  Subtract line 3 from line 2. Enter the result here and on Form 1040, line 2b", "500"),
+    ("6  Add the amounts on line 5. Enter the total here and on Form 1040, line 3b", "300"),
+]
+
+SCHEDULE_C_PAGE = [
+    ("SCHEDULE C  Profit or Loss From Business  OMB No. 1545-0074", ""),
+    ("(Form 1040)  2023", ""),
+    ("1  Gross receipts or sales", "50,000"),
+    ("4  Cost of goods sold", "10,000"),
+    ("5  Gross profit. Subtract line 4 from line 3", "40,000"),
+    ("7  Gross income. Add lines 5 and 6", "40,000"),
+    ("28 Total expenses before expenses for business use of home. Add lines 8 through 27a", "20,000"),
+    ("31 Net profit or (loss). Subtract line 30 from line 29", "20,000"),
+]
+
+SCHEDULE_D_PAGE = [
+    ("SCHEDULE D  Capital Gains and Losses  OMB No. 1545-0074", ""),
+    ("(Form 1040)  2023", ""),
+    ("7  Net short-term capital gain or (loss)", "500"),
+    ("15 Net long-term capital gain or (loss)", "1,000"),
+    ("16 Combine lines 7 and 15", "1,500"),
+]
+
+SCHEDULE_E_PAGE = [
+    ("SCHEDULE E  Supplemental Income and Loss  OMB No. 1545-0074", ""),
+    ("(Form 1040)  2023", ""),
+    ("26 Total rental real estate and royalty income or (loss)", "3,000"),
+    ("32 Total partnership and S corporation income or (loss)", "2,000"),
+    ("41 Total income or (loss). Combine lines 26, 32, 37, 39, and 40", "5,000"),
+]
+
+SCHEDULE_SE_PAGE = [
+    ("SCHEDULE SE  Self-Employment Tax  OMB No. 1545-0074", ""),
+    ("(Form 1040)  2023", ""),
+    ("2  Net profit or (loss) from Schedule C", "20,000"),
+    ("3  Combine lines 1a, 1b, and 2", "20,000"),
+    ("6  Combine lines 4c and 5b", "18,470"),
+    ("10 Multiply the smaller of line 6 or line 9 by 12.4%", "2,290"),
+    ("11 Multiply line 6 by 2.9%", "536"),
+    ("12 Self-employment tax. Add lines 10 and 11", "2,826"),
+    ("13 Deduction for one-half of self-employment tax", "1,413"),
+]
+
+
+def test_schedules_b_c_d_e_se_are_curated_and_scoped():
+    pdf_bytes = make_pdf([
+        MAIN_PAGE, SCHEDULE_B_PAGE, SCHEDULE_C_PAGE, SCHEDULE_D_PAGE, SCHEDULE_E_PAGE, SCHEDULE_SE_PAGE,
+    ])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+
+    assert by_id["sb_4"].value == 500
+    assert by_id["sb_6"].value == 300
+    assert by_id["sb_4"].confidence == "matched"
+    assert by_id["sb_4"].group == "Schedule B (Interest & Ordinary Dividends)"
+
+    assert by_id["sc_1"].value == 50000
+    assert by_id["sc_4"].value == 10000
+    assert by_id["sc_5"].value == 40000
+    assert by_id["sc_28"].value == 20000
+    assert by_id["sc_31"].value == 20000
+    assert by_id["sc_31"].group == "Schedule C (Profit or Loss From Business)"
+
+    assert by_id["sd_7"].value == 500
+    assert by_id["sd_15"].value == 1000
+    assert by_id["sd_16"].value == 1500
+    assert by_id["sd_16"].group == "Schedule D (Capital Gains & Losses)"
+
+    assert by_id["se_26"].value == 3000
+    assert by_id["se_32"].value == 2000
+    assert by_id["se_41"].value == 5000
+    assert by_id["se_41"].group == "Schedule E (Rental, Royalty & Passthrough Income)"
+
+    assert by_id["sse_2"].value == 20000
+    assert by_id["sse_6"].value == 18470
+    assert by_id["sse_10"].value == 2290
+    assert by_id["sse_11"].value == 536
+    assert by_id["sse_12"].value == 2826
+    assert by_id["sse_13"].value == 1413
+    assert by_id["sse_12"].group == "Schedule SE (Self-Employment Tax)"
+
+    # Main form still resolves correctly alongside five extra schedules.
+    assert by_id["1z"].value == 65000
+
+
+def test_schedule_e_income_flows_into_schedule_1_line_5():
+    pdf_bytes = make_pdf([MAIN_PAGE, SCHEDULE1_PAGE])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+    # No line 5 on this SCHEDULE1_PAGE fixture -> not_found, not silently
+    # absent, confirming s1_5 is now a real tracked line.
+    assert by_id["s1_5"].confidence == "not_found"
 
 
 DOTTED_SCHEDULE2_VALUE_ON_NEXT_ROW_PAGE = [
