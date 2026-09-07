@@ -110,45 +110,62 @@ def build_computation_1065(values: dict[str, float], filing_status: str | None =
         "result_amount": ordinary_income,
     }
 
+    def row(line_id: str, display_line: str, item: str, amount: float) -> dict:
+        # Every row carries its full plain-language explanation as a note,
+        # not just the short item label — this is what actually shows up
+        # under each line in the calculation walkthrough.
+        return {"line": display_line, "item": item, "amount": amount, "note": LINE_EXPLANATIONS_1065.get(line_id)}
+
     income_rows = []
     for line_id in _MAIN_LINE_IDS:
         amount = v(line_id)
         if not amount:
             continue
-        income_rows.append({"line": line_id.replace("p1_", ""), "item": LINE_EXPLANATIONS_1065[line_id].split(".")[0], "amount": amount})
+        display = line_id.replace("p1_", "")
+        income_rows.append(row(line_id, display, LINE_EXPLANATIONS_1065[line_id].split(".")[0], amount))
     total_income = v("p1_8")
     if total_income is not None:
-        income_rows.append({"line": "8", "item": "Total income", "amount": total_income})
+        income_rows.append(row("p1_8", "8", "Total income", total_income))
     total_deductions = v("p1_21")
     if total_deductions:
-        income_rows.append({"line": "21", "item": "Total deductions", "amount": -total_deductions})
+        income_rows.append(row("p1_21", "21", "Total deductions", -total_deductions))
     if ordinary_income is not None:
-        income_rows.append({"line": "22", "item": "Ordinary business income (loss)", "amount": ordinary_income})
+        income_rows.append(row("p1_22", "22", "Ordinary business income (loss)", ordinary_income))
 
     k_rows = []
     for line_id in _K_LINE_IDS:
         amount = v(line_id)
         if not amount:
             continue
-        k_rows.append({"line": line_id.replace("k_", ""), "item": LINE_EXPLANATIONS_1065[line_id].split(".")[0], "amount": amount})
+        display = line_id.replace("k_", "")
+        k_rows.append(row(line_id, display, LINE_EXPLANATIONS_1065[line_id].split(".")[0], amount))
     self_employment = v("k_14a")
     if self_employment:
-        k_rows.append({"line": "14a", "item": "Net earnings (loss) from self-employment", "amount": self_employment})
+        k_rows.append(row("k_14a", "14a", "Net earnings (loss) from self-employment", self_employment))
 
     distribution_rows = []
     for line_id in ("k_19a", "k_19b"):
         amount = v(line_id)
         if not amount:
             continue
-        distribution_rows.append({"line": line_id.replace("k_", ""), "item": LINE_EXPLANATIONS_1065[line_id].split(".")[0], "amount": amount})
+        display = line_id.replace("k_", "")
+        distribution_rows.append(row(line_id, display, LINE_EXPLANATIONS_1065[line_id].split(".")[0], amount))
 
     sections = []
     if income_rows:
-        sections.append({"title": "Income and deductions (page 1)", "rows": income_rows})
+        sections.append({"title": "Income and deductions (page 1)", "rows": income_rows,
+                          "description": "The partnership's own income and expenses, before anything is "
+                                          "passed through to individual partners."})
     if k_rows:
-        sections.append({"title": "Schedule K — other partnership items", "rows": k_rows})
+        sections.append({"title": "Schedule K — other partnership items", "rows": k_rows,
+                          "description": "Additional items reported separately on Schedule K because each "
+                                          "partner needs to know their own share, rather than just a "
+                                          "single combined total."})
     if distribution_rows:
-        sections.append({"title": "Distributions to partners", "rows": distribution_rows})
+        sections.append({"title": "Distributions to partners", "rows": distribution_rows,
+                          "description": "Cash and property actually paid out to partners during the year "
+                                          "— separate from (and not necessarily equal to) their share of "
+                                          "ordinary business income."})
 
     reviewer_notes = [{"severity": f.severity, "message": f.message} for f in build_flags_1065(values, filing_status, tax_year)]
 

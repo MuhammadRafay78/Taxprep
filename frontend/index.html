@@ -882,6 +882,7 @@ function renderComputationGeneric(comp) {
     html += `
       <div class="comp-section">
         <h3>${section.title}</h3>
+        ${section.description ? `<p class="explain" style="margin-top:-4px">${section.description}</p>` : ''}
         <table class="comp-table">
           <thead><tr><th>Line</th><th>Item</th><th class="num">Amount</th></tr></thead>
           <tbody>${computationRowsHtml(section.rows, { signed: true })}</tbody>

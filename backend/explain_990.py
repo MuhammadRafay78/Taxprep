@@ -119,46 +119,58 @@ def build_computation_990(values: dict[str, float], filing_status: str | None = 
         "result_amount": net_assets_end,
     }
 
+    def row(line_id: str, item: str, amount: float) -> dict:
+        # Every row carries its full plain-language explanation as a note,
+        # not just the short item label — this is what actually shows up
+        # under each line in the calculation walkthrough, so someone
+        # reading it doesn't have to already know what "line 8" means.
+        return {"line": line_id, "item": item, "amount": amount, "note": LINE_EXPLANATIONS_990.get(line_id)}
+
     revenue_rows = []
     for line_id in _REVENUE_LINE_IDS:
         amount = v(line_id)
         if not amount:
             continue
-        revenue_rows.append({"line": line_id, "item": LINE_EXPLANATIONS_990[line_id].split(".")[0], "amount": amount})
+        revenue_rows.append(row(line_id, LINE_EXPLANATIONS_990[line_id].split(".")[0], amount))
     total_revenue = v("9")
     if total_revenue is not None:
-        revenue_rows.append({"line": "9", "item": "Total revenue", "amount": total_revenue})
+        revenue_rows.append(row("9", "Total revenue", total_revenue))
 
     expense_rows = []
     for line_id in _EXPENSE_LINE_IDS:
         amount = v(line_id)
         if not amount:
             continue
-        expense_rows.append({"line": line_id, "item": LINE_EXPLANATIONS_990[line_id].split(".")[0], "amount": -amount})
+        expense_rows.append(row(line_id, LINE_EXPLANATIONS_990[line_id].split(".")[0], -amount))
     total_expenses = v("17")
     if total_expenses:
-        expense_rows.append({"line": "17", "item": "Total expenses", "amount": -total_expenses})
+        expense_rows.append(row("17", "Total expenses", -total_expenses))
 
     outcome_rows = []
     excess = v("18")
     if excess is not None:
-        outcome_rows.append({"line": "18", "item": "Excess or (deficit) for the year", "amount": excess})
+        outcome_rows.append(row("18", "Excess or (deficit) for the year", excess))
     net_assets_begin = v("19")
     if net_assets_begin is not None:
-        outcome_rows.append({"line": "19", "item": "Net assets, start of year", "amount": net_assets_begin})
+        outcome_rows.append(row("19", "Net assets, start of year", net_assets_begin))
     other_changes = v("20")
     if other_changes:
-        outcome_rows.append({"line": "20", "item": "Other changes in net assets", "amount": other_changes})
+        outcome_rows.append(row("20", "Other changes in net assets", other_changes))
     if net_assets_end is not None:
-        outcome_rows.append({"line": "21", "item": "Net assets, end of year", "amount": net_assets_end})
+        outcome_rows.append(row("21", "Net assets, end of year", net_assets_end))
 
     sections = []
     if revenue_rows:
-        sections.append({"title": "Revenue", "rows": revenue_rows})
+        sections.append({"title": "Revenue", "rows": revenue_rows,
+                          "description": "Everything the organization took in this year, from contributions "
+                                          "and grants through to any investment income."})
     if expense_rows:
-        sections.append({"title": "Expenses", "rows": expense_rows})
+        sections.append({"title": "Expenses", "rows": expense_rows,
+                          "description": "Everything the organization spent this year, added together."})
     if outcome_rows:
-        sections.append({"title": "Change in net assets", "rows": outcome_rows})
+        sections.append({"title": "Change in net assets", "rows": outcome_rows,
+                          "description": "How this year's revenue and expenses, plus what the organization "
+                                          "already held, add up to what it's carrying forward."})
 
     reviewer_notes = [{"severity": f.severity, "message": f.message} for f in build_flags_990(values, filing_status, tax_year)]
 
