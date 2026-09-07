@@ -1056,7 +1056,17 @@ function renderComputation(comp) {
 
   const tc = comp.tax_computation;
   if (tc) {
-    html += `<div class="comp-section"><h3>How the tax figure is built</h3>`;
+    html += `
+      <div class="comp-section">
+        <h3>How the tax figure is built</h3>
+        <p class="explain" style="margin-top:0">
+          This reconstructs line 16 from your taxable income using the published federal tax rates —
+          it's a check on what's already filed, not a re-preparation of it. The IRS actually computes
+          this using either the Tax Tables (which round income into $50 bands, for taxable income
+          under $100,000) or a worksheet applying these same rates directly above that, so a small gap
+          from rounding is normal and doesn't mean anything is wrong.
+        </p>
+    `;
     if (tc.method === 'qdcgt') {
       html += `
         <p class="explain" style="margin-top:0">Ordinary income (${fmtMoney(tc.ordinary_income)}) is taxed through the regular
@@ -1071,6 +1081,9 @@ function renderComputation(comp) {
             <tr class="comp-total"><td colspan="3">Tax on ordinary income</td><td class="num">${fmtMoney(tc.ordinary_tax)}</td></tr>
           </tbody>
         </table>
+        <p class="explain">The 0%/15%/20% rate isn't a flat rate on all your dividends/gains — it depends on
+        where this income falls once stacked on top of your ordinary income, relative to the thresholds for
+        your filing status and tax year. That's why it can split across more than one rate below.</p>
         <table class="comp-table" style="margin-top:12px">
           <thead><tr><th>Portion</th><th>Rate basis</th><th class="num">Amount</th><th class="num">Tax</th></tr></thead>
           <tbody>
@@ -1098,6 +1111,15 @@ function renderComputation(comp) {
     html += tc.ties_out
       ? `<div class="comp-tie ok">Ties out: reconstructed ${fmtMoney(tc.reconstructed_tax)} vs. line 16 reported ${reportedText}.</div>`
       : `<div class="comp-tie off">Doesn't tie out: reconstructed ${fmtMoney(tc.reconstructed_tax)} vs. line 16 reported ${reportedText} — worth a second look.</div>`;
+    html += `
+      <p class="explain" style="margin-top:8px">
+        "Ties out" allows some slack (the larger of $75 or 8% of the reconstructed tax) rather than requiring
+        an exact match, since this reconstruction doesn't model every real-world wrinkle — capital losses
+        capped at $3,000, the 28% collectibles rate, unrecaptured Section 1250 gain, or exact worksheet
+        rounding. A close match confirms the reported tax is in the right ballpark for this income; it
+        isn't a substitute for the actual worksheet.
+      </p>
+    `;
     html += `</div>`;
   }
 
