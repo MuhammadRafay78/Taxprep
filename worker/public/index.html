@@ -120,6 +120,7 @@
   </section>
 
   <section class="panel hidden" id="summary-panel">
+    <button type="button" class="secondary" id="back-btn">&larr; Back to sample returns</button>
     <div id="scanned-banner"></div>
     <div class="meta-row">
       <div><span class="meta-label" id="filing-status-label">Filing status</span><div id="filing-status-display" class="meta-value">—</div></div>
@@ -172,6 +173,8 @@ const fileInput = document.getElementById('file-input');
 const status = document.getElementById('status');
 const summaryPanel = document.getElementById('summary-panel');
 const resultsPanel = document.getElementById('results-panel');
+const uploadPanel = document.getElementById('upload-panel');
+const backBtn = document.getElementById('back-btn');
 const filingStatusDisplay = document.getElementById('filing-status-display');
 const filingStatusLabel = document.getElementById('filing-status-label');
 const taxYearDisplay = document.getElementById('tax-year-display');
@@ -810,9 +813,26 @@ function renderSummary(data) {
   renderCategories();
   renderExtraForms(data.lines);
 
+  // Swap views rather than appending below the sample-return list: without
+  // this, clicking a sample just rendered the summary far down the page
+  // (still below the full 14-button list), which read as "nothing
+  // happened" until you scrolled. Hiding the picker and scrolling to the
+  // top makes the summary read as its own screen, with the back button
+  // below as the way to return to it.
+  uploadPanel.classList.add('hidden');
   summaryPanel.classList.remove('hidden');
   resultsPanel.classList.add('hidden');
+  window.scrollTo({ top: 0, behavior: 'instant' });
 }
+
+function showUploadPanel() {
+  summaryPanel.classList.add('hidden');
+  resultsPanel.classList.add('hidden');
+  uploadPanel.classList.remove('hidden');
+  status.textContent = '';
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+backBtn.addEventListener('click', showUploadPanel);
 
 // No manual correction step anymore — the numbers shown are exactly what
 // was auto-detected (from the PDF, or a sample), and this just turns
