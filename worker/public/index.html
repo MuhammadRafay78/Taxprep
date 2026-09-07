@@ -1012,6 +1012,32 @@ function renderComputation(comp) {
     </div>
   `;
 
+  // Line 8 ("Additional income") and line 10 ("Adjustments to income") are
+  // each themselves sums of very different things — broken out here the
+  // same way "other taxes" already is, instead of one opaque number.
+  if (comp.schedule1_income_rows && comp.schedule1_income_rows.length > 0) {
+    html += `
+      <div class="comp-section">
+        <h3>Additional income (Schedule 1), broken down</h3>
+        <table class="comp-table">
+          <thead><tr><th>Line</th><th>Item</th><th class="num">Amount</th></tr></thead>
+          <tbody>${computationRowsHtml(comp.schedule1_income_rows)}</tbody>
+        </table>
+      </div>
+    `;
+  }
+  if (comp.schedule1_adjustment_rows && comp.schedule1_adjustment_rows.length > 0) {
+    html += `
+      <div class="comp-section">
+        <h3>Adjustments to income (Schedule 1), broken down</h3>
+        <table class="comp-table">
+          <thead><tr><th>Line</th><th>Item</th><th class="num">Amount</th></tr></thead>
+          <tbody>${computationRowsHtml(comp.schedule1_adjustment_rows)}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
   const at = comp.agi_to_taxable;
   html += `
     <div class="comp-section">

@@ -316,6 +316,8 @@ export interface Computation {
   } | null;
   taxToOutcome: ComputationRow[];
   otherTaxRows: { line: string; item: string; amount: number }[];
+  schedule1IncomeRows: { line: string; item: string; amount: number }[];
+  schedule1AdjustmentRows: { line: string; item: string; amount: number }[];
   reviewerNotes: Flag[];
 }
 
@@ -329,6 +331,25 @@ const OTHER_TAX_LABELS: Record<string, string> = {
   s2_12: "Net Investment Income Tax",
   s2_1: "Alternative Minimum Tax (AMT)",
   s2_2: "Excess advance premium tax credit repayment",
+};
+
+// Same idea for Schedule 1: line 8 ("Additional income") and line 10
+// ("Adjustments to income") are each themselves sums of very different
+// things, broken out here instead of shown as one opaque number.
+const SCHEDULE1_INCOME_LINE_IDS = ["s1_1", "s1_3", "s1_7", "s1_9"];
+const SCHEDULE1_INCOME_LABELS: Record<string, string> = {
+  s1_1: "Taxable refunds of state/local taxes",
+  s1_3: "Business income or (loss) (Schedule C)",
+  s1_7: "Unemployment compensation",
+  s1_9: "Other income",
+};
+const SCHEDULE1_ADJUSTMENT_LINE_IDS = ["s1_11", "s1_13", "s1_15", "s1_20", "s1_21"];
+const SCHEDULE1_ADJUSTMENT_LABELS: Record<string, string> = {
+  s1_11: "Educator expenses",
+  s1_13: "HSA deduction",
+  s1_15: "Deductible part of self-employment tax",
+  s1_20: "IRA deduction",
+  s1_21: "Student loan interest deduction",
 };
 
 /** The bracket-by-bracket breakdown of tax on `amount` under a progressive
@@ -381,18 +402,29 @@ export function buildComputation(
     resultAmount: refund ? refund : owed ? owed : null,
   };
 
+  const schedule1IncomeRows = SCHEDULE1_INCOME_LINE_IDS
+    .filter((id) => v(id))
+    .map((id) => ({ line: id.replace("s1_", ""), item: SCHEDULE1_INCOME_LABELS[id], amount: v(id)! }));
+  const schedule1AdjustmentRows = SCHEDULE1_ADJUSTMENT_LINE_IDS
+    .filter((id) => v(id))
+    .map((id) => ({ line: id.replace("s1_", ""), item: SCHEDULE1_ADJUSTMENT_LABELS[id], amount: v(id)! }));
+
   const incomeToAgi: ComputationRow[] = [];
   for (const lineId of INCOME_LINE_IDS) {
     const amount = v(lineId);
     if (!amount) continue;
     let note: string | null = null;
     if (lineId === "3b" && v("3a")) note = `of which $${v("3a")!.toLocaleString()} is qualified`;
+    else if (lineId === "8" && schedule1IncomeRows.length > 0) note = "see the breakdown below";
     incomeToAgi.push({ line: lineId, item: ITEM_LABELS[lineId], amount, note });
   }
   const totalIncome = v("9");
   if (totalIncome !== undefined) incomeToAgi.push({ line: "9", item: "Total income", amount: totalIncome, note: null });
   const adjustments = v("10");
-  if (adjustments) incomeToAgi.push({ line: "10", item: "Adjustments to income", amount: -adjustments, note: null });
+  if (adjustments) {
+    const adjNote = schedule1AdjustmentRows.length > 0 ? "see the breakdown below" : null;
+    incomeToAgi.push({ line: "10", item: "Adjustments to income", amount: -adjustments, note: adjNote });
+  }
   const agi = v("11");
   if (agi !== undefined) incomeToAgi.push({ line: "11", item: "Adjusted gross income (AGI)", amount: agi, note: null });
 
@@ -476,7 +508,10 @@ export function buildComputation(
 
   const reviewerNotes = buildFlags(values, filingStatus, taxYear);
 
-  return { header, incomeToAgi, agiToTaxable, taxComputation, taxToOutcome, otherTaxRows, reviewerNotes };
+  return {
+    header, incomeToAgi, agiToTaxable, taxComputation, taxToOutcome, otherTaxRows,
+    schedule1IncomeRows, schedule1AdjustmentRows, reviewerNotes,
+  };
 }
 
 export interface FlowStep {

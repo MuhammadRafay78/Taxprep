@@ -296,6 +296,25 @@ _OTHER_TAX_LABELS = {
     "s2_2": "Excess advance premium tax credit repayment",
 }
 
+# Same idea for Schedule 1: line 8 ("Additional income") and line 10
+# ("Adjustments to income") are each themselves sums of very different
+# things, broken out here instead of shown as one opaque number.
+_SCHEDULE1_INCOME_LINE_IDS = ["s1_1", "s1_3", "s1_7", "s1_9"]
+_SCHEDULE1_INCOME_LABELS = {
+    "s1_1": "Taxable refunds of state/local taxes",
+    "s1_3": "Business income or (loss) (Schedule C)",
+    "s1_7": "Unemployment compensation",
+    "s1_9": "Other income",
+}
+_SCHEDULE1_ADJUSTMENT_LINE_IDS = ["s1_11", "s1_13", "s1_15", "s1_20", "s1_21"]
+_SCHEDULE1_ADJUSTMENT_LABELS = {
+    "s1_11": "Educator expenses",
+    "s1_13": "HSA deduction",
+    "s1_15": "Deductible part of self-employment tax",
+    "s1_20": "IRA deduction",
+    "s1_21": "Student loan interest deduction",
+}
+
 
 def _bracket_rows(amount: float, brackets: list[tuple[float | None, float]]) -> list[dict]:
     """The bracket-by-bracket breakdown of tax on `amount` under a
@@ -347,6 +366,14 @@ def build_computation(
     }
 
     # Income -> AGI
+    schedule1_income_rows = [
+        {"line": line_id.replace("s1_", ""), "item": _SCHEDULE1_INCOME_LABELS[line_id], "amount": v(line_id)}
+        for line_id in _SCHEDULE1_INCOME_LINE_IDS if v(line_id)
+    ]
+    schedule1_adjustment_rows = [
+        {"line": line_id.replace("s1_", ""), "item": _SCHEDULE1_ADJUSTMENT_LABELS[line_id], "amount": v(line_id)}
+        for line_id in _SCHEDULE1_ADJUSTMENT_LINE_IDS if v(line_id)
+    ]
     income_rows = []
     for line_id in _INCOME_LINE_IDS:
         amount = v(line_id)
@@ -355,13 +382,16 @@ def build_computation(
         note = None
         if line_id == "3b" and v("3a"):
             note = f"of which ${v('3a'):,.0f} is qualified"
+        elif line_id == "8" and schedule1_income_rows:
+            note = "see the breakdown below"
         income_rows.append({"line": line_id, "item": ITEM_LABELS[line_id], "amount": amount, "note": note})
     total_income = v("9")
     if total_income is not None:
         income_rows.append({"line": "9", "item": "Total income", "amount": total_income, "note": None})
     adjustments = v("10")
     if adjustments:
-        income_rows.append({"line": "10", "item": "Adjustments to income", "amount": -adjustments, "note": None})
+        adj_note = "see the breakdown below" if schedule1_adjustment_rows else None
+        income_rows.append({"line": "10", "item": "Adjustments to income", "amount": -adjustments, "note": adj_note})
     agi = v("11")
     if agi is not None:
         income_rows.append({"line": "11", "item": "Adjusted gross income (AGI)", "amount": agi, "note": None})
@@ -475,6 +505,8 @@ def build_computation(
         "tax_computation": tax_computation,
         "tax_to_outcome": outcome_rows,
         "other_tax_rows": other_tax_rows,
+        "schedule1_income_rows": schedule1_income_rows,
+        "schedule1_adjustment_rows": schedule1_adjustment_rows,
         "reviewer_notes": reviewer_notes,
     }
 
