@@ -100,6 +100,9 @@
   .comp-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .comp-table tr.comp-total td { font-weight: 700; border-top: 2px solid var(--border); }
   .comp-note { color: var(--muted); font-size: 0.8rem; }
+  .link-btn { display: block; background: none; border: none; padding: 4px 0 0; margin: 0; color: var(--accent);
+    font-size: 0.85rem; font-weight: 600; cursor: pointer; text-align: left; font-family: inherit; }
+  .link-btn:hover { text-decoration: underline; }
   .comp-tie { padding: 8px 10px; border-radius: 6px; font-size: 0.85rem; margin-top: 8px; }
   .comp-tie.ok { background: var(--accent-dim); color: var(--accent); }
   .comp-tie.off { background: var(--warn-dim); color: var(--warn); }
@@ -164,6 +167,11 @@
     <div id="flow"></div>
   </section>
 
+  <section class="panel hidden" id="detail-panel">
+    <button type="button" class="secondary" id="detail-back-btn">&larr; Back</button>
+    <div id="detail-content"></div>
+  </section>
+
   <footer class="note">
     This tool gives general, educational explanations of Form 1040 line items — it is not tax advice and
     does not file anything. Numbers are only as accurate as the PDF parsing and your review of them.
@@ -178,6 +186,9 @@ const summaryPanel = document.getElementById('summary-panel');
 const resultsPanel = document.getElementById('results-panel');
 const uploadPanel = document.getElementById('upload-panel');
 const backBtn = document.getElementById('back-btn');
+const detailPanel = document.getElementById('detail-panel');
+const detailContent = document.getElementById('detail-content');
+const detailBackBtn = document.getElementById('detail-back-btn');
 const filingStatusDisplay = document.getElementById('filing-status-display');
 const filingStatusLabel = document.getElementById('filing-status-label');
 const taxYearDisplay = document.getElementById('tax-year-display');
@@ -214,30 +225,53 @@ const CATEGORIES = [
   // income. Shown as its own row it looked like both got summed into the
   // total below; it's folded into 3b's row as a note instead (see
   // categoryTableHtml).
-  { key: 'income', title: 'Income', headline: '9',
+  { key: 'income', title: 'Income', headline: '9', scheduleTriggers: ['8'],
     ids: ['1z', '2b', '3b', '4b', '5b', '6b', '7', '8', 's1_1', 's1_3', 's1_7', 's1_9', 's1_10'] },
-  { key: 'adjustments', title: 'Adjustments', headline: '10',
+  { key: 'adjustments', title: 'Adjustments', headline: '10', scheduleTriggers: ['10'],
     ids: ['s1_11', 's1_13', 's1_15', 's1_20', 's1_21', 's1_25'] },
   { key: 'agi', title: 'AGI', headline: '11', ids: [] },
   // Line 14 ("total deductions") isn't always printed as its own distinct
   // line on the form, so it's often not_found even when 12/13 individually
   // are — fall back to summing the parts rather than showing "—".
-  { key: 'deductions', title: 'Deductions', headline: '14',
+  { key: 'deductions', title: 'Deductions', headline: '14', scheduleTriggers: ['12'],
     ids: ['12', '13', 'sa_1', 'sa_4', 'sa_5e', 'sa_7', 'sa_8e', 'sa_10', 'sa_14', 'sa_15', 'sa_16', 'sa_17'],
     fallbackIds: ['12', '13'] },
   { key: 'taxableincome', title: 'Taxable Income', headline: '15', ids: [] },
-  { key: 'tax', title: 'Tax', headline: '18', ids: ['16', '17'] },
-  { key: 'credits', title: 'Credits', headline: '21',
+  { key: 'tax', title: 'Tax', headline: '18', scheduleTriggers: ['17'], ids: ['16', '17'] },
+  { key: 'credits', title: 'Credits', headline: '21', scheduleTriggers: ['20'],
     ids: ['19', '20', 's3_1', 's3_2', 's3_3', 's3_4', 's3_8'] },
-  { key: 'othertax', title: 'Other Taxes & Total Tax', headline: '24',
+  { key: 'othertax', title: 'Other Taxes & Total Tax', headline: '24', scheduleTriggers: ['23'],
     ids: ['22', '23', 's2_1', 's2_2', 's2_3', 's2_4', 's2_11', 's2_12', 's2_21'] },
-  { key: 'payments', title: 'Payments', headline: '33',
+  { key: 'payments', title: 'Payments', headline: '33', scheduleTriggers: ['31'],
     // 34/35a/37 (refund/amount owed) are the outcome derived from this
     // total, not a component that feeds into it — shown in the hero and
     // Computation walkthrough instead, so they don't show up here as if
     // they were part of the sum.
     ids: ['25d', '26', '27', '28', 's3_9', '31', '32'] },
 ];
+
+// Every schedule-backed summary line (the ones that lump a whole schedule's
+// worth of credits/taxes/deductions into a single 1040 number) can drill
+// down into its own page showing exactly which lines on that schedule fed
+// it, with the full explanation for each — not just the compact "of which"
+// note shown inline. Keyed by the 1040 line id that triggers it.
+const SCHEDULE_DETAILS = {
+  '8': { title: 'Schedule 1, Part I — Additional Income', totalId: 's1_10',
+         rowIds: ['s1_1', 's1_3', 's1_7', 's1_9'] },
+  '10': { title: 'Schedule 1, Part II — Adjustments to Income', totalId: 's1_25',
+          rowIds: ['s1_11', 's1_13', 's1_15', 's1_20', 's1_21'] },
+  '17': { title: 'Schedule 2, Part I — Tax', totalId: 's2_3',
+          rowIds: ['s2_1', 's2_2'] },
+  '23': { title: 'Schedule 2, Part II — Other Taxes', totalId: 's2_21',
+          rowIds: ['s2_4', 's2_11', 's2_12'] },
+  '20': { title: 'Schedule 3, Part I — Nonrefundable Credits', totalId: 's3_8',
+          rowIds: ['s3_1', 's3_2', 's3_3', 's3_4'] },
+  '31': { title: 'Schedule 3, Part II — Other Payments & Refundable Credits', totalId: 's3_13',
+          rowIds: ['s3_9'] },
+  '12': { title: 'Schedule A — Itemized Deductions', totalId: 'sa_17',
+          rowIds: ['sa_1', 'sa_4', 'sa_5e', 'sa_7', 'sa_8e', 'sa_10', 'sa_14', 'sa_15', 'sa_16'],
+          onlyIfItemized: true },
+};
 
 // Any line reported under a group outside this set came from a form we
 // don't have curated definitions for (Schedule D, Form 2441, etc., detected
@@ -638,6 +672,24 @@ const CATEGORY_NARRATIVES = {
   },
 };
 
+// Whether SCHEDULE_DETAILS[triggerId] has anything to actually show — the
+// schedule's own lines were found, or at least the total that flows from
+// it was. Also gates the Schedule A entry on itemizing actually being used
+// (no point drilling into an itemized breakdown nobody claimed).
+function scheduleDetailAvailable(triggerId) {
+  const detail = SCHEDULE_DETAILS[triggerId];
+  if (!detail) return false;
+  if (detail.onlyIfItemized && !(currentLinesById['sa_17'] && currentLinesById['sa_17'].value !== null)) return false;
+  const hasRows = detail.rowIds.some(id => currentLinesById[id] && currentLinesById[id].value !== null);
+  const hasTotal = currentLinesById[detail.totalId] && currentLinesById[detail.totalId].value !== null;
+  return hasRows || hasTotal;
+}
+
+function scheduleDetailLinkHtml(triggerId) {
+  if (!scheduleDetailAvailable(triggerId)) return '';
+  return `<button type="button" class="link-btn" data-schedule-trigger="${triggerId}">View full ${SCHEDULE_DETAILS[triggerId].title.split('—')[0].trim()} breakdown &rarr;</button>`;
+}
+
 // A short item/amount table for a category's card — the found lines that
 // feed its headline, plus the headline itself as a bolded total row.
 function categoryTableHtml(cat, childLines, headlineLine, headlineAmount) {
@@ -658,6 +710,7 @@ function categoryTableHtml(cat, childLines, headlineLine, headlineAmount) {
   } else if (headlineAmount !== null) {
     html += `<table class="comp-table"><tbody><tr class="comp-total"><td>${headlineLine ? headlineLine.label : cat.title}</td><td class="num">${fmtMoney(headlineAmount)}</td></tr></tbody></table>`;
   }
+  for (const triggerId of cat.scheduleTriggers || []) html += scheduleDetailLinkHtml(triggerId);
   return html;
 }
 
@@ -900,6 +953,65 @@ function showUploadPanel() {
 }
 backBtn.addEventListener('click', showUploadPanel);
 
+// Which panel (categories, or the computation walkthrough) opened the
+// current schedule detail page, so its own back button returns there
+// instead of always landing back on the category view.
+let detailReturnPanel = null;
+
+function renderScheduleDetail(triggerId) {
+  const detail = SCHEDULE_DETAILS[triggerId];
+  if (!detail) return;
+  const triggerLine = currentLinesById[triggerId];
+  const rows = detail.rowIds.map(id => currentLinesById[id]).filter(l => l && l.value !== null);
+  const totalLine = currentLinesById[detail.totalId];
+  const totalAmount = totalLine && totalLine.value !== null ? totalLine.value
+    : (triggerLine && triggerLine.value !== null ? triggerLine.value : null);
+  const formName = (FORM_CONFIGS[currentFormType] || FORM_CONFIGS['1040']).displayName;
+
+  let html = `<h2>${detail.title}</h2>`;
+  html += `<p class="explain">Feeds into ${formName}, line ${triggerId}`
+    + (triggerLine ? ` (${triggerLine.label})` : '')
+    + (triggerLine && triggerLine.value !== null ? `: ${fmtMoney(triggerLine.value)}` : '') + '.</p>';
+
+  if (rows.length > 0) {
+    html += `<table class="comp-table"><tbody>`;
+    for (const line of rows) {
+      html += `<tr><td>${line.label}${line.explanation ? `<div class="comp-note">${line.explanation}</div>` : ''}</td><td class="num">${fmtMoney(line.value)}</td></tr>`;
+    }
+    if (totalAmount !== null) {
+      html += `<tr class="comp-total"><td>${totalLine ? totalLine.label : detail.title}</td><td class="num">${fmtMoney(totalAmount)}</td></tr>`;
+    }
+    html += `</tbody></table>`;
+  } else {
+    html += `<p class="explain">This schedule's individual lines weren't found in the PDF — only the total that flows into line ${triggerId} was detected.</p>`;
+    if (totalAmount !== null) {
+      html += `<table class="comp-table"><tbody><tr class="comp-total"><td>${totalLine ? totalLine.label : detail.title}</td><td class="num">${fmtMoney(totalAmount)}</td></tr></tbody></table>`;
+    }
+  }
+  detailContent.innerHTML = html;
+
+  detailReturnPanel = !resultsPanel.classList.contains('hidden') ? resultsPanel : summaryPanel;
+  summaryPanel.classList.add('hidden');
+  resultsPanel.classList.add('hidden');
+  detailPanel.classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function showDetailReturnPanel() {
+  detailPanel.classList.add('hidden');
+  (detailReturnPanel || summaryPanel).classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+detailBackBtn.addEventListener('click', showDetailReturnPanel);
+
+// Delegated click handling for every "View full ... breakdown" link, since
+// they're generated as innerHTML strings inside category cards and the
+// computation walkthrough rather than bound individually.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-schedule-trigger]');
+  if (btn) renderScheduleDetail(btn.dataset.scheduleTrigger);
+});
+
 // No manual correction step anymore — the numbers shown are exactly what
 // was auto-detected (from the PDF, or a sample), and this just turns
 // currentLinesById back into the {id, value} shape /api/analyze expects.
@@ -937,11 +1049,11 @@ document.getElementById('analyze-btn').addEventListener('click', async () => {
   }
 });
 
-function computationRowsHtml(rows, { signed = false } = {}) {
+function computationRowsHtml(rows, { signed = false, scheduleLinks = false } = {}) {
   return rows.map(r => `
     <tr>
       <td>${r.line}</td>
-      <td>${r.item}${r.note ? `<div class="comp-note">${r.note}</div>` : ''}</td>
+      <td>${r.item}${r.note ? `<div class="comp-note">${r.note}</div>` : ''}${scheduleLinks ? scheduleDetailLinkHtml(r.line) : ''}</td>
       <td class="num">${signed ? fmtSignedMoney(r.amount) : fmtMoney(r.amount)}</td>
     </tr>
   `).join('');
@@ -1017,7 +1129,7 @@ function renderComputation(comp) {
       <h3>Income &rarr; AGI</h3>
       <table class="comp-table">
         <thead><tr><th>Line</th><th>Item</th><th class="num">Amount</th></tr></thead>
-        <tbody>${computationRowsHtml(comp.income_to_agi, { signed: true })}</tbody>
+        <tbody>${computationRowsHtml(comp.income_to_agi, { signed: true, scheduleLinks: true })}</tbody>
       </table>
     </div>
   `;
@@ -1138,7 +1250,7 @@ function renderComputation(comp) {
       <h3>Tax &rarr; Total tax &rarr; Refund/Balance due</h3>
       <table class="comp-table">
         <thead><tr><th>Line</th><th>Item</th><th class="num">Amount</th></tr></thead>
-        <tbody>${computationRowsHtml(comp.tax_to_outcome)}</tbody>
+        <tbody>${computationRowsHtml(comp.tax_to_outcome, { scheduleLinks: true })}</tbody>
       </table>
     </div>
   `;
