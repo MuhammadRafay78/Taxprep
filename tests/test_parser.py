@@ -446,6 +446,49 @@ def test_schedule_c_depreciation_line_is_curated():
     assert by_id["sc_13"].confidence == "not_found"
 
 
+SCHEDULE_H_PAGE = [
+    ("SCHEDULE H  Household Employment Taxes  OMB No. 1545-0074", ""),
+    ("(Form 1040)  2023", ""),
+    ("9  Total social security, Medicare, and federal income taxes. Add lines 3, 5, 7, and 8", "3,500"),
+    ("26 Total household employment taxes", "3,800"),
+]
+
+FORM_8863_PAGE = [
+    ("8863  Education Credits  OMB No. 1545-0074", ""),
+    ("Department of the Treasury  2023", ""),
+    ("8  Refundable American Opportunity Credit", "1,000"),
+    ("19 Nonrefundable education credits", "1,500"),
+]
+
+
+def test_schedule_h_and_form_8863_are_curated_and_scoped():
+    pdf_bytes = make_pdf([MAIN_PAGE, SCHEDULE2_PAGE, SCHEDULE_H_PAGE, FORM_8863_PAGE])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+
+    assert by_id["sh_9"].value == 3500
+    assert by_id["sh_26"].value == 3800
+    assert by_id["sh_26"].confidence == "matched"
+    assert by_id["sh_26"].group == "Schedule H (Household Employment Taxes)"
+
+    assert by_id["f8863_8"].value == 1000
+    assert by_id["f8863_19"].value == 1500
+    assert by_id["f8863_19"].group == "Form 8863 (Education Credits)"
+
+    # s2_9 (household employment taxes) isn't on SCHEDULE2_PAGE's fixture ->
+    # not_found rather than silently absent, confirming it's a real tracked
+    # line (the row Schedule H's own drill-down hangs off of).
+    assert by_id["s2_9"].confidence == "not_found"
+
+
+def test_line_29_american_opportunity_credit_is_tracked():
+    pdf_bytes = make_pdf([MAIN_PAGE])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+    # Not on MAIN_PAGE's fixture -> not_found rather than silently missing.
+    assert by_id["29"].confidence == "not_found"
+
+
 DOTTED_SCHEDULE2_VALUE_ON_NEXT_ROW_PAGE = [
     "SCHEDULE 2  Additional Taxes  OMB No. 1545-0074",
     "(Form 1040)  2023",
