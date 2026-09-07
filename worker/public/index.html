@@ -25,9 +25,14 @@
   .explain { color: var(--muted); font-size: 0.85rem; }
   #sample-scenarios { margin-top: 16px; }
   #sample-scenarios .scenario-heading { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
-  .scenario-btn { display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 10px 14px; }
+  .scenario-row { display: flex; align-items: stretch; gap: 8px; margin-bottom: 8px; }
+  .scenario-btn { display: block; width: 100%; text-align: left; margin-bottom: 0; padding: 10px 14px; }
   .scenario-btn .scenario-title { font-weight: 600; display: block; }
   .scenario-btn .scenario-desc { font-weight: 400; font-size: 0.82rem; opacity: 0.85; display: block; margin-top: 2px; }
+  .scenario-check { flex: 0 0 36px; border: 1px solid var(--border); border-radius: 6px; background: #fff;
+    cursor: pointer; font-size: 1rem; color: var(--accent); line-height: 1; }
+  .scenario-row.is-complete .scenario-check { background: var(--accent-dim); border-color: var(--accent); }
+  .scenario-row.is-complete .scenario-btn { opacity: 0.6; }
   select, input[type=number].meta { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); font: inherit; }
   .meta-row { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
   .meta-row label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); }
@@ -452,34 +457,59 @@ const SAMPLE_SCENARIOS = [
   },
   {
     id: 'sample-990ez-small-nonprofit',
-    title: 'Small nonprofit, all-volunteer operations',
+    title: 'Miraculous Education Foundation',
     description: 'Form 990-EZ, 2024 — a small exempt organization funded entirely by contributions, modest operating expenses, and a healthy surplus added to net assets.',
     data: {"form_type":"990","filing_status":null,"tax_year":2024,"scanned_pages":[],"ocr_pages":[],"lines":[{"id":"1","label":"Contributions, gifts, and grants received","value":26957.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Contributions, gifts, and grants the organization received during the year."},{"id":"9","label":"Total revenue","value":26957.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Total revenue: everything above, added together."},{"id":"16","label":"Other expenses","value":2621.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Other expenses not captured by the lines above."},{"id":"17","label":"Total expenses","value":2621.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Total expenses: everything spent during the year, added together."},{"id":"18","label":"Excess or (deficit) for the year","value":24336.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Excess or deficit for the year: total revenue minus total expenses."},{"id":"19","label":"Net assets or fund balances at beginning of year","value":0.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Net assets or fund balances the organization had at the start of the year."},{"id":"21","label":"Net assets or fund balances at end of year","value":24336.0,"confidence":"matched","group":"Form 990","via_ocr":false,"explanation":"Net assets or fund balances at the end of the year \u2014 what the organization is carrying forward."}]},
   },
   {
     id: 'sample-1065-small-llc-loss',
-    title: 'Small LLC\'s first-year operating loss',
+    title: 'PIC2PRINT LLC',
     description: 'Form 1065, 2024 — a small partnership/LLC with a modest ordinary business loss and a bit of interest income, restated on Schedule K for each partner\'s own K-1.',
     data: {"form_type":"1065","filing_status":null,"tax_year":2024,"scanned_pages":[],"ocr_pages":[],"lines":[{"id":"k_1","label":"Ordinary business income (loss)","value":-4577.0,"confidence":"matched","group":"Schedule K (Partners' Distributive Share Items)","via_ocr":false,"explanation":"Ordinary business income (loss), restated from page 1 \u2014 the starting point for what each partner reports on their own return via Schedule K-1."},{"id":"k_5","label":"Interest income","value":2.0,"confidence":"matched","group":"Schedule K (Partners' Distributive Share Items)","via_ocr":false,"explanation":"Interest income earned by the partnership."},{"id":"k_14a","label":"Net earnings (loss) from self-employment","value":-4577.0,"confidence":"matched","group":"Schedule K (Partners' Distributive Share Items)","via_ocr":false,"explanation":"Net earnings (loss) from self-employment \u2014 what self-employment tax, if any, is based on for the partners."}]},
   },
   {
     id: 'sample-1120s-profitable-scorp',
-    title: 'Profitable S-corp with shareholder distributions',
+    title: 'CJ CPAs PLLC',
     description: 'Form 1120-S, 2024 — a profitable S-corporation passing ordinary business income through to its shareholder, with a charitable contribution and a sizable cash distribution.',
     data: {"form_type":"1120s","filing_status":null,"tax_year":2024,"scanned_pages":[],"ocr_pages":[],"lines":[{"id":"k_1","label":"Ordinary business income (loss)","value":150972.0,"confidence":"matched","group":"Schedule K (Shareholders' Pro Rata Share Items)","via_ocr":false,"explanation":"Ordinary business income (loss), restated from page 1 \u2014 the starting point for what each shareholder reports on their own return via Schedule K-1."},{"id":"k_12a","label":"Cash charitable contributions","value":835.0,"confidence":"matched","group":"Schedule K (Shareholders' Pro Rata Share Items)","via_ocr":false,"explanation":"Cash charitable contributions made by the corporation."},{"id":"k_16d","label":"Distributions","value":65225.0,"confidence":"matched","group":"Schedule K (Shareholders' Pro Rata Share Items)","via_ocr":false,"explanation":"Cash and property distributed to shareholders during the year."}]},
   },
 ];
 
+// Which sample returns have been marked reviewed — kept only in this
+// browser's own storage (per-viewer, never shared or sent anywhere), so
+// someone working through the list can track progress across visits
+// without it touching anything server-side.
+const COMPLETED_SCENARIOS_KEY = 'taxprep-completed-scenarios';
+function getCompletedScenarios() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(COMPLETED_SCENARIOS_KEY) || '[]'));
+  } catch (e) {
+    return new Set();
+  }
+}
+function setScenarioComplete(id, done) {
+  const done_set = getCompletedScenarios();
+  if (done) done_set.add(id); else done_set.delete(id);
+  try {
+    localStorage.setItem(COMPLETED_SCENARIOS_KEY, JSON.stringify([...done_set]));
+  } catch (e) { /* private browsing / storage disabled — completion just won't persist */ }
+}
+
 function renderSampleScenarios() {
   const el = document.getElementById('sample-scenarios');
   const heading = dropzone ? 'Or try a sample return:' : 'Try a sample return:';
+  const completed = getCompletedScenarios();
   el.innerHTML = `
     <p class="scenario-heading">${heading}</p>
     ${SAMPLE_SCENARIOS.map(s => `
-      <button type="button" class="secondary scenario-btn" data-scenario-id="${s.id}">
-        <span class="scenario-title">${s.title}</span>
-        <span class="scenario-desc">${s.description}</span>
-      </button>
+      <div class="scenario-row ${completed.has(s.id) ? 'is-complete' : ''}">
+        <button type="button" class="scenario-check" data-scenario-check="${s.id}"
+          aria-pressed="${completed.has(s.id)}" title="${completed.has(s.id) ? 'Mark not reviewed' : 'Mark reviewed'}">${completed.has(s.id) ? '✓' : ''}</button>
+        <button type="button" class="secondary scenario-btn" data-scenario-id="${s.id}">
+          <span class="scenario-title">${s.title}</span>
+          <span class="scenario-desc">${s.description}</span>
+        </button>
+      </div>
     `).join('')}
   `;
   el.querySelectorAll('.scenario-btn').forEach(btn => {
@@ -490,6 +520,13 @@ function renderSampleScenarios() {
         renderSummary(scenario.data);
         updateDownloadButton();
       }
+    });
+  });
+  el.querySelectorAll('.scenario-check').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.scenarioCheck;
+      setScenarioComplete(id, !getCompletedScenarios().has(id));
+      renderSampleScenarios();
     });
   });
 }
