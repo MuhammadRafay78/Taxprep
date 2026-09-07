@@ -284,6 +284,42 @@ _INCOME_LINE_IDS = ["1z", "2b", "3b", "4b", "5b", "6b", "7", "8"]
 _OUTCOME_LINE_IDS = ["16", "17", "18", "19", "20", "21", "22", "23", "24",
                      "25d", "26", "27", "28", "31", "32", "33"]
 
+# Short display labels for Schedule 2's "other taxes" (line 23) components —
+# shown as their own breakdown in the walkthrough instead of a single lumped
+# number, the same way credits/income already break down into their parts.
+_OTHER_TAX_LINE_IDS = ["s2_4", "s2_11", "s2_12", "s2_1", "s2_2"]
+_OTHER_TAX_LABELS = {
+    "s2_4": "Self-employment tax",
+    "s2_11": "Additional Medicare Tax",
+    "s2_12": "Net Investment Income Tax",
+    "s2_1": "Alternative Minimum Tax (AMT)",
+    "s2_2": "Excess advance premium tax credit repayment",
+}
+
+
+def _bracket_rows(amount: float, brackets: list[tuple[float | None, float]]) -> list[dict]:
+    """The bracket-by-bracket breakdown of tax on `amount` under a
+    progressive schedule — one row per bracket actually reached, each with
+    the dollar range, rate, amount taxed at that rate, and the tax it
+    produced. Shared by both the plain-brackets and QDCGT computation
+    methods below, since ordinary income is taxed the same progressive way
+    in either case — QDCGT just taxes a preferential slice on top of it
+    separately instead of running the whole taxable income through this."""
+    rows = []
+    lower = 0.0
+    for ceiling, rate in brackets:
+        upper = ceiling if ceiling is not None else float("inf")
+        if amount <= lower:
+            break
+        taxed = min(amount, upper) - lower
+        if taxed > 0:
+            rows.append({
+                "range": f"${lower:,.0f}–${upper:,.0f}" if ceiling is not None else f"${lower:,.0f}+",
+                "rate": rate, "amount": taxed, "tax": round(taxed * rate, 2),
+            })
+        lower = upper
+    return rows
+
 
 def build_computation(
     values: dict[str, float],
@@ -360,7 +396,8 @@ def build_computation(
             preferential = max(0.0, qualified_dividends or 0) + max(0.0, capital_gains or 0)
             preferential = min(preferential, taxable_income)
             ordinary = taxable_income - preferential
-            ordinary_tax = tax_data.compute_bracket_tax(ordinary, brackets)
+            ordinary_bracket_rows = _bracket_rows(ordinary, brackets)
+            ordinary_tax = round(sum(r["tax"] for r in ordinary_bracket_rows), 2)
             cg_rows = []
             lower = ordinary
             for ceiling, rate in cg_brackets:
@@ -377,6 +414,11 @@ def build_computation(
                 "method": "qdcgt",
                 "ordinary_income": ordinary,
                 "ordinary_tax": ordinary_tax,
+                # The bracket-by-bracket math behind ordinary_tax — without
+                # this, the QDCGT path collapsed everything taxed at
+                # regular rates into one opaque number, unlike the plain
+                # "brackets" method below which always showed its work.
+                "ordinary_bracket_rows": ordinary_bracket_rows,
                 "preferential_income": preferential,
                 "preferential_rows": cg_rows,
                 "reconstructed_tax": reconstructed,
@@ -384,19 +426,7 @@ def build_computation(
                 "ties_out": reported_tax is not None and abs(reported_tax - reconstructed) <= max(75, reconstructed * 0.08),
             }
         elif brackets:
-            bracket_rows = []
-            lower = 0.0
-            for ceiling, rate in brackets:
-                upper = ceiling if ceiling is not None else float("inf")
-                if taxable_income <= lower:
-                    break
-                taxed = min(taxable_income, upper) - lower
-                if taxed > 0:
-                    bracket_rows.append({
-                        "range": f"${lower:,.0f}–${upper:,.0f}" if ceiling is not None else f"${lower:,.0f}+",
-                        "rate": rate, "amount": taxed, "tax": round(taxed * rate, 2),
-                    })
-                lower = upper
+            bracket_rows = _bracket_rows(taxable_income, brackets)
             reconstructed = round(sum(r["tax"] for r in bracket_rows), 2)
             tax_computation = {
                 "method": "brackets",
@@ -415,11 +445,24 @@ def build_computation(
         note = None
         if line_id == "20" and v("s3_1"):
             note = "includes foreign tax credit"
+        elif line_id == "23" and any(v(t) for t in _OTHER_TAX_LINE_IDS):
+            note = "see the breakdown below"
         outcome_rows.append({"line": line_id, "item": ITEM_LABELS[line_id], "amount": amount, "note": note})
     if refund:
         outcome_rows.append({"line": "34", "item": "Overpayment (refund)", "amount": refund, "note": None})
     elif owed:
         outcome_rows.append({"line": "37", "item": "Amount you owe", "amount": owed, "note": None})
+
+    # Line 23 ("other taxes") is itself a sum of very different things — SE
+    # tax, AMT, NIIT, Additional Medicare Tax — that a single lumped number
+    # doesn't distinguish. Broken out here the same way credits/income
+    # already are, so someone with self-employment tax and someone with AMT
+    # aren't shown the identical "$4,200 in other taxes" with no way to
+    # tell which is which.
+    other_tax_rows = [
+        {"line": line_id.replace("s2_", ""), "item": _OTHER_TAX_LABELS[line_id], "amount": v(line_id)}
+        for line_id in _OTHER_TAX_LINE_IDS if v(line_id)
+    ]
 
     reviewer_notes = [{"severity": f.severity, "message": f.message} for f in build_flags(values, filing_status, tax_year)]
 
@@ -429,6 +472,7 @@ def build_computation(
         "agi_to_taxable": agi_to_taxable,
         "tax_computation": tax_computation,
         "tax_to_outcome": outcome_rows,
+        "other_tax_rows": other_tax_rows,
         "reviewer_notes": reviewer_notes,
     }
 
