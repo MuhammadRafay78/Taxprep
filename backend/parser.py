@@ -217,6 +217,8 @@ LINE_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
     ("26", "Estimated tax payments", ["estimated tax payments"], "26"),
     ("27", "Earned income credit (EIC)", ["earned income credit"], "27"),
     ("28", "Additional child tax credit", ["additional child tax credit"], "28"),
+    ("29", "American Opportunity Credit (refundable, Form 8863)",
+     ["american opportunity credit from form 8863"], "29"),
     ("31", "Schedule 3, line 13", ["amount from schedule 3, line 13"], "31"),
     ("32", "Total other payments and refundable credits",
      ["total other payments or refundable credits"], "32"),
@@ -249,6 +251,7 @@ SCHEDULE2_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
     ("s2_2", "Excess advance premium tax credit repayment", ["excess advance premium tax credit"], "2"),
     ("s2_3", "Total (Part I)", ["add lines 1 and 2", "amount from schedule 2, line 3"], "3"),
     ("s2_4", "Self-employment tax", ["self-employment tax"], "4"),
+    ("s2_9", "Household employment taxes (Schedule H)", ["household employment taxes"], "9"),
     ("s2_11", "Additional Medicare Tax", ["additional medicare tax"], "11"),
     ("s2_12", "Net investment income tax", ["net investment income tax"], "12"),
     ("s2_21", "Total other taxes (Part II)", ["add lines 4 through 18", "total other taxes"], "21"),
@@ -360,6 +363,27 @@ FORM_4562_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
      ["macrs deductions for assets placed in service"], "17"),
     ("f4562_22", "Total depreciation",
      ["enter here and on the appropriate lines of your return"], "22"),
+]
+
+# Verified against the current Schedule H layout; like Schedule F this
+# hasn't been checked against a real filed return with household employees,
+# so treat its line numbers as best-effort.
+SCHEDULE_H_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
+    ("sh_9", "Social security, Medicare, and income tax withheld",
+     ["total social security, medicare, and federal income taxes"], "9"),
+    ("sh_26", "Total household employment taxes",
+     ["total household employment taxes"], "26"),
+]
+
+# Education credits split across two parts that flow to two entirely
+# different places on the 1040 (a refundable credit added into total
+# payments, and a nonrefundable credit that reduces tax owed) — both
+# curated here since both explain a real, separate line elsewhere.
+FORM_8863_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
+    ("f8863_8", "Refundable American Opportunity Credit",
+     ["refundable american opportunity credit"], "8"),
+    ("f8863_19", "Nonrefundable education credits",
+     ["nonrefundable education credits"], "19"),
 ]
 
 FILING_STATUS_PATTERNS = [
@@ -767,6 +791,8 @@ _CURATED_SCHEDULES: dict[str, tuple[list[tuple[str, str, list[str], str]], str]]
     "schedule se": (SCHEDULE_SE_DEFINITIONS, "Schedule SE (Self-Employment Tax)"),
     "schedule f": (SCHEDULE_F_DEFINITIONS, "Schedule F (Profit or Loss From Farming)"),
     "form 4562": (FORM_4562_DEFINITIONS, "Form 4562 (Depreciation and Amortization)"),
+    "schedule h": (SCHEDULE_H_DEFINITIONS, "Schedule H (Household Employment Taxes)"),
+    "form 8863": (FORM_8863_DEFINITIONS, "Form 8863 (Education Credits)"),
 }
 
 

@@ -255,13 +255,13 @@ const CATEGORIES = [
   { key: 'credits', title: 'Credits', headline: '21',
     ids: ['19', '20', 's3_1', 's3_2', 's3_3', 's3_4', 's3_8'] },
   { key: 'othertax', title: 'Other Taxes & Total Tax', headline: '24',
-    ids: ['22', '23', 's2_1', 's2_2', 's2_3', 's2_4', 's2_11', 's2_12', 's2_21'] },
+    ids: ['22', '23', 's2_1', 's2_2', 's2_3', 's2_4', 's2_9', 's2_11', 's2_12', 's2_21'] },
   { key: 'payments', title: 'Payments', headline: '33',
     // 34/35a/37 (refund/amount owed) are the outcome derived from this
     // total, not a component that feeds into it — shown in the hero and
     // Computation walkthrough instead, so they don't show up here as if
     // they were part of the sum.
-    ids: ['25d', '26', '27', '28', 's3_9', '31', '32'] },
+    ids: ['25d', '26', '27', '28', '29', 's3_9', '31', '32'] },
 ];
 
 // Every schedule-backed summary line (the ones that lump a whole schedule's
@@ -283,7 +283,7 @@ const SCHEDULE_DETAILS = {
   '17': { title: 'Schedule 2, Part I — Tax', totalId: 's2_3',
           rowIds: ['s2_1', 's2_2'] },
   '23': { title: 'Schedule 2, Part II — Other Taxes', totalId: 's2_21',
-          rowIds: ['s2_4', 's2_11', 's2_12'] },
+          rowIds: ['s2_4', 's2_9', 's2_11', 's2_12'] },
   '20': { title: 'Schedule 3, Part I — Nonrefundable Credits', totalId: 's3_8',
           rowIds: ['s3_1', 's3_2', 's3_3', 's3_4'] },
   '31': { title: 'Schedule 3, Part II — Other Payments & Refundable Credits', totalId: 's3_13',
@@ -307,6 +307,13 @@ const SCHEDULE_DETAILS = {
   // so it has no 1040/Schedule-1 line of its own to key off.
   'sc_13': { title: 'Form 4562 — Depreciation and Amortization', totalId: 'f4562_22',
              rowIds: ['f4562_12', 'f4562_14', 'f4562_17'] },
+  's2_9': { title: 'Schedule H — Household Employment Taxes', totalId: 'sh_26',
+            rowIds: ['sh_9'] },
+  // Form 8863 splits across two 1040 lines (line 29's refundable credit,
+  // and line 20/s3_3's nonrefundable one), so both trigger the same
+  // detail page rather than one drilling into the other.
+  '29': { title: 'Form 8863 — Education Credits', totalId: 'f8863_8', rowIds: [] },
+  's3_3': { title: 'Form 8863 — Education Credits', totalId: 'f8863_19', rowIds: [] },
 };
 
 // Any line reported under a group outside this set came from a form we
@@ -1066,7 +1073,15 @@ function renderScheduleDetail(triggerId) {
     }
     html += `</tbody></table>`;
   } else {
-    html += `<p class="explain">This schedule's individual lines weren't found in the PDF — only the total that flows into line ${triggerId} was detected.</p>`;
+    // Two different reasons a detail page has no rows: some schedules (like
+    // Form 8863, which splits into a refundable and a nonrefundable credit
+    // with no combined total) are intentionally this flat by design
+    // (detail.rowIds statically empty); others just have no PDF data for
+    // their sub-lines even though a total was detected. Only the second
+    // case is worth explaining away.
+    if (detail.rowIds.length > 0) {
+      html += `<p class="explain">This schedule's individual lines weren't found in the PDF — only the total that flows into line ${triggerId} was detected.</p>`;
+    }
     if (totalAmount !== null) {
       html += `<table class="comp-table"><tbody><tr class="comp-total"><td>${totalLine ? totalLine.label : detail.title}</td><td class="num">${fmtMoney(totalAmount)}</td></tr></tbody></table>`;
     }

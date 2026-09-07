@@ -43,6 +43,8 @@ LINE_EXPLANATIONS: dict[str, str] = {
     "26": "Estimated tax payments you made during the year, plus any amount applied from last year's refund.",
     "27": "Earned Income Credit (EIC) — a refundable credit for low-to-moderate income workers.",
     "28": "Additional Child Tax Credit — the refundable portion of the Child Tax Credit.",
+    "29": "The refundable 40% portion of the American Opportunity Credit (education expenses), from Form "
+          "8863 — unlike most credits, part of this one pays out even if it exceeds your tax bill.",
     "31": "Other refundable credits from Schedule 3, line 13.",
     "32": "Total of the refundable credits above (27, 28, 31, and similar).",
     "33": "Total payments: withholding, estimated payments, and refundable credits, all added together.",
@@ -86,6 +88,8 @@ LINE_EXPLANATIONS: dict[str, str] = {
     "s2_3": "Total of the two lines above, which flows into Form 1040, line 17.",
     "s2_4": "Self-employment tax — Social Security and Medicare tax on net self-employment earnings, since "
             "there's no employer to withhold and match it.",
+    "s2_9": "Employment taxes (Social Security, Medicare, and federal unemployment) owed on wages paid to "
+            "a household employee — a nanny, housekeeper, or similar — computed on Schedule H.",
     "s2_11": "Additional 0.9% Medicare tax that applies once wages/self-employment income pass a threshold "
              "based on your filing status.",
     "s2_12": "3.8% Net Investment Income Tax on investment income (interest, dividends, capital gains, "
@@ -161,6 +165,17 @@ LINE_EXPLANATIONS: dict[str, str] = {
                 "(which are both about newly acquired property).",
     "f4562_22": "Total depreciation and amortization from this form — flows to whichever schedule "
                 "(Schedule C, E, or F) actually claimed the underlying assets.",
+    # Schedule H — Household Employment Taxes
+    "sh_9": "Social Security, Medicare, and any federal income tax withheld from a household employee's "
+            "pay, added together.",
+    "sh_26": "Total household employment taxes (Social Security/Medicare/income tax withheld, plus federal "
+             "unemployment tax) — flows to Schedule 2, line 9.",
+    # Form 8863 — Education Credits
+    "f8863_8": "The refundable 40% portion of the American Opportunity Credit — flows to Form 1040, "
+               "line 29, and pays out even if it exceeds your tax bill.",
+    "f8863_19": "The nonrefundable education credits (the rest of the American Opportunity Credit, plus "
+                "any Lifetime Learning Credit) — flows to Schedule 3, line 3, and can only reduce tax "
+                "owed, not create a refund on its own.",
 }
 
 
@@ -331,7 +346,8 @@ ITEM_LABELS: dict[str, str] = {
     "22": "Subtract line 21 from line 18", "23": "Other taxes (Schedule 2)",
     "24": "Total tax", "25d": "Federal income tax withheld",
     "26": "Estimated tax payments", "27": "Earned income credit",
-    "28": "Additional child tax credit", "31": "Schedule 3, line 13",
+    "28": "Additional child tax credit", "29": "American Opportunity Credit (Form 8863)",
+    "31": "Schedule 3, line 13",
     "32": "Total other payments/refundable credits", "33": "Total payments",
     "34": "Overpayment", "37": "Amount you owe",
 }
@@ -343,7 +359,7 @@ FILING_STATUS_LABELS: dict[str, str] = {
 
 _INCOME_LINE_IDS = ["1z", "2b", "3b", "4b", "5b", "6b", "7", "8"]
 _OUTCOME_LINE_IDS = ["16", "17", "18", "19", "20", "21", "22", "23", "24",
-                     "25d", "26", "27", "28", "31", "32", "33"]
+                     "25d", "26", "27", "28", "29", "31", "32", "33"]
 
 # Short display labels for Schedule 2's "other taxes" (line 23) components —
 # shown as their own breakdown in the walkthrough instead of a single lumped
