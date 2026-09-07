@@ -113,6 +113,8 @@ async function handleAnalyze(request: Request): Promise<Response> {
       },
       tax_to_outcome: comp.taxToOutcome,
       other_tax_rows: comp.otherTaxRows,
+      schedule1_income_rows: comp.schedule1IncomeRows,
+      schedule1_adjustment_rows: comp.schedule1AdjustmentRows,
       reviewer_notes: comp.reviewerNotes.map((f) => ({ severity: f.severity, message: f.message })),
     },
   });
