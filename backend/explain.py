@@ -50,6 +50,17 @@ LINE_EXPLANATIONS: dict[str, str] = {
           "decide how to receive/apply it.",
     "35a": "The amount of your overpayment you're asking the IRS to refund to you.",
     "37": "Amount you owe: your total tax minus your total payments, when payments fall short.",
+    # Schedule A — Itemized Deductions (only attached if itemizing beat the standard deduction)
+    "sa_1": "Medical and dental expenses you paid out of pocket during the year, before the 7.5%-of-AGI floor is applied.",
+    "sa_4": "The portion of medical and dental expenses that's actually deductible — only the amount above 7.5% of your AGI counts.",
+    "sa_5e": "State and local income/sales taxes plus property taxes you paid, capped at $10,000 ($5,000 if married filing separately) no matter how much you actually paid.",
+    "sa_7": "Total taxes deducted on this schedule — mainly the capped state/local tax amount above.",
+    "sa_8e": "Interest paid on your home mortgage(s), the biggest itemized deduction for most homeowners.",
+    "sa_10": "Total interest deducted on this schedule (mortgage interest plus any investment interest).",
+    "sa_14": "Cash and non-cash charitable donations, added together (subject to AGI-based limits for large gifts).",
+    "sa_15": "Casualty and theft losses — deductible only if tied to a federally declared disaster.",
+    "sa_16": "Other itemized deductions not covered by the categories above.",
+    "sa_17": "Total itemized deductions — this is what flows to Form 1040, line 12 when itemizing beats the standard deduction.",
     # Schedule 1 — Additional Income and Adjustments to Income
     "s1_1": "Taxable refunds of state or local income tax you got back — usually only taxable if you "
             "itemized deductions the year you paid that tax.",

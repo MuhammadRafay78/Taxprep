@@ -185,6 +185,17 @@ const FILING_STATUS_NAMES = {
   single: 'Single', mfj: 'Married filing jointly', mfs: 'Married filing separately',
   hoh: 'Head of household', qss: 'Qualifying surviving spouse',
 };
+// Mirrors backend/tax_data.py's STANDARD_DEDUCTIONS — needed client-side so
+// the Deductions category can say "standard" vs. "itemized" for a sample
+// scenario, which renders entirely without a network round trip.
+const STANDARD_DEDUCTIONS = {
+  2020: { single: 12400, mfs: 12400, mfj: 24800, qss: 24800, hoh: 18650 },
+  2021: { single: 12550, mfs: 12550, mfj: 25100, qss: 25100, hoh: 18800 },
+  2022: { single: 12950, mfs: 12950, mfj: 25900, qss: 25900, hoh: 19400 },
+  2023: { single: 13850, mfs: 13850, mfj: 27700, qss: 27700, hoh: 20800 },
+  2024: { single: 14600, mfs: 14600, mfj: 29200, qss: 29200, hoh: 21900 },
+  2025: { single: 15000, mfs: 15000, mfj: 30000, qss: 30000, hoh: 22500 },
+};
 // The return's filing status/tax year, as auto-detected from the PDF (or a
 // sample) — shown read-only rather than editable, since nothing downstream
 // (the narrative, the categories, the computation walkthrough) actually
@@ -206,7 +217,9 @@ const CATEGORIES = [
   // Line 14 ("total deductions") isn't always printed as its own distinct
   // line on the form, so it's often not_found even when 12/13 individually
   // are — fall back to summing the parts rather than showing "—".
-  { key: 'deductions', title: 'Deductions', headline: '14', ids: ['12', '13'], fallbackIds: ['12', '13'] },
+  { key: 'deductions', title: 'Deductions', headline: '14',
+    ids: ['12', '13', 'sa_1', 'sa_4', 'sa_5e', 'sa_7', 'sa_8e', 'sa_10', 'sa_14', 'sa_15', 'sa_16', 'sa_17'],
+    fallbackIds: ['12', '13'] },
   { key: 'taxableincome', title: 'Taxable Income', headline: '15', ids: [] },
   { key: 'tax', title: 'Tax', headline: '18', ids: ['16', '17'] },
   { key: 'credits', title: 'Credits', headline: '21',
@@ -537,8 +550,41 @@ const CATEGORY_NARRATIVES = {
     const ded = val('12');
     const qbi = val('13');
     if (ded === null) return "The deduction amount wasn't found — check the numbers below.";
-    let s = `A ${fmtMoney(ded)} deduction was subtracted from income`;
-    return s + (qbi ? `, plus a ${fmtMoney(qbi)} deduction for qualified business income.` : '.');
+
+    const standard = currentFormType === '1040' && currentFilingStatus && STANDARD_DEDUCTIONS[currentTaxYear]
+      ? STANDARD_DEDUCTIONS[currentTaxYear][currentFilingStatus]
+      : null;
+    const itemizedTotal = val('sa_17');
+    // A close-enough match to the standard deduction table means the
+    // standard deduction was used — a few-dollar gap can happen from
+    // rounding or an age/blindness addition the return doesn't spell out
+    // as its own line, so this isn't an exact-equality check.
+    const looksStandard = standard !== null && Math.abs(ded - standard) <= 50;
+
+    let s;
+    if (looksStandard) {
+      s = `The ${fmtMoney(ded)} standard deduction was used`;
+      s += standard !== null ? ` (the standard amount for ${FILING_STATUS_NAMES[currentFilingStatus] || currentFilingStatus} in ${currentTaxYear} is ${fmtMoney(standard)}).` : '.';
+    } else if (itemizedTotal !== null) {
+      const parts = describeContributors([
+        { label: 'state and local taxes (capped at $10,000)', value: val('sa_5e') },
+        { label: 'home mortgage interest', value: val('sa_8e') },
+        { label: 'gifts to charity', value: val('sa_14') },
+        { label: 'deductible medical expenses', value: val('sa_4') },
+        { label: 'casualty/theft losses', value: val('sa_15') },
+        { label: 'other itemized deductions', value: val('sa_16') },
+      ]);
+      s = `${fmtMoney(ded)} in itemized deductions (Schedule A) was used instead of the standard deduction`;
+      s += standard !== null ? ` (${fmtMoney(standard)} for ${FILING_STATUS_NAMES[currentFilingStatus] || currentFilingStatus} in ${currentTaxYear})` : '';
+      s += ` — itemizing came out ahead${parts}.`;
+    } else {
+      // Not enough to tell (no filing status/year to compare against, or
+      // no Schedule A found even though the amount doesn't match standard
+      // — could be a return we don't have the standard-deduction table
+      // for, or itemized deductions not present as a separate schedule).
+      s = `A ${fmtMoney(ded)} deduction was subtracted from income — couldn't tell from this PDF whether that's the standard deduction or itemized (Schedule A wasn't found).`;
+    }
+    return s + (qbi ? ` A separate ${fmtMoney(qbi)} deduction for qualified business income was also claimed.` : '');
   },
   taxableincome() {
     const taxable = val('15');
@@ -628,12 +674,22 @@ function renderCategories() {
     const amountText = headlineAmount !== null ? fmtMoney(headlineAmount) : '—';
     const ocrBadge = headlineLine && headlineLine.via_ocr ? ' <span class="uncertain" style="margin:0">(OCR)</span>' : '';
     const table = categoryTableHtml(cat, childLines.filter(hasData), headlineLine, headlineAmount);
+    // The same plain-English sentence used in the top-of-page walkthrough
+    // (CATEGORY_NARRATIVES) also gets shown right inside the card itself —
+    // this is where "standard vs. itemized deduction, and how itemized
+    // breaks down" actually needs to be read, not just in a paragraph
+    // above the whole list of categories.
+    const narrativeFn = CATEGORY_NARRATIVES[cat.key];
+    const narrativeText = narrativeFn ? narrativeFn() : '';
+    const narrativeHtml = narrativeText && !narrativeText.includes("wasn't found")
+      ? `<p class="narrative">${narrativeText}</p>` : '';
     details.innerHTML = `
       <summary>
         <span class="cat-title">${cat.title}</span>
         <span class="cat-amount ${headlineAmount !== null ? '' : 'na'}">${amountText}${ocrBadge}</span>
       </summary>
       <div class="cat-body">
+        ${narrativeHtml}
         ${table || '<p class="narrative">Nothing in this category was found on this return.</p>'}
       </div>
     `;

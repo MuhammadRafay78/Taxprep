@@ -263,6 +263,24 @@ SCHEDULE3_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
      ["add lines 9 through 12", "amount from schedule 3, line 13"], "13"),
 ]
 
+SCHEDULE_A_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
+    ("sa_1", "Medical and dental expenses", ["medical and dental expenses"], "1"),
+    ("sa_4", "Deductible medical and dental expenses",
+     ["subtract line 3 from line 1", "medical and dental expenses. subtract"], "4"),
+    ("sa_5e", "State and local taxes claimed (after the $10,000 cap)",
+     ["smaller of line 5d or", "smaller of line 5d"], "5e"),
+    ("sa_7", "Total taxes", ["add lines 5e and 6", "total taxes. add"], "7"),
+    ("sa_8e", "Home mortgage interest and points",
+     ["add lines 8a through 8c", "home mortgage interest and points"], "8e"),
+    ("sa_10", "Total interest", ["add lines 8e and 9", "total interest. add"], "10"),
+    ("sa_14", "Gifts to charity",
+     ["add lines 11 through 13", "gifts to charity. add"], "14"),
+    ("sa_15", "Casualty and theft losses", ["casualty and theft loss"], "15"),
+    ("sa_16", "Other itemized deductions", ["other—from list in instructions", "other itemized deductions"], "16"),
+    ("sa_17", "Total itemized deductions",
+     ["add the amounts in the far right column", "total itemized deductions"], "17"),
+]
+
 FILING_STATUS_PATTERNS = [
     ("single", r"\bsingle\b"),
     ("mfj", r"married filing jointly"),
@@ -657,6 +675,7 @@ def _extract_generic_lines(lines: list[str]) -> list[tuple[str, str, float]]:
 
 
 _CURATED_SCHEDULES: dict[str, tuple[list[tuple[str, str, list[str], str]], str]] = {
+    "schedule a": (SCHEDULE_A_DEFINITIONS, "Schedule A (Itemized Deductions)"),
     "schedule 1": (SCHEDULE1_DEFINITIONS, "Schedule 1 (Additional Income & Adjustments)"),
     "schedule 2": (SCHEDULE2_DEFINITIONS, "Schedule 2 (Additional Taxes)"),
     "schedule 3": (SCHEDULE3_DEFINITIONS, "Schedule 3 (Additional Credits & Payments)"),
