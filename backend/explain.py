@@ -67,6 +67,7 @@ LINE_EXPLANATIONS: dict[str, str] = {
     "s1_3": "Net profit or loss from a sole-proprietor business, reported on Schedule C.",
     "s1_5": "Income (or loss) from rental real estate, royalties, partnerships, S corporations, trusts, "
             "and estates, reported on Schedule E.",
+    "s1_6": "Net profit or loss from farming, reported on Schedule F.",
     "s1_7": "Unemployment compensation you received during the year — fully taxable at the federal level.",
     "s1_9": "Other income not covered elsewhere — jury duty pay, gambling winnings, hobby income, etc.",
     "s1_10": "Total additional income from this schedule, which flows into Form 1040, line 8.",
@@ -110,6 +111,8 @@ LINE_EXPLANATIONS: dict[str, str] = {
     "sc_4": "Cost of goods sold — the direct cost of whatever inventory or product was actually sold.",
     "sc_5": "Gross profit: gross receipts minus cost of goods sold.",
     "sc_7": "Gross income: gross profit plus any other business income.",
+    "sc_13": "Depreciation and Section 179 expense claimed on business assets — the total computed in "
+             "detail on Form 4562, when one is attached.",
     "sc_28": "Total business expenses (advertising, supplies, rent, and everything else on Part II) before "
              "the home-office deduction.",
     "sc_31": "Net profit or loss from the business — flows to Schedule 1, line 3, and to Schedule SE if "
@@ -140,6 +143,24 @@ LINE_EXPLANATIONS: dict[str, str] = {
     "sse_13": "Deduction for half of the self-employment tax above — flows to Schedule 1, line 15, since "
               "self-employment tax otherwise covers both the employer and employee share with no employer "
               "to split it with.",
+    # Schedule F — Profit or Loss From Farming
+    "sf_9": "Total farm income before expenses — sales of livestock/produce, agricultural program "
+            "payments, crop insurance proceeds, and other farm income added together.",
+    "sf_14": "Depreciation and Section 179 expense claimed on farm assets — the total computed in detail "
+             "on Form 4562, when one is attached.",
+    "sf_34": "Total farm expenses (feed, fertilizer, labor, repairs, and everything else on Part II).",
+    "sf_35": "Net farm profit or loss — flows to Schedule 1, line 6.",
+    # Form 4562 — Depreciation and Amortization
+    "f4562_12": "Section 179 deduction — lets you deduct the full cost of qualifying business property "
+                "(equipment, vehicles, etc.) in the year you bought it, instead of depreciating it over "
+                "several years, up to an annual dollar limit.",
+    "f4562_14": "The special (bonus) depreciation allowance — an additional first-year deduction on top "
+                "of regular depreciation for qualifying new property.",
+    "f4562_17": "Regular (MACRS) depreciation on assets that were already in service before this year — "
+                "the ongoing yearly deduction as those assets age, separate from the two lines above "
+                "(which are both about newly acquired property).",
+    "f4562_22": "Total depreciation and amortization from this form — flows to whichever schedule "
+                "(Schedule C, E, or F) actually claimed the underlying assets.",
 }
 
 

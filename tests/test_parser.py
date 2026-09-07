@@ -254,20 +254,20 @@ def test_ocr_misread_leading_digit_still_recognizes_blank_echo():
     assert value is None
 
 
-UNCURATED_SCHEDULE_F_PAGE = [
-    "SCHEDULE F  Profit or Loss From Farming  OMB No. 1545-0074",
+UNCURATED_SCHEDULE_J_PAGE = [
+    "SCHEDULE J  Income Averaging for Farmers and Fishermen  OMB No. 1545-0074",
     "(Form 1040)  2023",
-    "9  Gross income . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9 500.",
-    "34 Net farm profit or (loss) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 34 500.",
+    "1  Taxable income . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 1 500.",
+    "23 Tax. Add lines 12, 18, and 22 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 23 500.",
 ]
 
 
-def test_uncurated_schedule_f_is_surfaced_as_uncertain():
-    # We have no hand-written line definitions for Schedule F, but it
+def test_uncurated_schedule_j_is_surfaced_as_uncertain():
+    # We have no hand-written line definitions for Schedule J, but it
     # should still show up (per the user's request that every attached
     # form be visible), marked as lower-confidence "uncertain" rather than
     # silently omitted or claimed with full confidence. MAIN_PAGE uses
-    # (label, amount) tuples while the Schedule F page uses raw dotted-
+    # (label, amount) tuples while the Schedule J page uses raw dotted-
     # leader rows, so this builds the PDF directly rather than reusing
     # make_pdf/make_raw_pdf.
     buf = io.BytesIO()
@@ -281,7 +281,7 @@ def test_uncurated_schedule_f_is_surfaced_as_uncertain():
         y -= 20
     c.showPage()
     y = 750
-    for row in UNCURATED_SCHEDULE_F_PAGE:
+    for row in UNCURATED_SCHEDULE_J_PAGE:
         c.setFont("Helvetica", 9)
         c.drawString(50, y, row)
         y -= 20
@@ -290,10 +290,10 @@ def test_uncurated_schedule_f_is_surfaced_as_uncertain():
     pdf_bytes = buf.getvalue()
 
     result = parse_1040(pdf_bytes)
-    schedule_f_lines = [ln for ln in result.lines if ln.group.startswith("Schedule F")]
-    assert schedule_f_lines, "Schedule F should be detected even without curated definitions"
-    assert all(ln.confidence == "uncertain" for ln in schedule_f_lines)
-    values = {ln.id: ln.value for ln in schedule_f_lines}
+    schedule_j_lines = [ln for ln in result.lines if ln.group.startswith("Schedule J")]
+    assert schedule_j_lines, "Schedule J should be detected even without curated definitions"
+    assert all(ln.confidence == "uncertain" for ln in schedule_j_lines)
+    values = {ln.id: ln.value for ln in schedule_j_lines}
     assert 500 in values.values()
 
 
@@ -392,6 +392,58 @@ def test_schedule_e_income_flows_into_schedule_1_line_5():
     # No line 5 on this SCHEDULE1_PAGE fixture -> not_found, not silently
     # absent, confirming s1_5 is now a real tracked line.
     assert by_id["s1_5"].confidence == "not_found"
+
+
+SCHEDULE_F_PAGE = [
+    ("SCHEDULE F  Profit or Loss From Farming  OMB No. 1545-0074", ""),
+    ("(Form 1040)  2023", ""),
+    ("9  Gross income. Add amounts in the right column", "40,000"),
+    ("14 Depreciation and section 179 expense", "6,000"),
+    ("34 Total expenses. Add lines 10 through 32f", "25,000"),
+    ("35 Net farm profit or (loss). Subtract line 34 from line 9", "15,000"),
+]
+
+FORM_4562_PAGE = [
+    ("4562  Depreciation and Amortization  OMB No. 1545-0172", ""),
+    ("Department of the Treasury  2023", ""),
+    ("12 Section 179 expense deduction. Add lines 9 and 10", "4,000"),
+    ("14 Special depreciation allowance for qualified property", "1,000"),
+    ("17 MACRS deductions for assets placed in service in earlier years", "1,000"),
+    ("22 Enter here and on the appropriate lines of your return", "6,000"),
+]
+
+
+def test_schedule_f_and_form_4562_are_curated_and_scoped():
+    pdf_bytes = make_pdf([MAIN_PAGE, SCHEDULE_F_PAGE, FORM_4562_PAGE])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+
+    assert by_id["sf_9"].value == 40000
+    assert by_id["sf_14"].value == 6000
+    assert by_id["sf_34"].value == 25000
+    assert by_id["sf_35"].value == 15000
+    assert by_id["sf_35"].confidence == "matched"
+    assert by_id["sf_35"].group == "Schedule F (Profit or Loss From Farming)"
+
+    assert by_id["f4562_12"].value == 4000
+    assert by_id["f4562_14"].value == 1000
+    assert by_id["f4562_17"].value == 1000
+    assert by_id["f4562_22"].value == 6000
+    assert by_id["f4562_22"].group == "Form 4562 (Depreciation and Amortization)"
+
+    # No line 6 on SCHEDULE1_PAGE elsewhere -> confirm s1_6 (farm income) is
+    # a real tracked line, not silently absent, same as s1_5.
+    assert "s1_6" in {ln.id for ln in result.lines}
+
+
+def test_schedule_c_depreciation_line_is_curated():
+    pdf_bytes = make_pdf([MAIN_PAGE, SCHEDULE_C_PAGE])
+    result = parse_1040(pdf_bytes)
+    by_id = {ln.id: ln for ln in result.lines}
+    # sc_13 (depreciation) isn't on the SCHEDULE_C_PAGE fixture -> not_found
+    # rather than silently missing, confirming it's now a real tracked line
+    # (the row Form 4562's own drill-down nests under).
+    assert by_id["sc_13"].confidence == "not_found"
 
 
 DOTTED_SCHEDULE2_VALUE_ON_NEXT_ROW_PAGE = [

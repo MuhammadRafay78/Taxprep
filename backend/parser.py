@@ -231,6 +231,7 @@ SCHEDULE1_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
     ("s1_3", "Business income or (loss) (Schedule C)", ["business income or (loss)"], "3"),
     ("s1_5", "Rental, royalty, partnership, S corp, trust income (Schedule E)",
      ["rental real estate, royalties, partnerships"], "5"),
+    ("s1_6", "Farm income or (loss) (Schedule F)", ["farm income or (loss)"], "6"),
     ("s1_7", "Unemployment compensation", ["unemployment compensation"], "7"),
     ("s1_9", "Total other income", ["add lines 1 through 8", "total other income"], "9"),
     ("s1_10", "Total additional income", ["combine lines 1 through 7 and 9", "add lines 1, 2c",
@@ -301,6 +302,8 @@ SCHEDULE_C_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
     ("sc_4", "Cost of goods sold", ["cost of goods sold"], "4"),
     ("sc_5", "Gross profit", ["gross profit. subtract line 4"], "5"),
     ("sc_7", "Gross income", ["gross income. add lines 5 and 6"], "7"),
+    ("sc_13", "Depreciation and section 179 expense deduction",
+     ["depreciation and section 179 expense deduction"], "13"),
     ("sc_28", "Total expenses", ["total expenses before expenses for business use of home"], "28"),
     ("sc_31", "Net profit or (loss)", ["net profit or (loss). subtract line 30"], "31"),
 ]
@@ -329,6 +332,34 @@ SCHEDULE_SE_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
     ("sse_12", "Self-employment tax", ["self-employment tax. add lines 10 and 11"], "12"),
     ("sse_13", "Deduction for one-half of self-employment tax",
      ["deduction for one-half of self-employment tax"], "13"),
+]
+
+# Verified against the redesigned (2018+) single-part Schedule F layout;
+# unlike Schedules 1/2/3/A this hasn't been checked against a real filed
+# farm return, so treat its line numbers as best-effort (same caveat this
+# codebase already gives its business-form parsers elsewhere).
+SCHEDULE_F_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
+    ("sf_9", "Gross income", ["gross income. add amounts in the right column"], "9"),
+    ("sf_14", "Depreciation and section 179 expense",
+     ["depreciation and section 179 expense"], "14"),
+    ("sf_34", "Total expenses", ["total expenses. add lines 10 through 32f"], "34"),
+    ("sf_35", "Net farm profit or (loss)", ["net farm profit or (loss). subtract line 34"], "35"),
+]
+
+# Form 4562 supports whichever schedule actually claims the depreciation
+# (Schedule C, E, or F all have their own "depreciation" line) rather than
+# flowing to one fixed place itself — its own total (line 22) is what
+# should match that schedule's depreciation line, not a 1040/Schedule 1
+# line of its own.
+FORM_4562_DEFINITIONS: list[tuple[str, str, list[str], str]] = [
+    ("f4562_12", "Section 179 expense deduction",
+     ["section 179 expense deduction. add lines 9 and 10"], "12"),
+    ("f4562_14", "Special depreciation allowance",
+     ["special depreciation allowance for qualified property"], "14"),
+    ("f4562_17", "MACRS deductions for assets placed in service in earlier years",
+     ["macrs deductions for assets placed in service"], "17"),
+    ("f4562_22", "Total depreciation",
+     ["enter here and on the appropriate lines of your return"], "22"),
 ]
 
 FILING_STATUS_PATTERNS = [
@@ -734,6 +765,8 @@ _CURATED_SCHEDULES: dict[str, tuple[list[tuple[str, str, list[str], str]], str]]
     "schedule d": (SCHEDULE_D_DEFINITIONS, "Schedule D (Capital Gains & Losses)"),
     "schedule e": (SCHEDULE_E_DEFINITIONS, "Schedule E (Rental, Royalty & Passthrough Income)"),
     "schedule se": (SCHEDULE_SE_DEFINITIONS, "Schedule SE (Self-Employment Tax)"),
+    "schedule f": (SCHEDULE_F_DEFINITIONS, "Schedule F (Profit or Loss From Farming)"),
+    "form 4562": (FORM_4562_DEFINITIONS, "Form 4562 (Depreciation and Amortization)"),
 }
 
 
