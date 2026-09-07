@@ -127,6 +127,10 @@
 
   <section class="panel hidden" id="summary-panel">
     <button type="button" class="secondary" id="back-btn">&larr; Back to sample returns</button>
+    <!-- Only ever shown for a PDF you uploaded yourself, from the exact
+         bytes you gave the browser — never for a sample return, and
+         nothing here is ever sent anywhere or stored on a server. -->
+    <button type="button" class="secondary hidden" id="download-pdf-btn" style="margin-left:8px" onclick="downloadCurrentPdf()">Download this PDF</button>
     <div id="scanned-banner"></div>
     <div class="meta-row">
       <div><span class="meta-label" id="filing-status-label">Filing status</span><div id="filing-status-display" class="meta-value">—</div></div>
@@ -213,6 +217,12 @@ const STANDARD_DEDUCTIONS = {
 // reacts to a manual change here; the walkthrough already states both.
 let currentFilingStatus = null;
 let currentTaxYear = null;
+// The exact File the user uploaded, kept only in this tab's memory so the
+// download button can hand back the identical bytes without a server round
+// trip — never uploaded anywhere new, never persisted. Sample scenarios
+// have no backing file (only their extracted numbers are built into the
+// app), so this stays null for those and the button hides itself.
+let currentUploadedFile = null;
 const heroEl = document.getElementById('hero');
 const categoriesEl = document.getElementById('categories');
 
@@ -442,7 +452,11 @@ function renderSampleScenarios() {
   el.querySelectorAll('.scenario-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const scenario = SAMPLE_SCENARIOS.find(s => s.id === btn.dataset.scenarioId);
-      if (scenario) renderSummary(scenario.data);
+      if (scenario) {
+        currentUploadedFile = null;
+        renderSummary(scenario.data);
+        updateDownloadButton();
+      }
     });
   });
 }
@@ -487,9 +501,32 @@ async function handleFile(file) {
     const data = await extractPdf(file);
     status.textContent = '';
     renderSummary(data);
+    currentUploadedFile = file;
+    updateDownloadButton();
   } catch (e) {
     status.textContent = 'Error: ' + e.message;
   }
+}
+
+// Hands back the exact PDF the user uploaded — entirely from this tab's own
+// memory, no request to any server. Hidden for sample scenarios, which have
+// no real file behind them (only their extracted numbers are built into the
+// app), so there's nothing to download and nothing new ever gets stored.
+function updateDownloadButton() {
+  const btn = document.getElementById('download-pdf-btn');
+  if (!btn) return;
+  btn.classList.toggle('hidden', !currentUploadedFile);
+}
+function downloadCurrentPdf() {
+  if (!currentUploadedFile) return;
+  const url = URL.createObjectURL(currentUploadedFile);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = currentUploadedFile.name || 'return.pdf';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 function fmtMoney(n) {
