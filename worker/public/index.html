@@ -206,8 +206,13 @@ const categoriesEl = document.getElementById('categories');
 // headline number shown on the collapsed row, or as a child line revealed
 // when that category is expanded.
 const CATEGORIES = [
+  // 3a (qualified dividends) is a subset of 3b (ordinary dividends), not an
+  // additional amount on top of it — Form 1040 only adds 3b into total
+  // income. Shown as its own row it looked like both got summed into the
+  // total below; it's folded into 3b's row as a note instead (see
+  // categoryTableHtml).
   { key: 'income', title: 'Income', headline: '9',
-    ids: ['1z', '2b', '3a', '3b', '4b', '5b', '6b', '7', '8', 's1_1', 's1_3', 's1_7', 's1_9', 's1_10'] },
+    ids: ['1z', '2b', '3b', '4b', '5b', '6b', '7', '8', 's1_1', 's1_3', 's1_7', 's1_9', 's1_10'] },
   { key: 'adjustments', title: 'Adjustments', headline: '10',
     ids: ['s1_11', 's1_13', 's1_15', 's1_20', 's1_21', 's1_25'] },
   { key: 'agi', title: 'AGI', headline: '11', ids: [] },
@@ -638,7 +643,9 @@ function categoryTableHtml(cat, childLines, headlineLine, headlineAmount) {
   if (rows.length > 0) {
     html += `<table class="comp-table"><tbody>`;
     for (const line of rows) {
-      html += `<tr><td>${line.label}</td><td class="num">${fmtMoney(line.value)}</td></tr>`;
+      const qualified = line.id === '3b' && currentLinesById['3a'] && currentLinesById['3a'].value
+        ? `<div class="comp-note">of which ${fmtMoney(currentLinesById['3a'].value)} is qualified</div>` : '';
+      html += `<tr><td>${line.label}${qualified}</td><td class="num">${fmtMoney(line.value)}</td></tr>`;
     }
     if (headlineAmount !== null) {
       const totalLabel = headlineLine ? headlineLine.label : cat.title;
