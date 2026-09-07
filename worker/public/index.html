@@ -906,20 +906,25 @@ function valuesFromOverrides(overrides) {
 }
 
 document.getElementById('analyze-btn').addEventListener('click', async () => {
-  const overrides = readAllOverrides();
-  const payload = {
-    filing_status: currentFilingStatus,
-    tax_year: currentTaxYear,
-    form_type: currentFormType,
-    overrides,
-  };
-  const res = await fetch('/api/analyze', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json();
-  renderResults(data);
+  try {
+    const overrides = readAllOverrides();
+    const payload = {
+      filing_status: currentFilingStatus,
+      tax_year: currentTaxYear,
+      form_type: currentFormType,
+      overrides,
+    };
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    renderResults(data);
+  } catch (err) {
+    console.error('Analyze failed:', err);
+    alert('Something went wrong updating the explanation. Please try again.');
+  }
 });
 
 function computationRowsHtml(rows, { signed = false } = {}) {
@@ -1034,7 +1039,7 @@ function renderComputation(comp) {
         <table class="comp-table">
           <thead><tr><th>Bracket</th><th>Rate</th><th class="num">Amount taxed</th><th class="num">Tax</th></tr></thead>
           <tbody>
-            ${tc.ordinary_bracket_rows.map(r => `
+            ${(tc.ordinary_bracket_rows || []).map(r => `
               <tr><td>${r.range}</td><td>${(r.rate * 100).toFixed(0)}%</td><td class="num">${fmtMoney(r.amount)}</td><td class="num">${fmtMoney(r.tax)}</td></tr>
             `).join('')}
             <tr class="comp-total"><td colspan="3">Tax on ordinary income</td><td class="num">${fmtMoney(tc.ordinary_tax)}</td></tr>
@@ -1043,7 +1048,7 @@ function renderComputation(comp) {
         <table class="comp-table" style="margin-top:12px">
           <thead><tr><th>Portion</th><th>Rate basis</th><th class="num">Amount</th><th class="num">Tax</th></tr></thead>
           <tbody>
-            ${tc.preferential_rows.map(r => `
+            ${(tc.preferential_rows || []).map(r => `
               <tr><td>Qualified dividends / LTCG</td><td>${(r.rate * 100).toFixed(0)}%</td><td class="num">${fmtMoney(r.amount)}</td><td class="num">${fmtMoney(r.tax)}</td></tr>
             `).join('')}
             <tr class="comp-total"><td colspan="3">Reconstructed tax (Qualified Dividends &amp; Capital Gain Tax Worksheet)</td><td class="num">${fmtMoney(tc.reconstructed_tax)}</td></tr>
@@ -1055,7 +1060,7 @@ function renderComputation(comp) {
         <table class="comp-table">
           <thead><tr><th>Bracket</th><th>Rate</th><th class="num">Amount taxed</th><th class="num">Tax</th></tr></thead>
           <tbody>
-            ${tc.bracket_rows.map(r => `
+            ${(tc.bracket_rows || []).map(r => `
               <tr><td>${r.range}</td><td>${(r.rate * 100).toFixed(0)}%</td><td class="num">${fmtMoney(r.amount)}</td><td class="num">${fmtMoney(r.tax)}</td></tr>
             `).join('')}
             <tr class="comp-total"><td colspan="3">Reconstructed tax</td><td class="num">${fmtMoney(tc.reconstructed_tax)}</td></tr>

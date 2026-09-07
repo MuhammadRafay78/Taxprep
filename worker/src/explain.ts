@@ -306,6 +306,7 @@ export interface Computation {
     method: "qdcgt" | "brackets";
     ordinaryIncome?: number;
     ordinaryTax?: number;
+    ordinaryBracketRows?: { range: string; rate: number; amount: number; tax: number }[];
     preferentialIncome?: number;
     preferentialRows?: { rate: number; amount: number; tax: number }[];
     bracketRows?: { range: string; rate: number; amount: number; tax: number }[];
@@ -314,7 +315,48 @@ export interface Computation {
     tiesOut: boolean;
   } | null;
   taxToOutcome: ComputationRow[];
+  otherTaxRows: { line: string; item: string; amount: number }[];
   reviewerNotes: Flag[];
+}
+
+// Short display labels for Schedule 2's "other taxes" (line 23) components —
+// shown as their own breakdown in the walkthrough instead of a single lumped
+// number, the same way credits/income already break down into their parts.
+const OTHER_TAX_LINE_IDS = ["s2_4", "s2_11", "s2_12", "s2_1", "s2_2"];
+const OTHER_TAX_LABELS: Record<string, string> = {
+  s2_4: "Self-employment tax",
+  s2_11: "Additional Medicare Tax",
+  s2_12: "Net Investment Income Tax",
+  s2_1: "Alternative Minimum Tax (AMT)",
+  s2_2: "Excess advance premium tax credit repayment",
+};
+
+/** The bracket-by-bracket breakdown of tax on `amount` under a progressive
+ * schedule — one row per bracket actually reached, each with the dollar
+ * range, rate, amount taxed at that rate, and the tax it produced. Shared
+ * by both the plain-brackets and QDCGT computation methods below, since
+ * ordinary income is taxed the same progressive way in either case — QDCGT
+ * just taxes a preferential slice on top of it separately instead of
+ * running the whole taxable income through this. */
+function bracketRowsFor(
+  amount: number,
+  brackets: [number | null, number][],
+): { range: string; rate: number; amount: number; tax: number }[] {
+  const rows: { range: string; rate: number; amount: number; tax: number }[] = [];
+  let lower = 0;
+  for (const [ceiling, rate] of brackets) {
+    const upper = ceiling ?? Infinity;
+    if (amount <= lower) break;
+    const taxed = Math.min(amount, upper) - lower;
+    if (taxed > 0) {
+      rows.push({
+        range: ceiling !== null ? `$${lower.toLocaleString()}–$${upper.toLocaleString()}` : `$${lower.toLocaleString()}+`,
+        rate, amount: taxed, tax: Math.round(taxed * rate * 100) / 100,
+      });
+    }
+    lower = upper;
+  }
+  return rows;
 }
 
 /** A table-driven walkthrough of how this return's numbers were computed,
@@ -381,7 +423,8 @@ export function buildComputation(
       let preferential = Math.max(0, qualifiedDividends || 0) + Math.max(0, capitalGains || 0);
       preferential = Math.min(preferential, taxableIncome);
       const ordinary = taxableIncome - preferential;
-      const ordinaryTax = taxData.computeBracketTax(ordinary, brackets);
+      const ordinaryBracketRows = bracketRowsFor(ordinary, brackets);
+      const ordinaryTax = Math.round(ordinaryBracketRows.reduce((s, r) => s + r.tax, 0) * 100) / 100;
       const preferentialRows: { rate: number; amount: number; tax: number }[] = [];
       let lower = ordinary;
       for (const [ceiling, rate] of cgBrackets) {
@@ -394,25 +437,12 @@ export function buildComputation(
       }
       const reconstructed = Math.round((ordinaryTax + preferentialRows.reduce((s, r) => s + r.tax, 0)) * 100) / 100;
       taxComputation = {
-        method: "qdcgt", ordinaryIncome: ordinary, ordinaryTax, preferentialIncome: preferential,
+        method: "qdcgt", ordinaryIncome: ordinary, ordinaryTax, ordinaryBracketRows, preferentialIncome: preferential,
         preferentialRows, reconstructedTax: reconstructed, reportedTax,
         tiesOut: reportedTax !== undefined && Math.abs(reportedTax - reconstructed) <= Math.max(75, reconstructed * 0.08),
       };
     } else if (brackets) {
-      const bracketRows: { range: string; rate: number; amount: number; tax: number }[] = [];
-      let lower = 0;
-      for (const [ceiling, rate] of brackets) {
-        const upper = ceiling ?? Infinity;
-        if (taxableIncome <= lower) break;
-        const taxed = Math.min(taxableIncome, upper) - lower;
-        if (taxed > 0) {
-          bracketRows.push({
-            range: ceiling !== null ? `$${lower.toLocaleString()}–$${upper.toLocaleString()}` : `$${lower.toLocaleString()}+`,
-            rate, amount: taxed, tax: Math.round(taxed * rate * 100) / 100,
-          });
-        }
-        lower = upper;
-      }
+      const bracketRows = bracketRowsFor(taxableIncome, brackets);
       const reconstructed = Math.round(bracketRows.reduce((s, r) => s + r.tax, 0) * 100) / 100;
       taxComputation = {
         method: "brackets", bracketRows, reconstructedTax: reconstructed, reportedTax,
@@ -421,18 +451,28 @@ export function buildComputation(
     }
   }
 
+  const hasOtherTax = OTHER_TAX_LINE_IDS.some((id) => v(id));
   const taxToOutcome: ComputationRow[] = [];
   for (const lineId of OUTCOME_LINE_IDS) {
     const amount = v(lineId);
     if (amount === undefined) continue;
-    taxToOutcome.push({ line: lineId, item: ITEM_LABELS[lineId], amount, note: null });
+    const note = lineId === "23" && hasOtherTax ? "see the breakdown below" : null;
+    taxToOutcome.push({ line: lineId, item: ITEM_LABELS[lineId], amount, note });
   }
   if (refund) taxToOutcome.push({ line: "34", item: "Overpayment (refund)", amount: refund, note: null });
   else if (owed) taxToOutcome.push({ line: "37", item: "Amount you owe", amount: owed, note: null });
 
+  // Line 23 ("other taxes") is itself a sum of very different things — SE
+  // tax, AMT, NIIT, Additional Medicare Tax — that a single lumped number
+  // doesn't distinguish. Broken out here the same way credits/income
+  // already are.
+  const otherTaxRows = OTHER_TAX_LINE_IDS
+    .filter((id) => v(id))
+    .map((id) => ({ line: id.replace("s2_", ""), item: OTHER_TAX_LABELS[id], amount: v(id)! }));
+
   const reviewerNotes = buildFlags(values, filingStatus, taxYear);
 
-  return { header, incomeToAgi, agiToTaxable, taxComputation, taxToOutcome, reviewerNotes };
+  return { header, incomeToAgi, agiToTaxable, taxComputation, taxToOutcome, otherTaxRows, reviewerNotes };
 }
 
 export interface FlowStep {
