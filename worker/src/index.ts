@@ -103,6 +103,7 @@ async function handleAnalyze(request: Request): Promise<Response> {
         method: comp.taxComputation.method,
         ordinary_income: comp.taxComputation.ordinaryIncome,
         ordinary_tax: comp.taxComputation.ordinaryTax,
+        ordinary_bracket_rows: comp.taxComputation.ordinaryBracketRows,
         preferential_income: comp.taxComputation.preferentialIncome,
         preferential_rows: comp.taxComputation.preferentialRows,
         bracket_rows: comp.taxComputation.bracketRows,
@@ -111,6 +112,7 @@ async function handleAnalyze(request: Request): Promise<Response> {
         ties_out: comp.taxComputation.tiesOut,
       },
       tax_to_outcome: comp.taxToOutcome,
+      other_tax_rows: comp.otherTaxRows,
       reviewer_notes: comp.reviewerNotes.map((f) => ({ severity: f.severity, message: f.message })),
     },
   });
