@@ -353,6 +353,13 @@ const FORM_CONFIGS = {
       { key: 'changeinassets', title: 'Change in Net Assets', headline: '21', ids: ['18', '19', '20'] },
     ],
     knownGroups: new Set(['Form 990']),
+    guide: `Form 990-EZ is an annual information return for small tax-exempt
+      organizations. It isn't a bill — most organizations that file it don't owe
+      income tax on program-related revenue. Instead, the IRS (and the public,
+      since 990s are public record) uses it to check that the organization is
+      still operating consistently with the exempt purpose it was granted. The
+      bottom line here is the change in net assets for the year, not a tax
+      liability.`,
   },
   '1065': {
     displayName: 'Form 1065',
@@ -364,6 +371,16 @@ const FORM_CONFIGS = {
       { key: 'distributions', title: 'Distributions to Partners', headline: '', ids: ['k_19a', 'k_19b'] },
     ],
     knownGroups: new Set(['Form 1065', "Schedule K (Partners' Distributive Share Items)"]),
+    guide: `Form 1065 is an information return for partnerships (including most
+      multi-member LLCs) — the partnership itself generally doesn't pay federal
+      income tax. Instead, it reports its income, deductions, and gains or
+      losses for the year, then passes each partner's share of the result to
+      them on a Schedule K-1, which they report on their own Form 1040. A
+      partner's share of ordinary business income can also be subject to
+      self-employment tax, separate from anything on this return. Cash
+      distributions to partners (below) aren't taxed again when paid out —
+      what's taxable is each partner's share of the income above, whether or
+      not it was actually distributed to them.`,
   },
   '1120s': {
     displayName: 'Form 1120-S',
@@ -376,6 +393,16 @@ const FORM_CONFIGS = {
       { key: 'entitytax', title: 'Entity-Level Tax', headline: 'p1_22c', ids: ['p1_23e'] },
     ],
     knownGroups: new Set(['Form 1120-S', "Schedule K (Shareholders' Pro Rata Share Items)"]),
+    guide: `Form 1120-S is the return for an S-corporation — like a partnership,
+      it generally doesn't pay federal income tax at the entity level (a few
+      exceptions exist, like tax on built-in gains). Income and losses pass
+      through to shareholders via Schedule K-1, in proportion to ownership, and
+      each shareholder reports their share on their own Form 1040. Distributions
+      to shareholders (below) are separate from wages — a shareholder who
+      actively works for the company is supposed to be paid reasonable
+      compensation through payroll first, with only the remaining profit paid
+      out as a distribution; a large distribution with little or no officer
+      compensation is a common audit flag.`,
   },
 };
 
@@ -1001,13 +1028,20 @@ function renderHero() {
 function renderStory() {
   const el = document.getElementById('story');
   if (!el) return;
-  // The step-by-step walkthrough paragraph only exists for Form 1040 today
-  // (CATEGORY_NARRATIVES is written entirely in terms of its line ids) —
-  // business/exempt-org returns still get the categories accordion, hero,
-  // and (via the Analyze button) a full computation walkthrough, just not
-  // this particular prose summary yet.
+  // The step-by-step walkthrough paragraph (built from CATEGORY_NARRATIVES,
+  // which is written entirely in terms of 1040 line ids) only exists for
+  // Form 1040. Every other return type falls back to its static "About this
+  // form" guide instead — what the form is, who files it, and the concepts
+  // (pass-through income, K-1s, entity-level tax) that don't show up
+  // anywhere else in the UI.
   if (currentFormType !== '1040') {
-    el.innerHTML = '';
+    const guide = (FORM_CONFIGS[currentFormType] || {}).guide;
+    el.innerHTML = guide
+      ? `
+        <h2 style="margin-bottom:8px">About this form</h2>
+        <p class="narrative" style="font-size:0.95rem;line-height:1.6">${guide}</p>
+      `
+      : '';
     return;
   }
   const order = ['income', 'adjustments', 'agi', 'deductions', 'taxableincome', 'tax', 'credits', 'othertax', 'payments'];
