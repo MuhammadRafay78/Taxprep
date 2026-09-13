@@ -65,10 +65,15 @@
   .category summary .cat-amount.na { color: var(--muted); font-weight: 400; }
   .category .cat-body { padding: 0 16px 14px; border-top: 1px solid var(--border); }
   .category .narrative { font-size: 0.92rem; line-height: 1.5; margin: 14px 0; }
+  .guide-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 20px; }
+  .guide-tabs button { padding: 8px 14px; font-size: 0.9rem; }
+  .guide-tabs button.secondary.active { background: var(--accent); color: #fff; }
   .guide-section h3 { margin-bottom: 4px; }
+  .guide-section h4 { margin: 22px 0 6px; }
   .guide-section p, .guide-section li { font-size: 0.92rem; line-height: 1.55; }
   .guide-section ul { margin: 8px 0; padding-left: 22px; }
   .guide-section li { margin-bottom: 6px; }
+  .guide-example { background: var(--accent-dim); border-radius: 8px; padding: 12px 16px; margin: 14px 0; font-size: 0.9rem; line-height: 1.5; }
   .numbers-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
   .line-row td { padding: 10px 0; border-bottom: 1px solid #f0efe9; vertical-align: top; }
   .line-row:last-child td { border-bottom: none; }
@@ -128,9 +133,11 @@
   <section class="panel hidden" id="guides-panel">
     <button type="button" class="secondary" id="guides-back-btn">&larr; Back</button>
     <h2 style="margin-bottom:4px">Business return guides</h2>
-    <p class="explain">These aren't tied to any specific return — they cover the concepts behind each business/exempt-org
-      form in general: how the entity is taxed, what flows through to the owners, and the pitfalls that come up most
-      often. For a walkthrough of an actual return's numbers, open one of the sample returns instead.</p>
+    <p class="explain">These aren't tied to any specific return — each is a full guide to how that entity type is
+      taxed, in general: eligibility, the pass-through mechanics, basis, distributions, entity-level tax traps, and
+      the filing mechanics that trip people up. For a walkthrough of an actual return's numbers, open one of the
+      sample returns instead.</p>
+    <div id="guides-tabs" class="guide-tabs"></div>
     <div id="guides-content"></div>
   </section>
 
@@ -425,192 +432,495 @@ const FORM_CONFIGS = {
   },
 };
 
-// Standalone conceptual guides for the business/exempt-org form types this
-// app supports — not tied to any particular return's numbers (that's what
-// each FORM_CONFIGS.guide one-liner and the category cards are for).
-// Deliberately conceptual rather than line-by-line: the goal is the handful
-// of ideas that actually explain *why* these forms work the way they do
-// (pass-through taxation, basis, distributions vs. compensation, the narrow
-// cases where the entity itself does owe tax) rather than a restatement of
-// every line the IRS instructions already cover.
+// Standalone master guides for the business/exempt-org form types this app
+// supports — not tied to any particular return's numbers (that's what each
+// FORM_CONFIGS.guide one-liner and the category cards are for). Each is its
+// own full reference, organized into the sub-sections a preparer actually
+// needs: eligibility, the pass-through/taxation mechanics, basis, the
+// distributions-vs-compensation line, the narrow cases where the entity
+// itself owes tax, filing mechanics, common pitfalls, and a small worked
+// example — not a line-by-line restatement of the IRS instructions.
 const FORM_GUIDES = {
   '1065': {
     title: 'Form 1065 — Partnerships',
     html: `
-      <p><strong>Who files it.</strong> General and limited partnerships, and most
-      multi-member LLCs (which are taxed as partnerships by default unless they
-      elect otherwise). A partnership doesn't pay federal income tax itself —
-      Form 1065 is an information return. Its income, deductions, gains, and
-      losses are computed once at the entity level, then each partner's share
-      is reported to them on a Schedule K-1, which they carry onto their own
-      Form 1040 (Schedule E, mostly) and pay tax on individually.</p>
+      <h4>What it is, and who files it</h4>
+      <p>Form 1065 is the annual information return for a partnership — a
+      general partnership, limited partnership, LLP, or (the most common case
+      today) a multi-member LLC, which is taxed as a partnership by default
+      unless it affirmatively elects corporate treatment. "Information
+      return" is the key phrase: the partnership itself generally pays no
+      federal income tax. It computes its income, deductions, gains, and
+      losses once at the entity level, then reports each partner's share of
+      the result to them on a Schedule K-1. Each partner then reports that
+      share on their own return (Schedule E, mostly, on Form 1040) and pays
+      tax on it individually — whether or not any cash actually changed
+      hands.</p>
 
-      <p><strong>Special allocations.</strong> Unlike an S-corp, a partnership
-      isn't limited to splitting everything strictly by ownership percentage.
-      The partnership agreement can allocate specific items disproportionately
-      — e.g. one partner gets all the depreciation, another gets more of the
-      cash income — as long as the allocation has "substantial economic
-      effect" (roughly: it has to actually change what each partner receives,
-      not just their tax bill). This flexibility is a big part of why
-      partnerships are used for real estate and investment deals.</p>
+      <h4>Page 1: income and deductions</h4>
+      <p>The front of the form computes ordinary business income the way a
+      sole proprietorship's Schedule C would: gross receipts, less cost of
+      goods sold, plus other business income (interest on business accounts,
+      gains on business property, etc.), less ordinary operating deductions —
+      salaries and wages paid to employees (not partners), guaranteed
+      payments to partners, rent, taxes and licenses, interest expense,
+      depreciation, and a catch-all "other deductions" line. The result is
+      "ordinary business income (loss)," Schedule K line 1 — the single
+      biggest number that gets allocated out to the partners, though far from
+      the only one.</p>
 
-      <p><strong>Guaranteed payments.</strong> A partnership can pay a partner
-      a fixed amount for services or for the use of capital, regardless of
-      whether the partnership had income — these are called guaranteed
-      payments. They work like a salary substitute: deductible to the
-      partnership, ordinary income to the partner, and (unlike most
-      distributions) they're reported and taxed whether or not the
-      partnership was profitable that year.</p>
+      <h4>Schedule K and Schedule K-1: separately stated items</h4>
+      <p>Not everything gets netted into that one ordinary-income number.
+      Items that are taxed differently depending on the partner's own
+      situation — capital gains and losses, Section 179 expense (which has
+      its own partner-level dollar limit), charitable contributions,
+      qualified dividends, foreign taxes paid, interest and investment
+      income, the information needed for the Section 199A (QBI) deduction —
+      all get pulled out and reported separately on Schedule K, then passed
+      through on each partner's K-1 in their own separately labeled boxes.
+      The reason: if these were buried inside "ordinary income," a partner
+      who could otherwise deduct a charitable contribution in full, or apply
+      their own capital-loss limitations, would lose that ability. Separately
+      stating them lets each partner apply their own rules downstream.</p>
 
-      <p><strong>Partner basis.</strong> Each partner tracks their own "outside
-      basis" in the partnership — starting with what they contributed, plus
-      their share of partnership debt (a key difference from S-corps, where
-      entity-level debt generally doesn't increase a shareholder's basis
-      unless they personally loaned the money). Basis goes up with income and
-      further contributions, and down with distributions, losses, and
-      deductions. It matters for two things: a cash distribution beyond basis
-      is a taxable gain, and a loss beyond basis simply isn't deductible yet —
-      it carries forward until basis is restored.</p>
+      <h4>Special allocations</h4>
+      <p>Unlike an S-corp, a partnership isn't required to split every item
+      strictly by ownership percentage. The partnership agreement can
+      allocate specific items disproportionately — one partner gets all the
+      depreciation, another gets more of the cash income — as long as the
+      allocation has "substantial economic effect" under the Section 704(b)
+      regulations: roughly, the allocation has to actually track who bears
+      the economic benefit or burden, not just shift the tax bill around.
+      This flexibility is a large part of why partnerships (rather than
+      S-corps) are the standard vehicle for real estate syndications and
+      investment funds, where investors and sponsors often want very
+      different allocations of depreciation versus cash flow.</p>
 
-      <p><strong>Self-employment tax.</strong> A general partner's distributive
-      share of ordinary business income is typically subject to
-      self-employment tax, same as a sole proprietor's. Limited partners are
-      generally treated differently for SE tax on their distributive share
-      (though the line is fact-specific and contested in practice), but
-      guaranteed payments for services are subject to SE tax regardless of
-      partner type.</p>
+      <h4>Guaranteed payments vs. distributive share</h4>
+      <p>A partnership can agree to pay a partner a fixed amount for services
+      rendered or for the use of their capital, regardless of whether the
+      partnership had any income at all — these are guaranteed payments.
+      They function like a salary substitute: deductible to the partnership
+      as a business expense, ordinary income to the receiving partner, and —
+      unlike a distributive share of profit — paid and taxed on their own
+      schedule, independent of whether the year was profitable. This is
+      distinct from a partner's distributive share of the partnership's
+      actual profit, which is what flows through via Schedule K-1 line 1 (or
+      the relevant separately stated line) regardless of guaranteed payments.</p>
 
-      <p><strong>Deadlines and filing.</strong> Form 1065 is due the 15th day
-      of the third month after year-end — March 15 for a calendar-year
-      partnership — with a 6-month extension available via Form 7004. K-1s
-      need to go out by that same deadline (including any extension) so each
-      partner has what they need to file their own return on time; a late K-1
-      is one of the most common reasons an individual return ends up on
-      extension.</p>
+      <h4>Partner basis (outside basis)</h4>
+      <p>Each partner tracks their own "outside basis" in the partnership —
+      a running account that determines two critical things: whether a
+      distribution is tax-free or a taxable gain, and whether a loss
+      allocated to them is currently deductible at all. Basis starts with
+      what the partner contributed (cash, or the adjusted basis of property
+      contributed), and is then:</p>
+      <ul>
+        <li><strong>Increased</strong> by additional contributions, the
+        partner's share of partnership income (including tax-exempt income),
+        and — a key difference from S-corps — the partner's share of
+        partnership <em>liabilities</em>. A partnership taking on debt
+        increases every partner's basis, even though no cash was contributed;
+        an S-corp shareholder generally gets no such basis increase from the
+        corporation's own borrowing.</li>
+        <li><strong>Decreased</strong> by distributions, the partner's share
+        of losses and nondeductible expenses, and a decrease in the partner's
+        share of partnership liabilities (which is treated as a deemed cash
+        distribution).</li>
+      </ul>
+      <p>A cash distribution in excess of outside basis is a taxable capital
+      gain to the partner. A loss allocated in excess of basis simply isn't
+      deductible in the current year — it's suspended and carries forward
+      until basis is restored.</p>
 
-      <p><strong>Common pitfalls.</strong> Not tracking outside basis at all
-      (so nobody notices a distribution has become taxable, or that a loss
-      claimed on a 1040 was actually disallowed); treating a guaranteed
-      payment as an ordinary distribution or vice versa; and capital accounts
-      that don't reconcile to the required tax-basis method.</p>
+      <h4>The three-step loss gate</h4>
+      <p>Even once a loss clears the basis limitation above, two more tests
+      apply before it can actually offset other income on the partner's
+      return: the <strong>at-risk rules</strong> (a partner generally can't
+      deduct losses beyond the amount they'd actually lose if the investment
+      went to zero — nonrecourse financing they aren't personally liable for
+      typically doesn't count, with an exception for qualified nonrecourse
+      real estate financing), and the <strong>passive activity loss
+      rules</strong> (losses from an activity the partner doesn't materially
+      participate in can generally only offset income from other passive
+      activities, not wages or portfolio income). A loss can be fully
+      supported by basis and still be stuck behind either of these gates.</p>
+
+      <h4>Self-employment tax</h4>
+      <p>A general partner's distributive share of ordinary business income
+      is typically subject to self-employment tax, the same as a sole
+      proprietor's net profit — there's no employer to withhold and match
+      Social Security/Medicare, so the partner pays both halves. Limited
+      partners are traditionally treated differently for SE tax on their
+      distributive share (the theory being a purely passive investor
+      shouldn't owe SE tax), though the line between a true limited partner
+      and an LLC member who's actually active in the business is fact-specific
+      and has been litigated repeatedly. Guaranteed payments for services are
+      subject to SE tax regardless of whether the recipient is styled a
+      general or limited partner.</p>
+
+      <h4>The centralized partnership audit regime (BBA)</h4>
+      <p>Since 2018, most partnerships are audited under the "BBA" regime,
+      which by default assesses and collects any additional tax at the
+      <em>partnership</em> level in the year the audit concludes — not by
+      going back and amending each partner's old return. A partnership can
+      instead elect to "push out" adjustments to the partners who were
+      partners in the audited year, who then account for it themselves.
+      Every partnership must designate a "Partnership Representative" with
+      sole authority to bind the partnership (and, by extension, every
+      partner) in an audit — a significant departure from the old "Tax
+      Matters Partner" role, and one that's easy to overlook when drafting or
+      reviewing a partnership agreement.</p>
+
+      <h4>State pass-through entity tax (PTET) elections</h4>
+      <p>Many states now let a partnership elect to pay state income tax at
+      the entity level instead of having partners pay it individually. Since
+      an entity-level tax is deductible as a business expense on the federal
+      return (unlike an individual's state tax, which is capped at $10,000
+      under the SALT cap), this election is a common workaround that state
+      legislatures have deliberately made available — it's not a loophole,
+      but it does require an affirmative election, usually annually, and the
+      resulting state credit at the partner level has to be tracked
+      carefully.</p>
+
+      <h4>Filing mechanics</h4>
+      <p>Form 1065 is due the 15th day of the third month after year-end —
+      March 15 for a calendar-year partnership — with a 6-month extension
+      available via Form 7004. K-1s need to reach each partner by that same
+      deadline (including any extension), since a partner can't accurately
+      file their own Form 1040 without it; a late K-1 is one of the most
+      common reasons an individual return ends up on extension. Penalties for
+      filing late (or with an incomplete K-1) are assessed per partner, per
+      month, and can add up quickly on a partnership with many partners.</p>
+
+      <h4>Common pitfalls</h4>
+      <ul>
+        <li>Not tracking outside basis at all, so a distribution that should
+        have triggered a taxable gain goes unreported, or a loss claimed on a
+        1040 was actually disallowed for lack of basis.</li>
+        <li>Confusing a guaranteed payment with an ordinary distribution (or
+        vice versa) — they're taxed differently and have different SE-tax
+        consequences.</li>
+        <li>Capital accounts that don't reconcile to the tax-basis method now
+        required for most partnerships' Schedule K-1, Item L.</li>
+        <li>Treating an active LLC member as a passive limited partner to
+        avoid SE tax without the facts to support it.</li>
+      </ul>
+
+      <div class="guide-example"><strong>Small example.</strong> A two-member
+      LLC (50/50) has $120,000 of ordinary business income and took out a
+      $40,000 business loan during the year. Each partner's K-1 shows $60,000
+      of ordinary income, and each partner's outside basis goes up not just
+      by their $60,000 share of income, but also by their $20,000 share of
+      the new partnership debt — even though neither partner put in any more
+      cash. If the LLC later distributes $70,000 to one partner, that
+      distribution is tax-free up to that partner's basis, and only the
+      excess (if any) is a taxable gain.</div>
     `,
   },
   '1120s': {
     title: 'Form 1120-S — S-Corporations',
     html: `
-      <p><strong>Who files it.</strong> A corporation that's made a valid S
-      election (Form 2553) — generally limited to 100 shareholders, one class
-      of stock, and shareholders who are individuals, certain trusts, or
-      estates (not partnerships, corporations, or nonresident aliens). Like a
-      partnership, an S-corp is generally a pass-through: it doesn't pay
-      federal income tax itself in the ordinary case. Income and losses flow
-      to shareholders via Schedule K-1, strictly in proportion to shares owned
-      (weighted by how many days in the year they held them) — there's no
-      special-allocation flexibility here the way there is for partnerships.</p>
+      <h4>What it is, and the S election</h4>
+      <p>Form 1120-S is the annual return for a corporation (or an LLC that
+      elected corporate treatment) that has also made a valid S election on
+      Form 2553. Like a partnership, an S-corp is generally a pass-through
+      entity: it doesn't pay federal income tax at the entity level in the
+      ordinary case. Instead, its income and losses flow through to
+      shareholders via Schedule K-1, strictly in proportion to shares owned
+      (weighted by how many days in the year each shareholder held them) —
+      there's no special-allocation flexibility here the way there is for
+      partnerships.</p>
 
-      <p><strong>Shareholder basis.</strong> Each shareholder tracks stock
-      basis and, separately, debt basis (which only exists if the shareholder
-      personally loaned money to the corporation — merely guaranteeing a bank
-      loan does not create debt basis, a frequent point of confusion).
-      Distributions reduce basis; a distribution beyond basis is a capital
-      gain. Losses are deductible only up to basis (stock first, then debt),
-      with anything beyond that suspended until basis is restored.</p>
+      <h4>Eligibility and the election</h4>
+      <p>S status is available only to a "small business corporation": no
+      more than 100 shareholders (family members can often be counted as one
+      shareholder for this purpose), exactly one class of stock (differences
+      in voting rights are allowed, but not differences in distribution or
+      liquidation rights), and shareholders limited to individuals, certain
+      trusts, and estates — not partnerships, corporations, or nonresident
+      aliens. The Form 2553 election generally must be filed by the 15th day
+      of the third month of the tax year it's meant to take effect for (so,
+      March 15 for a calendar-year corporation wanting S status for that same
+      year); the IRS does have a well-used late-election relief procedure
+      (Rev. Proc. 2013-30) for a late filing with reasonable cause, so a
+      missed deadline isn't automatically fatal.</p>
 
-      <p><strong>Reasonable compensation — the single biggest audit target
-      here.</strong> A shareholder who actively works for the company is
-      required to be paid a reasonable salary through payroll before any
-      profit is paid out as a distribution. The incentive to skip this is
-      real: salary is subject to Social Security/Medicare (FICA) tax,
-      distributions aren't. The IRS specifically watches for S-corps paying
-      little or no officer compensation while making large distributions to
-      the same person — that pattern alone is one of the more common triggers
-      for an S-corp exam.</p>
+      <h4>Page 1: income and deductions</h4>
+      <p>The front of the form computes ordinary business income much like a
+      C-corporation would: gross receipts less cost of goods sold, plus other
+      income, less compensation of officers, salaries and wages for other
+      employees, rents, taxes and licenses, interest, depreciation, and other
+      deductions. That result — Schedule K line 1, "ordinary business income
+      (loss)" — is the main number allocated out to shareholders, alongside
+      the separately stated items below.</p>
 
-      <p><strong>The exceptions where the entity itself does owe tax.</strong>
-      An S-corp isn't always tax-free at the entity level:</p>
+      <h4>Schedule K and Schedule K-1: separately stated items</h4>
+      <p>As with a partnership, items that are taxed differently depending on
+      each shareholder's own situation — capital gains, Section 179 expense,
+      charitable contributions, dividend and interest income, the components
+      needed for the Section 199A (QBI) deduction — are separately stated on
+      Schedule K and passed through in their own boxes on each shareholder's
+      K-1, rather than being netted into ordinary income. Because allocation
+      must be strictly pro rata by share and holding period, there's much
+      less judgment involved here than on a partnership K-1 — the main
+      complexity is making sure the allocation percentages and holding
+      periods for shares that changed hands mid-year are actually correct.</p>
+
+      <h4>Shareholder basis: stock basis and debt basis</h4>
+      <p>Each shareholder separately tracks stock basis and debt basis.
+      Stock basis starts with what was paid for the shares, goes up with
+      income allocated to the shareholder, and down with losses,
+      nondeductible expenses, and distributions. Debt basis only exists if
+      the shareholder <em>personally</em> loaned money directly to the
+      corporation — merely guaranteeing a bank's loan to the corporation does
+      not create debt basis, a very common point of confusion (and litigated
+      issue) since it feels like the shareholder is "on the hook" either way.
+      Losses are deductible only up to combined basis (stock first, then
+      debt), with any excess suspended until basis is restored; a
+      distribution in excess of stock basis is taxed as a capital gain.</p>
+
+      <p>The same three-step loss gate that applies to partnerships —
+      basis, then at-risk, then passive activity loss rules — applies to
+      S-corp shareholders as well; clearing the basis limitation doesn't by
+      itself guarantee a loss is currently deductible.</p>
+
+      <h4>Reasonable compensation — the single biggest audit target here</h4>
+      <p>A shareholder who actively works for the company is required to be
+      paid a reasonable salary through payroll before any profit is paid out
+      to them as a distribution. The incentive to shortchange this is real:
+      W-2 salary is subject to Social Security and Medicare (FICA) tax split
+      between employer and employee, while S-corp distributions are not
+      subject to payroll tax at all. The IRS specifically looks for S-corps
+      paying little or no officer compensation while making large
+      distributions to that same person-as-shareholder — that pattern alone
+      is one of the more common triggers for an S-corp exam. Courts weighing
+      "reasonable compensation" generally look at what comparable
+      businesses pay someone doing the same work, the shareholder's actual
+      duties and time devoted, and the relationship between salary and
+      distributions over multiple years, not just one year in isolation.</p>
+
+      <h4>The exceptions where the entity itself does owe tax</h4>
+      <p>An S-corp isn't always tax-free at the entity level. Three
+      situations create entity-level tax, all specific to a corporation that
+      was previously a C-corp:</p>
       <ul>
-        <li><strong>Built-in gains tax</strong> — if the company converted
-        from a C-corp, appreciated assets it held at conversion can trigger
-        entity-level tax if sold within the recognition period (5 years).</li>
+        <li><strong>Built-in gains (BIG) tax</strong> — if the corporation
+        converted from C-corp to S-corp status, any appreciation that existed
+        at the time of conversion is taxed at the corporate level (currently
+        at the top corporate rate) if the underlying asset is sold within the
+        recognition period, generally five years after conversion.</li>
         <li><strong>Excess net passive income tax</strong> — applies if the
-        S-corp has accumulated earnings and profits from a prior life as a
-        C-corp and too much of its income is passive (rents, royalties,
-        interest, dividends); enough years of this can even terminate the S
-        election involuntarily.</li>
-        <li><strong>LIFO recapture tax</strong> — a one-time tax for a C-corp
-        that used LIFO inventory accounting before converting to S status.</li>
+        S-corp has accumulated earnings and profits (E&amp;P) left over from
+        its prior life as a C-corp, and more than 25% of its gross receipts
+        for the year is passive income (rents, royalties, interest,
+        dividends, certain capital gains). Enough consecutive years of this
+        can even terminate the S election involuntarily.</li>
+        <li><strong>LIFO recapture tax</strong> — a one-time tax triggered
+        when a C-corp using LIFO inventory accounting converts to S status,
+        recapturing the deferred benefit of LIFO.</li>
+      </ul>
+      <p>A company that's been an S-corp since day one (never a C-corp) never
+      encounters any of these three — they exist specifically to keep a
+      C-corp from converting to S status purely to avoid tax on gains or
+      passive income that built up before the conversion.</p>
+
+      <h4>The Accumulated Adjustments Account (AAA)</h4>
+      <p>An S-corp tracks its Accumulated Adjustments Account, essentially a
+      running total of post-S-election income that hasn't yet been
+      distributed. It matters most for a corporation with leftover C-corp
+      E&amp;P: distributions come out of AAA tax-free (to the extent of stock
+      basis) first, and only dip into taxable C-corp E&amp;P — a taxable
+      dividend to the shareholder — once AAA is exhausted. A corporation with
+      no C-corp history has no E&amp;P to worry about, which simplifies this
+      considerably.</p>
+
+      <h4>The one-class-of-stock rule, and how it's accidentally violated</h4>
+      <p>Because S-corp allocations must be strictly pro rata, the IRS treats
+      certain arrangements as creating a disqualifying second class of stock
+      even without a formal second stock certificate — most commonly,
+      distributions that aren't actually made proportionally to ownership
+      (e.g. covering one shareholder's personal expenses without a
+      corresponding distribution to the others), or loan terms to a
+      shareholder that are disguised equity. A violation found on audit can
+      terminate the S election retroactively, which is a far bigger problem
+      than the underlying distribution issue itself.</p>
+
+      <h4>State pass-through entity tax (PTET) elections</h4>
+      <p>As with partnerships, many states allow an S-corp to elect to pay
+      state income tax at the entity level, working around the $10,000 SALT
+      cap on the shareholders' individual returns since an entity-level tax
+      is deductible as a business expense federally. The election mechanics
+      and the resulting shareholder-level credit vary significantly by
+      state.</p>
+
+      <h4>Filing mechanics</h4>
+      <p>Form 1120-S is due March 15 for a calendar-year corporation, with a
+      6-month extension available via Form 7004 — the same calendar as a
+      partnership. K-1s are due to shareholders on that same schedule.</p>
+
+      <h4>Common pitfalls</h4>
+      <ul>
+        <li>No, or unreasonably low, officer compensation relative to
+        distributions.</li>
+        <li>Confusing a shareholder's loan guarantee with actual debt basis.</li>
+        <li>Distributions taken in excess of stock basis without anyone
+        recognizing the resulting capital gain.</li>
+        <li>Non-pro-rata distributions or informal side arrangements that
+        risk creating a disqualifying second class of stock.</li>
+        <li>Missing the S-election deadline without pursuing available late-
+        election relief.</li>
       </ul>
 
-      <p><strong>Deadlines and filing.</strong> Same calendar as a
-      partnership: due March 15 for a calendar-year corporation, with a
-      6-month extension via Form 7004. K-1s are due on that same schedule.</p>
-
-      <p><strong>Common pitfalls.</strong> No or unreasonably low officer
-      compensation; distributions taken beyond basis without anyone noticing
-      the resulting capital gain; and actions that inadvertently create a
-      second class of stock (e.g. distributions that aren't strictly pro
-      rata), which can blow the S election entirely.</p>
+      <div class="guide-example"><strong>Small example.</strong> A sole
+      shareholder's S-corp nets $150,000 before compensation. A reasonable
+      salary for the work performed is $70,000. Paying that $70,000 through
+      payroll (subject to FICA) and distributing the remaining $80,000 as a
+      shareholder distribution (not subject to FICA) is the intended
+      structure. Paying only a $10,000 salary and distributing $140,000 to
+      minimize payroll tax is exactly the pattern the IRS targets — on
+      exam, it can reclassify part of the distribution as wages, assessing
+      back payroll tax, penalties, and interest.</div>
     `,
   },
   '990': {
     title: 'Form 990-EZ — Tax-Exempt Organizations',
     html: `
-      <p><strong>Who files it.</strong> Tax-exempt organizations (mostly
-      501(c)(3) charities, but other 501(c) types too) with gross receipts and
-      total assets under thresholds set by the IRS — small enough for the
-      "EZ" version instead of the full Form 990, but too large to file the
-      simple 990-N e-postcard. This isn't an income tax return in the usual
-      sense: filing it doesn't produce a tax bill for the organization's
-      program activities, which is the whole point of being tax-exempt.</p>
+      <h4>What it is, and who files it</h4>
+      <p>Form 990-EZ is an annual information return for small-to-midsize
+      tax-exempt organizations — mostly 501(c)(3) charities, but other
+      501(c) categories too (social welfare organizations, business leagues,
+      etc.). It sits in the middle of a three-tier system based on size: the
+      smallest organizations (generally under $50,000 in gross receipts) file
+      the simple 990-N e-postcard; organizations under the 990-EZ thresholds
+      (gross receipts under $200,000 and total assets under $500,000, as of
+      current IRS thresholds — these are adjusted periodically) file the EZ;
+      larger organizations file the full Form 990. This isn't an income tax
+      return in the usual sense — filing it doesn't produce a tax bill on the
+      organization's regular program activities, which is the entire point
+      of being tax-exempt.</p>
 
-      <p><strong>Why it exists anyway.</strong> The IRS (and the public — 990s
-      are public record, searchable on sites like ProPublica's Nonprofit
-      Explorer) uses it to confirm the organization is actually operating
-      consistently with the exempt purpose it was granted, and hasn't quietly
-      become something else. Exempt status is a privilege the organization
-      has to keep earning, not a one-time approval.</p>
+      <h4>Why the IRS requires it anyway</h4>
+      <p>Exempt status is a privilege the organization has to keep earning,
+      not a one-time approval. The IRS (and the public — Form 990/990-EZ
+      filings are public record, searchable on sites like ProPublica's
+      Nonprofit Explorer or Candid/GuideStar) uses the return to confirm the
+      organization is still operating consistently with the exempt purpose it
+      was originally granted, hasn't quietly shifted into something else, and
+      isn't being used to enrich insiders.</p>
 
-      <p><strong>Unrelated business income tax (UBIT) — the case where tax
-      really is owed.</strong> If the organization regularly carries on a
-      trade or business unrelated to its exempt purpose (a classic example:
-      a charity running an unrelated retail store, or renting out
-      debt-financed property), the income from that activity can be taxable
-      on a separate return, Form 990-T — even though the organization as a
-      whole remains tax-exempt. Nothing about being a nonprofit exempts
-      income that has nothing to do with the mission.</p>
+      <h4>Revenue and expenses</h4>
+      <p>The core financial section is simpler than a for-profit return: it
+      totals revenue by source (contributions and grants, program service
+      revenue, membership dues, investment income, gains from asset sales,
+      fundraising event income net of direct expenses, gaming income) and
+      expenses by category (grants and similar amounts paid, benefits paid to
+      or for members, salaries/wages/employee benefits, professional fees,
+      occupancy, printing/postage, and other expenses), landing on the change
+      in net assets for the year — revenue minus expenses — which is the
+      closest thing this return has to a bottom line. There's no tax computed
+      on that number in the ordinary case.</p>
 
-      <p><strong>Private inurement and excess benefit transactions.</strong>
-      Officers, directors, and other insiders can't be paid excessively or
-      otherwise receive improper personal benefit from the organization's
-      assets. Beyond risking the organization's exempt status, this can
-      trigger "intermediate sanctions" — excise taxes assessed directly
-      against the individual who received the excess benefit (and sometimes
-      against organization managers who approved it), separate from anything
-      that happens to the entity.</p>
+      <h4>Unrelated business income tax (UBIT) — the case where tax really
+      is owed</h4>
+      <p>If the organization regularly carries on a trade or business that's
+      unrelated to its exempt purpose, income from that activity can be
+      taxable — on a separate return, Form 990-T — even though the
+      organization as a whole remains tax-exempt. Classic examples: a museum
+      gift shop selling items unrelated to its collection, a charity renting
+      out debt-financed property, or a trade association selling advertising
+      unrelated to its educational mission. Income from a business run
+      substantially by volunteers, or from selling donated merchandise, is
+      generally excluded from UBIT under specific statutory exceptions.
+      Nothing about being a nonprofit exempts income that has nothing to do
+      with the organization's mission.</p>
 
-      <p><strong>Public support and classification.</strong> A 501(c)(3) is
-      generally classified as either a public charity (broad public/government
-      funding) or a private foundation (concentrated funding, often from one
-      family or company) — the two carry meaningfully different rules
-      (private foundations face an excise tax on net investment income and
-      stricter self-dealing rules). The public support test that determines
-      this classification is tracked over a multi-year average, so a single
-      unusually large donation can shift an organization's status if it isn't
-      watched.</p>
+      <h4>Compensation, private inurement, and excess benefit transactions</h4>
+      <p>Officers, directors, key employees, and other "disqualified
+      persons" can't be paid excessively or otherwise receive improper
+      personal benefit from the organization's assets — a principle called
+      private inurement. Beyond risking the organization's exempt status
+      outright, an excess benefit transaction can trigger "intermediate
+      sanctions": excise taxes assessed directly against the individual who
+      received the excess benefit (typically 25% of the excess, rising to
+      200% if not corrected), and sometimes against organization managers who
+      knowingly approved it — separate consequences from anything that
+      happens to the organization itself. Compensation is generally
+      considered reasonable if it's comparable to what similar organizations
+      pay for similar work, based on actual comparability data reviewed and
+      approved by an independent body within the organization.</p>
 
-      <p><strong>Deadlines and filing.</strong> Due the 15th day of the fifth
-      month after the fiscal year ends — May 15 for a calendar-year
-      organization — with an automatic extension available via Form 8868.
-      Missing the filing for three consecutive years triggers automatic
-      revocation of exempt status by operation of law, with no separate IRS
-      notice required before it happens — a common way small nonprofits lose
-      their status without realizing it.</p>
+      <h4>Public charity vs. private foundation, and the public support test</h4>
+      <p>A 501(c)(3) organization is classified as either a public charity
+      (broad public or governmental funding, or active program service
+      revenue) or a private foundation (funding concentrated among a small
+      number of donors, often a single family or company). The distinction
+      matters a great deal: private foundations face a federal excise tax on
+      net investment income, mandatory minimum annual distribution
+      requirements, and much stricter self-dealing and excess-business-
+      holdings rules. Public charity status is maintained through a public
+      support test — the percentage of total support that comes from a broad
+      base of public/government sources versus concentrated sources —
+      measured on a rolling multi-year average. A single unusually large
+      donation, if not properly structured or disclosed, can shift an
+      organization's classification if nobody is tracking the ratio.</p>
 
-      <p><strong>Common pitfalls.</strong> Not recognizing an activity as
-      unrelated business income; compensation to founders/officers that isn't
-      benchmarked against comparable organizations; and simply missing a
-      filing year, which is far more consequential here (automatic status
-      revocation) than a late filing usually is for a taxable entity.</p>
+      <h4>Governance disclosures</h4>
+      <p>The return also asks about governance practices that aren't
+      themselves legally mandatory for most organizations but that the IRS
+      treats as evidence of good stewardship — whether the organization has a
+      written conflict-of-interest policy, how it reviews and documents
+      compensation decisions, and whether it discloses related-party
+      transactions. These questions don't generate a tax liability on their
+      own, but consistently answering "no" across the board is a pattern the
+      IRS has flagged in the past as correlating with higher audit risk.</p>
+
+      <h4>Public disclosure requirements</h4>
+      <p>An exempt organization must make its three most recent annual
+      returns (and its original exemption application) available for public
+      inspection on request, and many now satisfy this by posting them
+      online. This transparency requirement is part of the trade-off for
+      exemption: the public and press are meant to be able to check how a
+      tax-exempt organization is actually spending money it doesn't pay tax
+      on.</p>
+
+      <h4>Filing mechanics</h4>
+      <p>Form 990-EZ is due the 15th day of the fifth month after the fiscal
+      year ends — May 15 for a calendar-year organization — with an
+      automatic extension available via Form 8868. Missing the filing for
+      three consecutive years triggers automatic revocation of exempt status
+      by operation of law, with no separate warning notice required before it
+      happens — a surprisingly common way small, all-volunteer nonprofits
+      lose their status without ever realizing a deadline was missed.
+      Reinstatement afterward requires re-applying for exemption, sometimes
+      retroactively, and is far more work than simply filing on time would
+      have been.</p>
+
+      <h4>Common pitfalls</h4>
+      <ul>
+        <li>Not recognizing an activity as unrelated business income because
+        it "feels" mission-related even though it doesn't meet the legal
+        test.</li>
+        <li>Compensation to founders or officers that isn't benchmarked
+        against comparable organizations, or isn't independently reviewed and
+        documented.</li>
+        <li>Not tracking the public support test ratio, and being surprised
+        by a reclassification to private foundation status after a large
+        one-time gift.</li>
+        <li>Simply missing a filing year — far more consequential here
+        (automatic status revocation after three years) than a late filing
+        usually is for a taxable entity.</li>
+      </ul>
+
+      <div class="guide-example"><strong>Small example.</strong> A community
+      arts nonprofit has $180,000 in program/donation revenue and runs a
+      small gift shop selling unrelated novelty items that nets $8,000 a
+      year. The $180,000 in mission-related revenue and donations is exempt
+      from tax as usual on Form 990-EZ. The $8,000 of gift-shop profit,
+      because it's a regularly carried on trade or business unrelated to the
+      organization's exempt arts purpose, is reported and taxed separately on
+      Form 990-T — even though the organization as a whole remains fully
+      tax-exempt.</div>
     `,
   },
 };
@@ -1312,15 +1622,43 @@ backBtn.addEventListener('click', showUploadPanel);
 
 // The business-return guides are static reference content, not tied to any
 // particular return — reachable from the header at any time, independent of
-// whatever's currently shown in the upload/summary/results flow.
-function renderGuides() {
+// whatever's currently shown in the upload/summary/results flow. Each form
+// type is its own full guide/section, switched via tabs rather than all
+// three stacked on one long page.
+const GUIDE_ORDER = ['1065', '1120s', '990'];
+let currentGuideKey = GUIDE_ORDER[0];
+
+function renderGuideTabs() {
+  const tabsEl = document.getElementById('guides-tabs');
+  tabsEl.innerHTML = GUIDE_ORDER.map(key => `
+    <button type="button" class="secondary${key === currentGuideKey ? ' active' : ''}" data-guide-key="${key}">
+      ${FORM_GUIDES[key].title.split(' — ')[0]}
+    </button>
+  `).join('');
+  tabsEl.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentGuideKey = btn.dataset.guideKey;
+      renderGuideTabs();
+      renderGuideContent();
+      document.getElementById('guides-content').scrollIntoView({ behavior: 'instant', block: 'start' });
+    });
+  });
+}
+
+function renderGuideContent() {
   const el = document.getElementById('guides-content');
-  el.innerHTML = Object.values(FORM_GUIDES).map(guide => `
+  const guide = FORM_GUIDES[currentGuideKey];
+  el.innerHTML = `
     <section class="guide-section">
       <h3>${guide.title}</h3>
       ${guide.html}
     </section>
-  `).join('<hr style="margin:24px 0;border:none;border-top:1px solid var(--border)">');
+  `;
+}
+
+function renderGuides() {
+  renderGuideTabs();
+  renderGuideContent();
 }
 renderGuides();
 
