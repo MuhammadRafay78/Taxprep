@@ -97,7 +97,6 @@
   .guide-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 20px; }
   .guide-tabs button { padding: 8px 14px; font-size: 0.9rem; }
   .guide-tabs button.secondary.active { background: var(--accent); color: var(--btn-text); }
-  #landing-guides { margin: 18px 0 4px; padding-top: 14px; border-top: 1px solid var(--border); }
   .guide-example-cta { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
   .guide-section { max-width: 680px; }
   .guide-section h3 { margin: 0 0 12px; font-size: 1.15rem; }
@@ -209,10 +208,6 @@
       <input type="file" id="file-input" accept="application/pdf" />
     </div>
     <p id="status"></p>
-    <div id="landing-guides">
-      <p class="scenario-heading">Or learn about a return type first:</p>
-      <div class="guide-tabs" id="landing-guides-tabs"></div>
-    </div>
     <div id="sample-scenarios"></div>
   </section>
 
@@ -566,6 +561,25 @@ const FORM_GUIDES = {
       taxable income can owe very different tax if one has a large capital
       gain and the other doesn't.</p>
 
+      <div class="guide-example"><strong>Example: two filers, same taxable
+      income, different tax.</strong> Both are single with $70,000 of taxable
+      income for 2024. Filer A's is all wages. Filer B has $50,000 of wages
+      and $20,000 of long-term capital gains. Filer A's tax is computed by
+      running the full $70,000 through the ordinary brackets (10%/12%/22%).
+      Filer B's ordinary $50,000 runs through those same brackets, but the
+      $20,000 of gains is stacked on top and taxed at the capital-gains rate
+      for that income range instead — some of it may even fall in the 0%
+      capital-gains bracket. Filer B ends up with a lower total tax bill
+      despite identical taxable income, purely because of what <em>kind</em>
+      of income makes up that total.</div>
+
+      <p>The "long-term" qualifier matters just as much as the income type
+      itself: an asset has to be held more than one year to get these
+      preferential rates. Sell one day early and the entire gain is
+      short-term — taxed at ordinary rates, no preferential treatment at all,
+      which is a common and entirely avoidable mistake when someone is close
+      to the one-year mark and doesn't realize the date matters.</p>
+
       <h4>Deductions vs. credits — and why the difference matters so much</h4>
       <p>A deduction reduces the income being taxed, so its value depends on
       the filer's marginal tax bracket (a $1,000 deduction saves $220 for
@@ -580,6 +594,16 @@ const FORM_GUIDES = {
       credit's value is one of the most common misunderstandings in personal
       tax planning.</p>
 
+      <div class="guide-example"><strong>Example: a $2,000 deduction vs. a
+      $2,000 credit.</strong> A filer in the 24% bracket is offered a choice
+      between a $2,000 above-the-line deduction and a $2,000 nonrefundable
+      credit (assume both are otherwise equally available to them). The
+      deduction reduces taxable income by $2,000, saving 24% × $2,000 = $480
+      in tax. The credit reduces the tax bill itself by the full $2,000 —
+      more than four times as valuable here. The gap only closes for someone
+      in a very high bracket, and a deduction never catches up to a
+      dollar-for-dollar credit of the same size at any ordinary bracket.</div>
+
       <h4>Marginal rate vs. effective rate</h4>
       <p>The marginal rate is the rate applied to the last dollar of income —
       the bracket a filer is "in." The effective rate is total tax divided by
@@ -587,6 +611,16 @@ const FORM_GUIDES = {
       because the progressive bracket system only taxes each slice of income
       at its own rate, not the whole amount at the top rate. "I'm in the 24%
       bracket" does not mean 24% of all income went to tax.</p>
+
+      <div class="guide-example"><strong>Example: marginal vs. effective on
+      the same return.</strong> A single filer's 2024 taxable income is
+      $60,000. The 2024 brackets tax the first $11,600 at 10%, the next
+      $35,550 (up to $47,150) at 12%, and the remaining $12,850 at 22% — a
+      marginal rate of 22%, since that's the rate on the last dollar earned.
+      Total tax comes to roughly $1,160 + $4,266 + $2,827 = $8,253. Divide
+      that by $60,000 and the effective rate is about 13.8% — nearly 8 points
+      below the 22% marginal rate this filer would (incorrectly) quote if
+      asked "what tax bracket are you in."</div>
 
       <h4>Withholding, estimated payments, and the underpayment penalty</h4>
       <p>Tax is meant to be paid throughout the year, not just at filing time
@@ -608,25 +642,72 @@ const FORM_GUIDES = {
       with a timely-filed extension.</p>
 
       <h4>Related forms and schedules</h4>
+      <p>Form 1040 itself is only two pages; almost everything beyond wages,
+      interest, and the standard deduction actually gets computed on an
+      attached schedule or form and then carried onto the 1040 as a single
+      number. Knowing what each one does — and which one a given kind of
+      income or deduction belongs on — is most of what makes a return
+      complicated.</p>
       <ul>
-        <li><strong>Schedule A</strong> — itemized deductions, when they beat
-        the standard deduction.</li>
-        <li><strong>Schedule B</strong> — interest and dividend income above
-        $1,500.</li>
-        <li><strong>Schedule C</strong> — profit or loss from a sole-
-        proprietor business.</li>
-        <li><strong>Schedule D / Form 8949</strong> — capital gains and
-        losses, and the individual sale-by-sale detail behind them.</li>
-        <li><strong>Schedule E</strong> — rental real estate, royalty, and
-        pass-through (partnership/S-corp K-1) income.</li>
-        <li><strong>Schedule SE</strong> — self-employment tax on net
-        self-employment or partnership earnings.</li>
-        <li><strong>Schedule 8812</strong> — Child Tax Credit / Credit for
-        Other Dependents computation.</li>
-        <li><strong>Form 4562</strong> — depreciation and Section 179
-        expensing for business or rental assets.</li>
-        <li><strong>Form 8863</strong> — education credits (American
-        Opportunity / Lifetime Learning).</li>
+        <li><strong>Schedule A (Itemized Deductions)</strong> — used instead
+        of the standard deduction when itemized amounts are larger. Covers
+        state and local taxes (capped at $10,000 total — property tax plus
+        income or sales tax combined), home mortgage interest on up to
+        $750,000 of acquisition debt, charitable contributions (generally
+        capped at 60% of AGI for cash gifts to public charities), and medical
+        expenses, but only the portion above 7.5% of AGI. Someone with
+        $80,000 AGI and $9,000 of medical bills can only deduct $3,000 of
+        it — the first $6,000 (7.5% of AGI) doesn't count at all.</li>
+        <li><strong>Schedule B (Interest and Ordinary Dividends)</strong> —
+        required once either interest or dividend income exceeds $1,500 for
+        the year; below that threshold both are just entered directly on
+        Form 1040 with no schedule needed. Also where a foreign bank account
+        or trust gets disclosed via a yes/no question, independent of the
+        dollar amount involved.</li>
+        <li><strong>Schedule C (Profit or Loss From Business)</strong> — a
+        sole proprietor's (or single-member LLC's) business income statement:
+        revenue, cost of goods sold, and a long list of expense categories,
+        netting to a profit or loss that flows to Schedule 1 and, separately,
+        to Schedule SE for self-employment tax. A loss here can offset other
+        income on the same return, subject to the hobby-loss and passive-
+        activity rules if the activity isn't run in a business-like way.</li>
+        <li><strong>Schedule D and Form 8949 (Capital Gains and Losses)</strong>
+        — Form 8949 lists each individual sale (asset, dates, proceeds, basis,
+        gain or loss); Schedule D totals those sales by short-term vs.
+        long-term and carries the net result to Form 1040 line 7. A capital
+        loss can offset any amount of capital gains plus up to $3,000 of
+        ordinary income per year, with anything beyond that carried forward
+        to future years indefinitely.</li>
+        <li><strong>Schedule E (Supplemental Income and Loss)</strong> —
+        rental real estate, royalties, and any partnership/S-corp K-1 income
+        (Schedule E, Part II, is literally where a partner or shareholder's
+        K-1 numbers land on their own 1040). Rental losses are often
+        "passive" and limited to offsetting only passive income, with a
+        narrow $25,000 special allowance for active participants below a
+        phased-out income threshold.</li>
+        <li><strong>Schedule SE (Self-Employment Tax)</strong> — computes
+        Social Security and Medicare tax on net self-employment earnings
+        (roughly 15.3% combined, though only the Social Security portion
+        stops once earnings pass the annual wage base). Half of this tax is
+        then deductible as an above-the-line adjustment on Schedule 1,
+        mirroring the employer-side deduction a W-2 employee's company
+        effectively gets automatically.</li>
+        <li><strong>Schedule 8812 (Credits for Qualifying Children and Other
+        Dependents)</strong> — computes the Child Tax Credit and the smaller
+        Credit for Other Dependents, including the income phase-out and the
+        refundable Additional Child Tax Credit portion for filers whose
+        credit exceeds their tax liability.</li>
+        <li><strong>Form 4562 (Depreciation and Amortization)</strong> —
+        required whenever a business or rental activity places a depreciable
+        asset in service, or elects to expense it immediately under Section
+        179 (up to an annual dollar cap) or bonus depreciation instead of
+        spreading the deduction over several years.</li>
+        <li><strong>Form 8863 (Education Credits)</strong> — the American
+        Opportunity Credit (up to $2,500 per student, partially refundable,
+        limited to the first four years of post-secondary education) and the
+        Lifetime Learning Credit (up to $2,000 per return, nonrefundable, no
+        year limit) — a filer can use one or the other per student per year,
+        never both.</li>
       </ul>
 
       <h4>Common pitfalls</h4>
@@ -709,6 +790,18 @@ const FORM_GUIDES = {
       investment funds, where investors and sponsors often want very
       different allocations of depreciation versus cash flow.</p>
 
+      <div class="guide-example"><strong>Example: a special allocation in a
+      real estate deal.</strong> A sponsor and an investor form a partnership
+      to buy a rental building 10%/90% (sponsor/investor) by capital
+      contributed, but the partnership agreement allocates 99% of tax
+      depreciation to the investor and only 1% to the sponsor, while cash
+      distributions stay 10%/90%. Because the investor is the one whose
+      capital account actually absorbs that depreciation (it reduces what
+      they'd receive on a liquidation), this can satisfy "substantial
+      economic effect" — the investor gets an outsized paper loss to shelter
+      other income, which is exactly why real estate deals are so often
+      structured as partnerships rather than S-corps.</div>
+
       <h4>Guaranteed payments vs. distributive share</h4>
       <p>A partnership can agree to pay a partner a fixed amount for services
       rendered or for the use of their capital, regardless of whether the
@@ -720,6 +813,17 @@ const FORM_GUIDES = {
       distinct from a partner's distributive share of the partnership's
       actual profit, which is what flows through via Schedule K-1 line 1 (or
       the relevant separately stated line) regardless of guaranteed payments.</p>
+
+      <div class="guide-example"><strong>Example: a break-even year with a
+      guaranteed payment.</strong> A two-partner consulting LLC has $80,000
+      of revenue and pays one partner a $60,000 guaranteed payment for
+      day-to-day management, regardless of how the year goes. After other
+      expenses of $30,000, the partnership actually has a $10,000 ordinary
+      loss ($80,000 − $60,000 − $30,000) split between the two partners. The
+      managing partner still reports the full $60,000 guaranteed payment as
+      ordinary income (subject to SE tax) <em>plus</em> their share of the
+      $10,000 loss — the guaranteed payment and the distributive share are
+      computed and taxed completely independently of each other.</div>
 
       <h4>Partner basis (outside basis)</h4>
       <p>Each partner tracks their own "outside basis" in the partnership —
@@ -809,18 +913,37 @@ const FORM_GUIDES = {
       <h4>Related forms and schedules</h4>
       <ul>
         <li><strong>Schedule K-1 (Form 1065)</strong> — each partner's own
-        copy of their share of the partnership's items, filed with the 1065
-        and given to the partner for their 1040.</li>
-        <li><strong>Form 7004</strong> — the extension request (6 months).</li>
+        copy of their share of every item on Schedule K: ordinary income,
+        each separately stated item, their ending capital account, and their
+        share of partnership liabilities (broken into recourse, nonrecourse,
+        and qualified nonrecourse — the categories that feed the at-risk
+        rules). A partner literally cannot correctly file their own 1040
+        without this document; it is not optional supplementary detail.</li>
+        <li><strong>Form 7004</strong> — the automatic 6-month extension
+        request, filed by the partnership's own deadline (so, by March 15 for
+        a calendar-year partnership) — it extends the 1065's filing deadline,
+        not any individual partner's.</li>
         <li><strong>Form 8825</strong> — rental real estate income and
-        expenses, when the partnership's rental activity is reported there
-        instead of directly on page 1.</li>
-        <li><strong>Schedule SE</strong> — filed by each partner individually
-        on their own 1040 to compute self-employment tax on their share.</li>
+        expenses for a partnership, functionally the same computation as
+        Schedule E on a 1040 but formatted for an entity reporting to
+        multiple owners at once; its bottom line flows to Schedule K.</li>
+        <li><strong>Schedule SE</strong> — filed by each individual general
+        partner on their own 1040, using the self-employment earnings figure
+        (Schedule K-1, box 14) the partnership reported to them, to compute
+        their own Social Security/Medicare tax.</li>
         <li><strong>Form 4562</strong> — depreciation and Section 179
-        expensing at the partnership level.</li>
-        <li><strong>Form 1065-X</strong> — amending a previously filed 1065
-        outside the BBA centralized audit adjustment process.</li>
+        expensing computed once at the partnership level; the resulting
+        deduction (or the separately stated Section 179 amount, which has its
+        own partner-level dollar limit) flows through via Schedule K-1.</li>
+        <li><strong>Form 1065-X</strong> — used to amend a previously filed
+        1065 outside the BBA centralized audit adjustment process (e.g. a
+        partnership below the electing-out size threshold correcting its own
+        mistake, rather than responding to an IRS exam).</li>
+        <li><strong>Schedule B-1</strong> — required when the partnership has
+        certain foreign partners or when any partner (directly or through
+        related parties) owns 50% or more of profits or capital — the IRS
+        uses it to identify ownership concentration and foreign-partner
+        withholding obligations.</li>
       </ul>
 
       <h4>Common pitfalls</h4>
@@ -930,6 +1053,19 @@ const FORM_GUIDES = {
       duties and time devoted, and the relationship between salary and
       distributions over multiple years, not just one year in isolation.</p>
 
+      <div class="guide-example"><strong>Example: the FICA savings that
+      draws scrutiny.</strong> A single shareholder-employee's S-corp nets
+      $150,000 before compensation. Paying a reasonable $90,000 salary
+      leaves $60,000 as a distribution; combined employer+employee FICA on
+      the salary runs roughly 15.3% up to the Social Security wage base
+      (Medicare continues above it), so this shareholder pays FICA on
+      $90,000, not $150,000. Now compare paying only a $20,000 salary and
+      taking $130,000 as a distribution: FICA applies to just $20,000,
+      saving thousands in payroll tax — which is exactly the pattern an IRS
+      exam looks for, and on audit the $70,000 "shortfall" between the two
+      salary numbers can be reclassified as wages, with back FICA, penalties,
+      and interest assessed on top.</div>
+
       <h4>The exceptions where the entity itself does owe tax</h4>
       <p>An S-corp isn't always tax-free at the entity level. Three
       situations create entity-level tax, all specific to a corporation that
@@ -954,6 +1090,17 @@ const FORM_GUIDES = {
       encounters any of these three — they exist specifically to keep a
       C-corp from converting to S status purely to avoid tax on gains or
       passive income that built up before the conversion.</p>
+
+      <div class="guide-example"><strong>Example: built-in gains tax in
+      action.</strong> A C-corp holding a building worth $800,000 with a
+      $300,000 tax basis (a $500,000 built-in gain) converts to S status.
+      If the S-corp sells that building for $800,000 just two years later —
+      inside the 5-year recognition period — the $500,000 gain is taxed at
+      the corporate level at the top corporate rate before it even reaches
+      the shareholders, who then also pay tax on their share of the gain
+      that passes through. Had the company waited until year six to sell,
+      or never converted from a C-corp to begin with (started as an S-corp),
+      no entity-level built-in gains tax would apply at all.</div>
 
       <h4>The Accumulated Adjustments Account (AAA)</h4>
       <p>An S-corp tracks its Accumulated Adjustments Account, essentially a
@@ -992,16 +1139,31 @@ const FORM_GUIDES = {
       <h4>Related forms and schedules</h4>
       <ul>
         <li><strong>Form 2553</strong> — the S election itself, filed once
-        (not annually).</li>
+        (not annually) and signed by every shareholder consenting to the
+        election; a missing shareholder signature is one of the most common
+        reasons an election is later found invalid.</li>
         <li><strong>Schedule K-1 (Form 1120-S)</strong> — each shareholder's
-        share of the corporation's items.</li>
-        <li><strong>Form 7004</strong> — the extension request (6 months).</li>
+        pro rata share of ordinary income and every separately stated item,
+        weighted by exact days of ownership if shares changed hands mid-year
+        — unlike a partnership K-1, there's no room for negotiated
+        allocations here.</li>
+        <li><strong>Form 7004</strong> — the automatic 6-month extension
+        request, due by the S-corp's own March 15 deadline.</li>
         <li><strong>Form 4562</strong> — depreciation and Section 179
-        expensing.</li>
-        <li><strong>Form 1125-E</strong> — an itemized breakdown of officer
-        compensation, required once total receipts reach $500,000.</li>
-        <li><strong>Form 1120-S Schedule D</strong> — capital gains/losses,
-        and the built-in gains tax computation when it applies.</li>
+        expensing computed at the corporate level, passed through via
+        Schedule K-1.</li>
+        <li><strong>Form 1125-E</strong> — an itemized breakdown of each
+        officer's compensation and percentage of stock owned, required once
+        the corporation's total receipts reach $500,000 — this is the exact
+        document an IRS examiner pulls first when checking reasonable
+        compensation.</li>
+        <li><strong>Form 1120-S Schedule D</strong> — capital gains and
+        losses, and the mechanical computation behind the built-in gains tax
+        described above when the corporation has C-corp history.</li>
+        <li><strong>Form 8869</strong> — the election for a "Qualified
+        Subchapter S Subsidiary" (QSub), letting an S-corp own another
+        corporation that's then disregarded for federal tax purposes and
+        folded into the parent's own return.</li>
       </ul>
 
       <h4>Common pitfalls</h4>
@@ -1081,6 +1243,16 @@ const FORM_GUIDES = {
       shareholders — it has no equivalent for an individual receiving
       dividends.</p>
 
+      <div class="guide-example"><strong>Example: why the DRD matters.</strong>
+      Corporation A owns 30% of Corporation B and receives a $100,000
+      dividend from it. Without a DRD, that $100,000 would be taxed at
+      Corporation A's 21% rate ($21,000), on top of the tax Corporation B
+      already paid on the profit before distributing it — and again if
+      Corporation A itself later distributes to its own shareholders. At a
+      30% ownership stake, the DRD is 65%, so only $35,000 of the dividend is
+      taxable to Corporation A ($7,350 of tax) — still some layering, but far
+      less than taxing the whole amount again.</div>
+
       <h4>Net operating losses (NOLs) post-2017</h4>
       <p>Current law lets a C-corp carry a net operating loss forward
       indefinitely, but generally not back to prior years (with narrow
@@ -1089,6 +1261,14 @@ const FORM_GUIDES = {
       A corporation with a large loss carryforward and a profitable year can
       therefore still owe some tax that year, even with more than enough NOL
       on the books to otherwise wipe it out.</p>
+
+      <div class="guide-example"><strong>Example: the 80% limitation in
+      practice.</strong> A corporation has a $500,000 NOL carryforward from
+      prior lean years, then earns $200,000 of taxable income (before NOL)
+      in a strong year. The NOL deduction is capped at 80% × $200,000 =
+      $160,000 — not the full $200,000 — so $40,000 remains taxable at 21%
+      ($8,400 of tax) even though $340,000 of NOL is still sitting unused on
+      the books, carried forward again to next year.</div>
 
       <h4>Book-tax differences: Schedule M-1 and M-2</h4>
       <p>A corporation's financial-statement ("book") income and its taxable
@@ -1137,16 +1317,33 @@ const FORM_GUIDES = {
 
       <h4>Related forms and schedules</h4>
       <ul>
-        <li><strong>Form 1125-A</strong> — cost of goods sold detail.</li>
-        <li><strong>Form 1125-E</strong> — an itemized breakdown of officer
-        compensation, required once total receipts reach $500,000.</li>
+        <li><strong>Form 1125-A</strong> — cost of goods sold detail:
+        beginning/ending inventory, purchases, labor, and the inventory
+        valuation method used (FIFO, LIFO, or specific identification) —
+        required whenever the corporation carries inventory.</li>
+        <li><strong>Form 1125-E</strong> — an itemized breakdown of each
+        officer's compensation and percentage of stock owned, required once
+        total receipts reach $500,000 — the same audit-relevant document an
+        S-corp files, but here the concern runs the other direction
+        (compensation set unreasonably high, not unreasonably low).</li>
         <li><strong>Form 4562</strong> — depreciation and Section 179
-        expensing.</li>
-        <li><strong>Schedule D (Form 1120)</strong> — capital gains and
-        losses.</li>
-        <li><strong>Form 7004</strong> — the extension request (6 months).</li>
+        expensing, plus bonus depreciation elections, for corporate assets.</li>
+        <li><strong>Schedule D (Form 1120) and Form 8949</strong> — capital
+        gains and losses; unlike an individual, a C-corp gets no preferential
+        rate on long-term gains (everything is taxed at the flat 21% rate)
+        and can only use capital losses against capital gains, never against
+        ordinary income, with a 3-year carryback / 5-year carryforward for
+        any unused loss.</li>
+        <li><strong>Form 7004</strong> — the automatic 6-month extension
+        request, due by the corporation's own April 15 deadline.</li>
         <li><strong>Form 1120-W</strong> — the corporation's own worksheet
-        for computing its required quarterly estimated tax payments.</li>
+        for computing its required quarterly estimated tax payments; not
+        filed with the IRS, but kept to support the payments actually made.</li>
+        <li><strong>Schedule UTP (Uncertain Tax Positions)</strong> —
+        required of larger corporations to disclose federal tax positions
+        for which a reserve was recorded in the financial statements,
+        essentially flagging positions the company itself expects could be
+        challenged.</li>
       </ul>
 
       <h4>Common pitfalls</h4>
@@ -1230,6 +1427,28 @@ const FORM_GUIDES = {
       Nothing about being a nonprofit exempts income that has nothing to do
       with the organization's mission.</p>
 
+      <div class="guide-example"><strong>Example: related vs. unrelated
+      side by side.</strong> A university's on-campus bookstore sells
+      textbooks to enrolled students — directly related to its educational
+      mission, so that revenue is exempt. The same bookstore also sells
+      branded sweatshirts and coffee mugs to the general public walking by —
+      that revenue is generally treated as unrelated business income, taxed
+      on Form 990-T, because selling apparel to the public doesn't further
+      the school's educational purpose merely because the seller happens to
+      be a school. The dividing line isn't "does this bring in money the
+      nonprofit needs" — nearly everything does — it's "does the activity
+      itself further the exempt purpose."</div>
+
+      <div class="guide-example"><strong>Example: the debt-financed property
+      trap.</strong> A charity buys an office building partly with a
+      mortgage and rents out the half it doesn't use to a for-profit tenant.
+      Rental income from real property is normally excluded from UBIT
+      entirely — but once the property is debt-financed, a proportional
+      share of that rental income (matching the percentage of the purchase
+      price that was borrowed) becomes taxable unrelated business income
+      under the "debt-financed property" rules, even though a simple cash
+      rental of the same space would have been fully exempt.</div>
+
       <h4>Compensation, private inurement, and excess benefit transactions</h4>
       <p>Officers, directors, key employees, and other "disqualified
       persons" can't be paid excessively or otherwise receive improper
@@ -1244,6 +1463,20 @@ const FORM_GUIDES = {
       considered reasonable if it's comparable to what similar organizations
       pay for similar work, based on actual comparability data reviewed and
       approved by an independent body within the organization.</p>
+
+      <div class="guide-example"><strong>Example: an excess benefit
+      transaction and its excise tax.</strong> A charity's board (which
+      includes the executive director's spouse) approves a $250,000 salary
+      for the executive director, but comparable nonprofits of similar size
+      pay $150,000 for the same role. The $100,000 excess is an excess
+      benefit transaction. The executive director personally owes a 25%
+      excise tax on the excess ($25,000) under Section 4958, rising to 200%
+      of the excess if it isn't repaid to the organization within the
+      correction period — and board members who knowingly approved an
+      unreasonable amount can separately owe their own excise tax (up to
+      10% of the excess, capped per transaction) for approving it. None of
+      this excise tax is paid by the organization itself; it's assessed on
+      the individuals.</div>
 
       <h4>Public charity vs. private foundation, and the public support test</h4>
       <p>A 501(c)(3) organization is classified as either a public charity
@@ -1260,6 +1493,21 @@ const FORM_GUIDES = {
       A single unusually large donation, if not properly structured or
       disclosed, can shift an organization's classification if nobody is
       tracking the ratio.</p>
+
+      <div class="guide-example"><strong>Example: one big gift changing
+      everything.</strong> A small charity has raised a steady $300,000 a
+      year from broad public donations for years, comfortably passing the
+      public support test. One year, a single donor gives $1,000,000. Under
+      the public support test's rules, an individual donor's contributions
+      generally only count as "public" support up to 2% of the
+      organization's total support over the measuring period — so most of
+      that $1,000,000 gift gets treated as coming from a narrow, concentrated
+      source rather than the general public for this calculation. If the
+      organization doesn't track this and plan around it (e.g. by
+      structuring the gift over multiple years, or simply understanding the
+      math ahead of time), it can find itself reclassified as a private
+      foundation the following year — with a whole different, stricter set
+      of rules attached, triggered by what looked like great news.</div>
 
       <h4>Governance disclosures</h4>
       <p>The return also asks about governance practices that aren't
@@ -1293,28 +1541,73 @@ const FORM_GUIDES = {
       filing on time would have been.</p>
 
       <h4>Related forms and schedules</h4>
+      <p>These aren't a checklist of optional add-ons — which variant of 990
+      an organization files is mandatory based on size, and most of the
+      schedules below are only required if a specific yes/no question
+      elsewhere on the return is answered "yes." Getting the wrong variant or
+      skipping a required schedule is one of the most common reasons a
+      Form 990 filing gets rejected or flagged.</p>
       <ul>
-        <li><strong>Form 990-N</strong> — the e-postcard for the smallest
-        organizations (generally under $50,000 in gross receipts).</li>
+        <li><strong>Form 990-N (e-Postcard)</strong> — an eight-question
+        online-only filing for organizations whose gross receipts are
+        normally $50,000 or less. There's no financial detail at all, just
+        basic identifying information — but it's still mandatory, and
+        skipping it counts the same toward the 3-year automatic-revocation
+        clock as skipping a full 990 would.</li>
         <li><strong>Form 990-EZ</strong> — the mid-size version this app's
-        sample return uses.</li>
+        sample return uses, for organizations with gross receipts under
+        $200,000 and total assets under $500,000. It condenses the full
+        Form 990's financial statements into single-page summaries but keeps
+        the same governance questions and, where triggered, the same
+        supporting schedules (A, B, O, etc.).</li>
         <li><strong>Form 990 (full)</strong> — required once an organization
-        exceeds the 990-EZ thresholds.</li>
-        <li><strong>Form 990-PF</strong> — the separate variant every private
-        foundation files, regardless of size.</li>
+        exceeds the 990-EZ thresholds. Adds much more detail: a full
+        statement of functional expenses split by program/management/
+        fundraising, a list of the five highest-compensated employees over
+        $100,000, and (for the largest organizations) Schedule M-3-style
+        reconciliation between book and tax figures.</li>
+        <li><strong>Form 990-PF</strong> — the return every private
+        foundation files, regardless of size — even a $10,000 family
+        foundation files this instead of the e-Postcard. Includes the excise
+        tax on net investment income (generally 1.39%) and a computation of
+        the minimum amount the foundation must distribute for charitable
+        purposes each year (roughly 5% of the prior year's average
+        investment assets) — a foundation that under-distributes owes a
+        separate excise tax on the shortfall.</li>
         <li><strong>Form 990-T</strong> — reports and pays unrelated business
-        income tax (UBIT) separately from the main return.</li>
-        <li><strong>Schedule A</strong> — public charity status and the
-        public support test computation.</li>
-        <li><strong>Schedule B</strong> — a list of contributors above
-        certain thresholds (not always required to be made public).</li>
-        <li><strong>Schedule O</strong> — required narrative detail
-        supplementing specific yes/no answers elsewhere on the return.</li>
-        <li><strong>Form 8868</strong> — the automatic filing extension
-        (6 months).</li>
+        income tax (UBIT), taxed at regular corporate rates on net UBTI after
+        a $1,000 specific deduction. Filed separately from the main 990/990-EZ/
+        990-PF, on its own schedule, even though the organization filing it
+        remains tax-exempt overall.</li>
+        <li><strong>Schedule A</strong> — required of every 501(c)(3) filer;
+        this is where public charity vs. private foundation status is
+        actually established, including the multi-year public support test
+        computation described above. An organization that fails the test two
+        years running is reclassified as a private foundation going
+        forward.</li>
+        <li><strong>Schedule B (Schedule of Contributors)</strong> — lists
+        donors who gave above a threshold (generally the greater of $5,000 or
+        2% of total contributions). Historically a point of controversy since
+        some organizations aren't required to make this schedule public even
+        though the rest of the 990 is — donor privacy versus transparency has
+        been genuinely litigated and legislated on this exact schedule.</li>
+        <li><strong>Schedule O</strong> — required narrative supplement
+        whenever the return itself says "see Schedule O" next to a yes/no
+        question — governance policy descriptions, explanations of unusual
+        transactions, and details that don't fit the main form's fixed
+        fields. A 990 with no Schedule O attached despite the main form
+        pointing to it is an incomplete filing.</li>
+        <li><strong>Form 8868</strong> — the automatic 6-month filing
+        extension, filed by the original May 15 (calendar-year) deadline —
+        unlike some other entity types, no separate approval is needed; it's
+        automatic once properly filed on time.</li>
         <li><strong>Form 1023 / 1024</strong> — the original application for
-        tax-exempt recognition, filed once before any Form 990 is ever
-        due.</li>
+        tax-exempt recognition, filed once, before any Form 990 obligation
+        even exists. Form 1023-EZ is a streamlined version for smaller
+        organizations expecting under $50,000 in annual gross receipts;
+        approval establishes the exemption (and, usually, retroactively
+        covers the period back to the organization's formation if filed
+        within 27 months of it).</li>
       </ul>
 
       <h4>Common pitfalls</h4>
@@ -2128,35 +2421,16 @@ function renderGuides() {
 }
 renderGuides();
 
-function showGuidesPanel(guideKey) {
-  if (guideKey) currentGuideKey = guideKey;
+function showGuidesPanel() {
   uploadPanel.classList.add('hidden');
   summaryPanel.classList.add('hidden');
   resultsPanel.classList.add('hidden');
   detailPanel.classList.add('hidden');
   guidesPanel.classList.remove('hidden');
-  renderGuideTabs();
-  renderGuideContent();
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
-guidesLink.addEventListener('click', () => showGuidesPanel());
+guidesLink.addEventListener('click', showGuidesPanel);
 guidesBackBtn.addEventListener('click', showUploadPanel);
-
-// The same 5 guide buttons also appear directly on the landing page (not
-// just behind the header link), so "which return type am I even looking
-// at" has an answer before someone uploads anything or picks a sample.
-function renderLandingGuideLinks() {
-  const tabsEl = document.getElementById('landing-guides-tabs');
-  tabsEl.innerHTML = GUIDE_ORDER.map(key => `
-    <button type="button" class="secondary" data-guide-key="${key}">
-      ${FORM_GUIDES[key].title.split(' — ')[0]}
-    </button>
-  `).join('');
-  tabsEl.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => showGuidesPanel(btn.dataset.guideKey));
-  });
-}
-renderLandingGuideLinks();
 
 // Some schedule details nest inside another (e.g. Schedule C's own
 // depreciation line drills further into Form 4562), so "back" needs to
