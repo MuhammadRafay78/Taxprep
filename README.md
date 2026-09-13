@@ -52,40 +52,22 @@ extracted number before it explains anything.
    the two (computed client-side from whatever you've reviewed/corrected in
    both review tables).
 
-5. **Scanned pages fall back to OCR.** Any page with zero extractable text
-   (a photographed or scanned page in an otherwise text-based PDF) is
-   rendered to an image and run through Tesseract (`backend/ocr.py`).
-   Section-boundary detection (which pages belong to which schedule) is
-   still computed from the *original*, pre-OCR pages — Form 1040 itself
-   prints an OMB control number too, and once OCR reveals it, it would
-   otherwise look like a new attachment starting mid-return and truncate
-   the main form's scope. Every value recovered via OCR is marked
-   `confidence: "uncertain"` and `via_ocr: true` and shown with a "verify
-   this, OCR can misread digits" caption — it's meaningfully less reliable
-   than reading a real text layer (digit misreads, merged/garbled words),
-   so it's never treated with the same confidence as a phrase-anchored
-   match on real text. The UI banner tells you which pages needed OCR and
-   whether it actually recovered anything from each one.
-
-   Scanned pages are OCR'd concurrently (one Tesseract subprocess per page,
-   in a thread pool sized to the CPU count) — a multi-page scanned return
-   run one page at a time can take minutes, which is well past what anyone
-   will wait on for a PDF upload. Each Tesseract invocation is also capped
-   at 20 seconds and constrained to a single internal thread
-   (`OMP_THREAD_LIMIT=1`); without that, running several multi-threaded
-   Tesseract processes at once oversubscribes the machine badly (measured:
-   4 workers × 4 internal threads each on a 4-core box turned a ~20-second
-   job into a 2-minute one where nearly every page hit the timeout).
+5. **Scanned pages are reported, not recovered.** Any page with zero
+   extractable text (a photographed or scanned page in an otherwise
+   text-based PDF) has nothing this app can pull values from — there's no
+   OCR fallback. Every line on such a page comes back `not_found`, and the
+   UI banner tells you which page numbers were unreadable so you know to
+   enter those values by hand.
 
 ## What it deliberately doesn't do
 
 - **No e-filing, no tax calculation from scratch, no advice.** It explains
   the numbers that are already on the return; it doesn't compute what your
   taxes *should* be.
-- **No OCR on the Cloudflare Workers port** (`worker/`). Workers can't run
-  the `tesseract-ocr` native binary this needs (no native binaries in its
-  WASM sandbox) — see `worker/README.md`. That deployment stays text-layer
-  only; a scanned page there is reported as such with no fallback.
+- **No OCR.** Scanned or photographed pages have no text layer to read, on
+  either this Python backend or the Cloudflare Workers port (`worker/`) —
+  neither recovers anything from them, and both just flag the page as
+  unreadable so you know to enter those values by hand.
 
 ## Running it
 
@@ -94,21 +76,11 @@ pip install -r requirements.txt
 uvicorn backend.main:app --reload
 ```
 
-OCR requires the `tesseract-ocr` system package (not just the Python
-`pytesseract` wrapper installed via pip) — e.g. `apt-get install
-tesseract-ocr` on Debian/Ubuntu, `brew install tesseract` on macOS. Without
-it, `backend/ocr.py` fails closed: scanned pages are still reported in
-`scanned_pages`, just never recovered into `ocr_pages`.
-
 Then open http://127.0.0.1:8000/.
 
-## Hosting the OCR-capable backend
+## Hosting the backend
 
-The Cloudflare Worker (`worker/`) can't run OCR at all (see "What it
-deliberately doesn't do" above), so a return with scanned pages needs the
-Python backend running somewhere with a real server and the `tesseract-ocr`
-system package. The `Dockerfile` at the repo root packages exactly that —
-`tesseract-ocr` installed via `apt-get`, the Python dependencies, and
+The `Dockerfile` at the repo root packages the Python dependencies and
 `uvicorn` serving both the API and `frontend/`.
 
 ```bash
@@ -147,7 +119,6 @@ and the self-employment tax note.
 ```
 backend/
   parser.py     PDF -> extracted line values, incl. Schedules 1-3 (pdfplumber-based)
-  ocr.py        OCR fallback (Tesseract) for pages with no text layer
   tax_data.py   reference standard deductions / brackets / EIC limits for sanity checks
   explain.py    line explanations, anomaly flags, money-flow breakdown
   main.py       FastAPI app (/api/extract, /api/analyze) + serves frontend/

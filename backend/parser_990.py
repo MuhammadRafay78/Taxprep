@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import re
 
-from . import ocr
 from .parser import (
     ExtractedLine,
     ExtractionResult,
@@ -80,25 +79,13 @@ def parse_990(pdf_bytes: bytes) -> ExtractionResult:
     scanned_page_indices = [i for i, rows in enumerate(page_lines) if not any(row.strip() for row in rows)]
     sections = _detect_form_sections(list(pages), [list(p) for p in page_lines])
 
-    ocr_page_indices: set[int] = set()
-    ocr_results = ocr.ocr_pages_text(pdf_bytes, scanned_page_indices)
-    for i, ocr_text in ocr_results.items():
-        if ocr_text.strip():
-            pages[i] = ocr_text
-            page_lines[i] = ocr_text.splitlines()
-            ocr_page_indices.add(i)
-
     text = "\n".join(pages)
 
     result = ExtractionResult(raw_text=text)
     result.scanned_pages = [i + 1 for i in scanned_page_indices]
-    result.ocr_pages = [i + 1 for i in sorted(ocr_page_indices)]
 
     def flatten(a: int, b: int) -> list[str]:
         return [line for page in page_lines[a:b] for line in page]
-
-    def uses_ocr(a: int, b: int) -> bool:
-        return any(i in ocr_page_indices for i in range(a, b))
 
     # The main form's own start page is found directly by its title phrase
     # (searched across the whole page's text, not just the first couple of
@@ -117,8 +104,7 @@ def parse_990(pdf_bytes: bytes) -> ExtractionResult:
     later_omb_pages = [i for i, p in enumerate(pages) if i > main_start and _OMB_RE.search(p)]
     main_end = later_omb_pages[0] if later_omb_pages else total_pages
     main_scope = flatten(main_start, main_end)
-    result.lines.extend(_extract_group(main_scope, main_scope, LINE_DEFINITIONS, "Form 990",
-                                        via_ocr=uses_ocr(main_start, main_end)))
+    result.lines.extend(_extract_group(main_scope, main_scope, LINE_DEFINITIONS, "Form 990"))
 
     # Any other attached schedule/form (Schedule A, Schedule O, Schedule B,
     # ...) has no curated line definitions here — surface it generically,
@@ -129,7 +115,6 @@ def parse_990(pdf_bytes: bytes) -> ExtractionResult:
         if section.start_page < main_end and section.end_page > main_start:
             continue
         scope = flatten(section.start_page, section.end_page)
-        section_via_ocr = uses_ocr(section.start_page, section.end_page)
         for number, label, value in _extract_generic_lines(scope):
             result.lines.append(ExtractedLine(
                 id=f"{_slugify(section.title)}_{number}",
@@ -137,7 +122,6 @@ def parse_990(pdf_bytes: bytes) -> ExtractionResult:
                 value=value,
                 confidence="uncertain",
                 group=section.title,
-                via_ocr=section_via_ocr,
             ))
 
     return result

@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import re
 
-from . import ocr
 from .parser import (
     ExtractedLine,
     ExtractionResult,
@@ -82,24 +81,12 @@ def parse_1120s(pdf_bytes: bytes) -> ExtractionResult:
     scanned_page_indices = [i for i, rows in enumerate(page_lines) if not any(row.strip() for row in rows)]
     sections = _detect_form_sections(list(pages), [list(p) for p in page_lines])
 
-    ocr_page_indices: set[int] = set()
-    ocr_results = ocr.ocr_pages_text(pdf_bytes, scanned_page_indices)
-    for i, ocr_text in ocr_results.items():
-        if ocr_text.strip():
-            pages[i] = ocr_text
-            page_lines[i] = ocr_text.splitlines()
-            ocr_page_indices.add(i)
-
     text = "\n".join(pages)
     result = ExtractionResult(raw_text=text)
     result.scanned_pages = [i + 1 for i in scanned_page_indices]
-    result.ocr_pages = [i + 1 for i in sorted(ocr_page_indices)]
 
     def flatten(a: int, b: int) -> list[str]:
         return [line for page in page_lines[a:b] for line in page]
-
-    def uses_ocr(a: int, b: int) -> bool:
-        return any(i in ocr_page_indices for i in range(a, b))
 
     def find_title_page(title_re: re.Pattern[str]) -> int | None:
         return next((i for i, p in enumerate(pages) if title_re.search(p)), None)
@@ -126,15 +113,13 @@ def parse_1120s(pdf_bytes: bytes) -> ExtractionResult:
         m = _FORM_1120S_HEADER_YEAR_RE.search(text)
         result.tax_year = int(m.group(1)) if m else None
     main_scope = flatten(main_start, main_end)
-    result.lines.extend(_extract_group(main_scope, main_scope, MAIN_LINE_DEFINITIONS, "Form 1120-S",
-                                        via_ocr=uses_ocr(main_start, main_end)))
+    result.lines.extend(_extract_group(main_scope, main_scope, MAIN_LINE_DEFINITIONS, "Form 1120-S"))
 
     if k_page is not None:
         k_start, k_end = bounded_scope(k_page)
         k_scope = truncate_before_next_lettered_schedule(flatten(k_start, k_end))
         result.lines.extend(_extract_group(k_scope, k_scope, SCHEDULE_K_DEFINITIONS,
-                                            "Schedule K (Shareholders' Pro Rata Share Items)",
-                                            via_ocr=uses_ocr(k_start, k_end)))
+                                            "Schedule K (Shareholders' Pro Rata Share Items)"))
     else:
         k_start = k_end = None
         result.lines.extend(_extract_group([], None, SCHEDULE_K_DEFINITIONS,
@@ -148,7 +133,6 @@ def parse_1120s(pdf_bytes: bytes) -> ExtractionResult:
         if any(section.start_page < end and section.end_page > start for start, end in covered_ranges):
             continue
         scope = flatten(section.start_page, section.end_page)
-        section_via_ocr = uses_ocr(section.start_page, section.end_page)
         for number, label, value in _extract_generic_lines(scope):
             result.lines.append(ExtractedLine(
                 id=f"{_slugify(section.title)}_{number}",
@@ -156,7 +140,6 @@ def parse_1120s(pdf_bytes: bytes) -> ExtractionResult:
                 value=value,
                 confidence="uncertain",
                 group=section.title,
-                via_ocr=section_via_ocr,
             ))
 
     return result

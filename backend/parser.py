@@ -15,9 +15,9 @@ like "1" repeat across the main form and every schedule — matching one
 anywhere in the document would happily grab the wrong line.
 
 This is inherently heuristic. Pages with no text layer at all (a scanned or
-photographed page) are run through OCR as a fallback (see ocr.py) — slower
-and less reliable than reading real text, so lines recovered that way are
-marked `via_ocr` and never given full "matched" confidence.
+photographed page) have nothing to extract from — there's no OCR fallback —
+so every line on such a page comes back not_found, reported via
+`scanned_pages` so the caller can flag it.
 Callers should always let the person reviewing the result correct any field
 before relying on it; see the `confidence` field on each result.
 """
@@ -28,8 +28,6 @@ import re
 from dataclasses import dataclass, field
 
 import pdfplumber
-
-from . import ocr
 
 # Requires proper thousands-grouping (",ddd" in groups of exactly 3) when a
 # comma is present, and allows 0-2 digits after a decimal point (real IRS
@@ -403,14 +401,15 @@ class ExtractedLine:
     label: str
     value: float | None
     # "matched" / "not_found": a curated line (Form 1040, Schedule 1/2/3) -
-    # phrase-anchored, validated against real returns. "uncertain": either
-    # a generically-detected line on a form we have no curated definitions
-    # for (position-based only, no phrase anchor to confirm it's reading
-    # the right cell), or a curated line recovered via OCR (see `via_ocr`)
-    # rather than a real text layer - OCR misreads digits often enough that
-    # even a phrase-anchored match shouldn't be shown with full confidence.
+    # phrase-anchored, validated against real returns. "uncertain": a
+    # generically-detected line on a form we have no curated definitions for
+    # (position-based only, no phrase anchor to confirm it's reading the
+    # right cell).
     confidence: str
     group: str = "Form 1040"
+    # Always False — kept for API/schema compatibility with existing sample-
+    # scenario fixtures and the frontend's rendering code. This app no
+    # longer has an OCR fallback, so nothing ever sets this true.
     via_ocr: bool = False
 
 
@@ -421,11 +420,10 @@ class ExtractionResult:
     tax_year: int | None = None
     raw_text: str = ""
     # 1-indexed page numbers with zero extractable text — almost always a
-    # scanned/rasterized page (an image with no text layer at all).
+    # scanned/rasterized page (an image with no text layer at all). Nothing
+    # recovers these; every line on such a page comes back not_found.
     scanned_pages: list[int] = field(default_factory=list)
-    # Subset of scanned_pages that OCR successfully recovered *some* text
-    # from (Tesseract not installed, or OCR itself failing, leaves a page
-    # in scanned_pages but out of this list).
+    # Always empty — kept for API/schema compatibility (see `via_ocr` above).
     ocr_pages: list[int] = field(default_factory=list)
 
     def as_value_map(self) -> dict[str, float]:
@@ -717,7 +715,6 @@ def _extract_group(
     fallback_scope: list[str] | None,
     definitions: list[tuple[str, str, list[str], str]],
     group: str,
-    via_ocr: bool = False,
 ) -> list[ExtractedLine]:
     results = []
     for line_id, label, phrases, fallback_number in definitions:
@@ -729,12 +726,8 @@ def _extract_group(
             id=line_id,
             label=label,
             value=value,
-            # A phrase-anchored match is normally trustworthy ("matched"),
-            # but OCR misreads digits often enough that even a correctly
-            # *located* line shouldn't be shown with full confidence.
-            confidence=("uncertain" if via_ocr else "matched") if matched else "not_found",
+            confidence="matched" if matched else "not_found",
             group=group,
-            via_ocr=via_ocr and matched,
         ))
     return results
 
@@ -803,45 +796,24 @@ def parse_1040(pdf_bytes: bytes) -> ExtractionResult:
 
     scanned_page_indices = [i for i, rows in enumerate(page_lines) if not any(row.strip() for row in rows)]
 
-    # Section boundaries are detected from the *original* (pre-OCR) pages,
-    # before any OCR substitution below. Form 1040 itself prints an OMB
-    # control number too (the same one Schedules 1/2/3 use, in fact) - as
-    # long as its own page has no text layer, it naturally can't trigger a
-    # false section boundary, exactly like every other scanned page. Once
-    # OCR fills that page's text in, it *would* otherwise look like a new
-    # attachment starting mid-return and wrongly cut the main form's scope
-    # short before ever reaching its real content. Using the pre-OCR
-    # snapshot for section detection keeps that boundary exactly where it
-    # was, while OCR'd text is still used for the actual value extraction
-    # within whatever section a page falls into.
     sections = _detect_form_sections(list(pages), [list(p) for p in page_lines])
 
-    # OCR is slower and less reliable than a real text layer, so it's only
-    # ever used to fill in pages that have literally no extractable text at
-    # all — never to double-check a page that already parsed normally.
-    # Pages are OCR'd concurrently (see ocr.py) since a multi-page scanned
-    # return run one page at a time can take minutes.
-    ocr_page_indices: set[int] = set()
-    ocr_results = ocr.ocr_pages_text(pdf_bytes, scanned_page_indices)
-    for i, ocr_text in ocr_results.items():
-        if ocr_text.strip():
-            pages[i] = ocr_text
-            page_lines[i] = ocr_text.splitlines()
-            ocr_page_indices.add(i)
-
+    # Scanned/photographed pages (no extractable text layer at all) are
+    # reported so the UI can flag them, but nothing recovers their content —
+    # this app no longer has an OCR fallback (removed: it was slow,
+    # frequently misread digits, and needed a system binary this deployment
+    # doesn't want to depend on). Every line on such a page simply comes
+    # back not_found, the same as any other line this app has no definition
+    # for.
     text = "\n".join(pages)
 
     result = ExtractionResult(raw_text=text)
     result.filing_status = detect_filing_status(text)
     result.tax_year = detect_tax_year(text)
     result.scanned_pages = [i + 1 for i in scanned_page_indices]
-    result.ocr_pages = [i + 1 for i in sorted(ocr_page_indices)]
 
     def flatten(a: int, b: int) -> list[str]:
         return [line for page in page_lines[a:b] for line in page]
-
-    def uses_ocr(a: int, b: int) -> bool:
-        return any(i in ocr_page_indices for i in range(a, b))
 
     # Every attached form/schedule (curated or not) is bounded by the next
     # one's own first page, found generically via its OMB control number —
@@ -850,18 +822,16 @@ def parse_1040(pdf_bytes: bytes) -> ExtractionResult:
     # the PDF when there's no next *known* schedule to stop at.
     main_end = sections[0].start_page if sections else total_pages
     main_scope = flatten(0, main_end)
-    result.lines.extend(_extract_group(main_scope, main_scope, LINE_DEFINITIONS, "Form 1040",
-                                        via_ocr=uses_ocr(0, main_end)))
+    result.lines.extend(_extract_group(main_scope, main_scope, LINE_DEFINITIONS, "Form 1040"))
 
     curated_found: set[str] = set()
     for section in sections:
         scope = flatten(section.start_page, section.end_page)
-        section_via_ocr = uses_ocr(section.start_page, section.end_page)
         curated_key = next((k for k in _CURATED_SCHEDULES if section.title.lower().startswith(k)), None)
         if curated_key:
             curated_found.add(curated_key)
             definitions, group_name = _CURATED_SCHEDULES[curated_key]
-            result.lines.extend(_extract_group(scope, scope, definitions, group_name, via_ocr=section_via_ocr))
+            result.lines.extend(_extract_group(scope, scope, definitions, group_name))
         else:
             # No hand-written line definitions for this form (Schedule D,
             # Form 8949, Schedule E, Form 2441, etc.) — surface whatever
@@ -874,7 +844,6 @@ def parse_1040(pdf_bytes: bytes) -> ExtractionResult:
                     value=value,
                     confidence="uncertain",
                     group=section.title,
-                    via_ocr=section_via_ocr,
                 ))
 
     # A curated schedule with no detected page at all is simply absent from
