@@ -7,8 +7,9 @@
 <style>
   :root {
     --bg: #f7f7f5; --panel: #ffffff; --border: #e3e1db; --text: #2b2a27;
-    --muted: #6b6a64; --accent: #1f6f5c; --accent-dim: #eef6f3; --warn: #b3541e; --warn-dim: #fbe9e0; --info: #2f5f8a;
+    --muted: #6b6a64; --accent: #1f6f5c; --accent-hover: #185849; --accent-dim: #eef6f3; --warn: #b3541e; --warn-dim: #fbe9e0; --info: #2f5f8a;
     --info-dim: #e7eff6; --divider: #f0efe9; --track: #eee; --btn-text: #fff;
+    --shadow: 0 1px 2px rgba(30,28,20,0.05), 0 4px 10px rgba(30,28,20,0.04);
     color-scheme: light;
   }
   /* Dark ("black") theme: applied automatically when the OS is set to dark
@@ -16,33 +17,39 @@
      the toggle button (data-theme, persisted in localStorage). */
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #121212; --panel: #1b1b1b; --border: #333230; --text: #ececea;
-      --muted: #a3a19b; --accent: #3fae8d; --accent-dim: #17251f; --warn: #e08a52; --warn-dim: #3a2418; --info: #6fa3d6;
-      --info-dim: #1b2734; --divider: #2a2a28; --track: #2a2a28; --btn-text: #0e0e0e;
+      --bg: #121212; --panel: #1c1c1c; --border: #343330; --text: #ececea;
+      --muted: #a8a59d; --accent: #4cc2a0; --accent-hover: #6ad0b4; --accent-dim: #17251f; --warn: #e6975e; --warn-dim: #3a2418; --info: #7db1e0;
+      --info-dim: #1b2734; --divider: #2c2c2a; --track: #2c2c2a; --btn-text: #0b0f0d;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.28);
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #121212; --panel: #1b1b1b; --border: #333230; --text: #ececea;
-    --muted: #a3a19b; --accent: #3fae8d; --accent-dim: #17251f; --warn: #e08a52; --warn-dim: #3a2418; --info: #6fa3d6;
-    --info-dim: #1b2734; --divider: #2a2a28; --track: #2a2a28; --btn-text: #0e0e0e;
+    --bg: #121212; --panel: #1c1c1c; --border: #343330; --text: #ececea;
+    --muted: #a8a59d; --accent: #4cc2a0; --accent-hover: #6ad0b4; --accent-dim: #17251f; --warn: #e6975e; --warn-dim: #3a2418; --info: #7db1e0;
+    --info-dim: #1b2734; --divider: #2c2c2a; --track: #2c2c2a; --btn-text: #0b0f0d;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.28);
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; transition: background-color 0.15s ease, color 0.15s ease; }
   header { padding: 28px 24px 8px; max-width: 760px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
   header .header-text { flex: 1; min-width: 0; }
   h1 { font-size: 1.5rem; margin: 0 0 4px; }
   header p { color: var(--muted); margin: 0; }
-  #theme-toggle { flex: none; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 8px 10px; font-size: 1.1rem; line-height: 1; border-radius: 8px; }
+  #theme-toggle { flex: none; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 8px 10px; font-size: 1.1rem; line-height: 1; border-radius: 8px; transition: border-color 0.15s ease, background-color 0.15s ease; }
+  #theme-toggle:hover { border-color: var(--accent); background: var(--accent-dim); }
   main { max-width: 760px; margin: 0 auto; padding: 16px 24px 64px; }
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-  .dropzone { border: 2px dashed var(--border); border-radius: 10px; padding: 32px; text-align: center; cursor: pointer; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); transition: background-color 0.15s ease, border-color 0.15s ease; }
+  .dropzone { border: 2px dashed var(--border); border-radius: 10px; padding: 32px; text-align: center; cursor: pointer; transition: border-color 0.15s ease, background-color 0.15s ease; }
+  .dropzone:hover { border-color: var(--accent); }
   .dropzone.drag { border-color: var(--accent); background: var(--accent-dim); }
   .dropzone input { display: none; }
-  button { background: var(--accent); color: var(--btn-text); border: none; border-radius: 8px; padding: 11px 18px; font-size: 0.95rem; cursor: pointer; min-height: 44px; }
+  button { background: var(--accent); color: var(--btn-text); border: none; border-radius: 8px; padding: 11px 18px; font-size: 0.95rem; cursor: pointer; min-height: 44px; transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
+  button:hover:not(:disabled) { background: var(--accent-hover); }
   button:disabled { opacity: 0.5; cursor: default; }
   button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  button.secondary:hover:not(:disabled) { background: var(--accent-dim); }
   .explain { color: var(--muted); font-size: 0.85rem; }
   #sample-scenarios { margin-top: 16px; }
   #sample-scenarios .scenario-heading { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
@@ -52,6 +59,7 @@
   .scenario-btn .scenario-desc { font-weight: 400; font-size: 0.82rem; opacity: 0.85; display: block; margin-top: 2px; }
   .scenario-check { flex: 0 0 36px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel);
     cursor: pointer; font-size: 1rem; color: var(--accent); line-height: 1; }
+  button.scenario-check:hover { background: var(--accent-dim); }
   .scenario-row.is-complete .scenario-check { background: var(--accent-dim); border-color: var(--accent); }
   .scenario-row.is-complete .scenario-btn { opacity: 0.6; }
   select, input[type=number].meta { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); font: inherit; }
@@ -89,9 +97,14 @@
   .guide-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 20px; }
   .guide-tabs button { padding: 8px 14px; font-size: 0.9rem; }
   .guide-tabs button.secondary.active { background: var(--accent); color: var(--btn-text); }
-  .guide-section h3 { margin-bottom: 4px; }
-  .guide-section h4 { margin: 22px 0 6px; }
-  .guide-section p, .guide-section li { font-size: 0.92rem; line-height: 1.55; }
+  #landing-guides { margin: 18px 0 4px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .guide-example-cta { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .guide-section { max-width: 680px; }
+  .guide-section h3 { margin: 0 0 12px; font-size: 1.15rem; }
+  .guide-section h4 { margin: 26px 0 8px; font-size: 1rem; color: var(--accent); }
+  .guide-section h4:first-of-type { margin-top: 4px; }
+  .guide-section p { font-size: 0.92rem; line-height: 1.6; margin: 0 0 14px; }
+  .guide-section li { font-size: 0.92rem; line-height: 1.6; }
   .guide-section ul { margin: 8px 0; padding-left: 22px; }
   .guide-section li { margin-bottom: 6px; }
   .guide-example { background: var(--accent-dim); border-radius: 8px; padding: 12px 16px; margin: 14px 0; font-size: 0.9rem; line-height: 1.5; }
@@ -192,10 +205,14 @@
   <section class="panel" id="upload-panel">
     <div class="dropzone" id="dropzone">
       <p>Drop a Form 1040 PDF here, or click to choose a file.</p>
-      <p class="explain">Works best with text-based PDFs (fillable IRS form, or one exported from tax software). Scanned or photographed pages are read with OCR as a fallback — slower and less reliable, so anything recovered that way is clearly marked and worth double-checking.</p>
+      <p class="explain">Works with text-based PDFs — a fillable IRS form, or one exported from tax software. Scanned or photographed pages have no text to read, so anything on them will need to be entered by hand.</p>
       <input type="file" id="file-input" accept="application/pdf" />
     </div>
     <p id="status"></p>
+    <div id="landing-guides">
+      <p class="scenario-heading">Or learn about a return type first:</p>
+      <div class="guide-tabs" id="landing-guides-tabs"></div>
+    </div>
     <div id="sample-scenarios"></div>
   </section>
 
@@ -590,6 +607,28 @@ const FORM_GUIDES = {
       April 15, and interest and penalties accrue on an unpaid balance even
       with a timely-filed extension.</p>
 
+      <h4>Related forms and schedules</h4>
+      <ul>
+        <li><strong>Schedule A</strong> — itemized deductions, when they beat
+        the standard deduction.</li>
+        <li><strong>Schedule B</strong> — interest and dividend income above
+        $1,500.</li>
+        <li><strong>Schedule C</strong> — profit or loss from a sole-
+        proprietor business.</li>
+        <li><strong>Schedule D / Form 8949</strong> — capital gains and
+        losses, and the individual sale-by-sale detail behind them.</li>
+        <li><strong>Schedule E</strong> — rental real estate, royalty, and
+        pass-through (partnership/S-corp K-1) income.</li>
+        <li><strong>Schedule SE</strong> — self-employment tax on net
+        self-employment or partnership earnings.</li>
+        <li><strong>Schedule 8812</strong> — Child Tax Credit / Credit for
+        Other Dependents computation.</li>
+        <li><strong>Form 4562</strong> — depreciation and Section 179
+        expensing for business or rental assets.</li>
+        <li><strong>Form 8863</strong> — education credits (American
+        Opportunity / Lifetime Learning).</li>
+      </ul>
+
       <h4>Common pitfalls</h4>
       <ul>
         <li>Assuming a refund means "I did well" or a balance due means "I did
@@ -767,6 +806,23 @@ const FORM_GUIDES = {
       filing late (or with an incomplete K-1) are assessed per partner, per
       month, and can add up quickly on a partnership with many partners.</p>
 
+      <h4>Related forms and schedules</h4>
+      <ul>
+        <li><strong>Schedule K-1 (Form 1065)</strong> — each partner's own
+        copy of their share of the partnership's items, filed with the 1065
+        and given to the partner for their 1040.</li>
+        <li><strong>Form 7004</strong> — the extension request (6 months).</li>
+        <li><strong>Form 8825</strong> — rental real estate income and
+        expenses, when the partnership's rental activity is reported there
+        instead of directly on page 1.</li>
+        <li><strong>Schedule SE</strong> — filed by each partner individually
+        on their own 1040 to compute self-employment tax on their share.</li>
+        <li><strong>Form 4562</strong> — depreciation and Section 179
+        expensing at the partnership level.</li>
+        <li><strong>Form 1065-X</strong> — amending a previously filed 1065
+        outside the BBA centralized audit adjustment process.</li>
+      </ul>
+
       <h4>Common pitfalls</h4>
       <ul>
         <li>Not tracking outside basis at all, so a distribution that should
@@ -933,6 +989,21 @@ const FORM_GUIDES = {
       6-month extension available via Form 7004 — the same calendar as a
       partnership. K-1s are due to shareholders on that same schedule.</p>
 
+      <h4>Related forms and schedules</h4>
+      <ul>
+        <li><strong>Form 2553</strong> — the S election itself, filed once
+        (not annually).</li>
+        <li><strong>Schedule K-1 (Form 1120-S)</strong> — each shareholder's
+        share of the corporation's items.</li>
+        <li><strong>Form 7004</strong> — the extension request (6 months).</li>
+        <li><strong>Form 4562</strong> — depreciation and Section 179
+        expensing.</li>
+        <li><strong>Form 1125-E</strong> — an itemized breakdown of officer
+        compensation, required once total receipts reach $500,000.</li>
+        <li><strong>Form 1120-S Schedule D</strong> — capital gains/losses,
+        and the built-in gains tax computation when it applies.</li>
+      </ul>
+
       <h4>Common pitfalls</h4>
       <ul>
         <li>No, or unreasonably low, officer compensation relative to
@@ -1063,6 +1134,20 @@ const FORM_GUIDES = {
       April 15 for a calendar-year corporation (note this is a different
       deadline than the March 15 deadline that applies to partnerships and
       S-corps) — with a 6-month extension available via Form 7004.</p>
+
+      <h4>Related forms and schedules</h4>
+      <ul>
+        <li><strong>Form 1125-A</strong> — cost of goods sold detail.</li>
+        <li><strong>Form 1125-E</strong> — an itemized breakdown of officer
+        compensation, required once total receipts reach $500,000.</li>
+        <li><strong>Form 4562</strong> — depreciation and Section 179
+        expensing.</li>
+        <li><strong>Schedule D (Form 1120)</strong> — capital gains and
+        losses.</li>
+        <li><strong>Form 7004</strong> — the extension request (6 months).</li>
+        <li><strong>Form 1120-W</strong> — the corporation's own worksheet
+        for computing its required quarterly estimated tax payments.</li>
+      </ul>
 
       <h4>Common pitfalls</h4>
       <ul>
@@ -1206,6 +1291,31 @@ const FORM_GUIDES = {
       deadline was missed. Reinstatement afterward requires re-applying for
       exemption, sometimes retroactively, and is far more work than simply
       filing on time would have been.</p>
+
+      <h4>Related forms and schedules</h4>
+      <ul>
+        <li><strong>Form 990-N</strong> — the e-postcard for the smallest
+        organizations (generally under $50,000 in gross receipts).</li>
+        <li><strong>Form 990-EZ</strong> — the mid-size version this app's
+        sample return uses.</li>
+        <li><strong>Form 990 (full)</strong> — required once an organization
+        exceeds the 990-EZ thresholds.</li>
+        <li><strong>Form 990-PF</strong> — the separate variant every private
+        foundation files, regardless of size.</li>
+        <li><strong>Form 990-T</strong> — reports and pays unrelated business
+        income tax (UBIT) separately from the main return.</li>
+        <li><strong>Schedule A</strong> — public charity status and the
+        public support test computation.</li>
+        <li><strong>Schedule B</strong> — a list of contributors above
+        certain thresholds (not always required to be made public).</li>
+        <li><strong>Schedule O</strong> — required narrative detail
+        supplementing specific yes/no answers elsewhere on the return.</li>
+        <li><strong>Form 8868</strong> — the automatic filing extension
+        (6 months).</li>
+        <li><strong>Form 1023 / 1024</strong> — the original application for
+        tax-exempt recognition, filed once before any Form 990 is ever
+        due.</li>
+      </ul>
 
       <h4>Common pitfalls</h4>
       <ul>
@@ -1416,8 +1526,8 @@ themeToggle.addEventListener('click', () => {
 });
 
 // dropzone/fileInput are absent on deployments that don't offer PDF
-// upload at all (e.g. the Cloudflare Worker, with no OCR to fall back on
-// for scanned returns) — guard so the rest of this shared script still
+// upload at all (e.g. the Cloudflare Worker, which only offers the
+// built-in sample returns) — guard so the rest of this shared script still
 // runs fine without them.
 if (dropzone && fileInput) {
   dropzone.addEventListener('click', () => fileInput.click());
@@ -1498,8 +1608,6 @@ function lineInputHtml(line) {
   let caption = '';
   if (line.confidence === 'not_found') {
     caption = '<div class="not-found">Not found in this PDF.</div>';
-  } else if (line.confidence === 'uncertain' && line.via_ocr) {
-    caption = '<div class="uncertain">Read via OCR from a scanned page — OCR can misread digits.</div>';
   } else if (line.confidence === 'uncertain') {
     caption = '<div class="uncertain">Auto-detected from this form\'s layout, not double-checked.</div>';
   }
@@ -1726,7 +1834,6 @@ function renderCategories() {
       if (parts.length > 0) headlineAmount = parts.reduce((a, b) => a + b, 0);
     }
     const amountText = headlineAmount !== null ? fmtMoney(headlineAmount) : '—';
-    const ocrBadge = headlineLine && headlineLine.via_ocr ? ' <span class="uncertain" style="margin:0">(OCR)</span>' : '';
     const table = categoryTableHtml(cat, childLines.filter(hasData), headlineLine, headlineAmount);
     // The same plain-English sentence used in the top-of-page walkthrough
     // (CATEGORY_NARRATIVES) also gets shown right inside the card itself —
@@ -1740,7 +1847,7 @@ function renderCategories() {
     details.innerHTML = `
       <summary>
         <span class="cat-title">${cat.title}</span>
-        <span class="cat-amount ${headlineAmount !== null ? '' : 'na'}">${amountText}${ocrBadge}</span>
+        <span class="cat-amount ${headlineAmount !== null ? '' : 'na'}">${amountText}</span>
       </summary>
       <div class="cat-body">
         ${narrativeHtml}
@@ -1754,33 +1861,16 @@ function renderCategories() {
   }
 }
 
-function renderScannedBanner(scannedPages, ocrPages) {
+function renderScannedBanner(scannedPages) {
   const el = document.getElementById('scanned-banner');
   if (!scannedPages || scannedPages.length === 0) {
     el.innerHTML = '';
     return;
   }
-  ocrPages = ocrPages || [];
   const pageWord = scannedPages.length === 1 ? 'page' : 'pages';
-  const failedPages = scannedPages.filter(p => !ocrPages.includes(p));
-
-  let html = `<div class="banner">${scannedPages.length} ${pageWord} of this PDF (${scannedPages.join(', ')}) `
-    + `${scannedPages.length === 1 ? 'has' : 'have'} no text layer — `;
-
-  if (ocrPages.length > 0) {
-    html += `so ${ocrPages.length === 1 ? 'it was' : 'they were'} run through OCR instead. `
-      + `Anything recovered that way is marked "Read via OCR" below and needs a closer look — `
-      + `OCR reads handwriting and small print well enough to be useful, but not perfectly, and it can misread digits.`;
-    if (failedPages.length > 0) {
-      html += ` OCR couldn't recover anything from ${failedPages.length === 1 ? 'page' : 'pages'} `
-        + `${failedPages.join(', ')} — those numbers still need to be entered by hand.`;
-    }
-  } else {
-    html += `and OCR wasn't able to read ${scannedPages.length === 1 ? 'it' : 'them'} either — `
-      + `those numbers will need to be entered by hand.`;
-  }
-  html += '</div>';
-  el.innerHTML = html;
+  el.innerHTML = `<div class="banner">${scannedPages.length} ${pageWord} of this PDF (${scannedPages.join(', ')}) `
+    + `${scannedPages.length === 1 ? 'has' : 'have'} no text layer, so nothing could be read from `
+    + `${scannedPages.length === 1 ? 'it' : 'them'} — those numbers will need to be entered by hand.</div>`;
 }
 
 function renderExtraForms(lines) {
@@ -1927,7 +2017,7 @@ function renderSummary(data) {
   currentLinesById = {};
   for (const line of data.lines) currentLinesById[line.id] = line;
 
-  renderScannedBanner(data.scanned_pages, data.ocr_pages);
+  renderScannedBanner(data.scanned_pages);
   renderHero();
   renderStory();
   renderCategories();
@@ -1981,15 +2071,55 @@ function renderGuideTabs() {
   });
 }
 
+// Which sample return (if any) best illustrates each guide, so "go deeper"
+// has somewhere concrete to land. Form 1040 has 11 samples rather than one
+// obvious pick, so its button opens the sample-return list instead of a
+// single scenario; Form 1120 has no interactive sample yet (this app has no
+// 1120 parser support), so its guide gets an explanatory note instead of a
+// button that would go nowhere.
+const GUIDE_EXAMPLE_SCENARIO = {
+  '1065': 'sample-1065-small-llc-loss',
+  '1120s': 'sample-1120s-profitable-scorp',
+  '990': 'sample-990ez-small-nonprofit',
+};
+
 function renderGuideContent() {
   const el = document.getElementById('guides-content');
   const guide = FORM_GUIDES[currentGuideKey];
+  let exampleHtml;
+  if (currentGuideKey === '1040') {
+    exampleHtml = `<button type="button" class="secondary" id="guide-example-btn">See Form 1040 example returns</button>`;
+  } else if (GUIDE_EXAMPLE_SCENARIO[currentGuideKey]) {
+    exampleHtml = `<button type="button" class="secondary" id="guide-example-btn">See an example ${guide.title.split(' — ')[0]} return</button>`;
+  } else {
+    exampleHtml = `<p class="explain">No interactive example return for ${guide.title.split(' — ')[0]} yet — this app doesn't parse that form.</p>`;
+  }
   el.innerHTML = `
     <section class="guide-section">
       <h3>${guide.title}</h3>
       ${guide.html}
+      <div class="guide-example-cta">${exampleHtml}</div>
     </section>
   `;
+  const exampleBtn = document.getElementById('guide-example-btn');
+  if (exampleBtn) {
+    exampleBtn.addEventListener('click', () => {
+      const scenarioId = GUIDE_EXAMPLE_SCENARIO[currentGuideKey];
+      if (scenarioId) {
+        const scenario = SAMPLE_SCENARIOS.find(s => s.id === scenarioId);
+        if (scenario) {
+          currentUploadedFile = null;
+          renderSummary(scenario.data);
+          updateDownloadButton();
+          return;
+        }
+      }
+      // Form 1040 (or a missing scenario, defensively): land on the sample
+      // list itself rather than one specific return.
+      showUploadPanel();
+      document.getElementById('sample-scenarios').scrollIntoView({ behavior: 'instant', block: 'start' });
+    });
+  }
 }
 
 function renderGuides() {
@@ -1998,16 +2128,35 @@ function renderGuides() {
 }
 renderGuides();
 
-function showGuidesPanel() {
+function showGuidesPanel(guideKey) {
+  if (guideKey) currentGuideKey = guideKey;
   uploadPanel.classList.add('hidden');
   summaryPanel.classList.add('hidden');
   resultsPanel.classList.add('hidden');
   detailPanel.classList.add('hidden');
   guidesPanel.classList.remove('hidden');
+  renderGuideTabs();
+  renderGuideContent();
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
-guidesLink.addEventListener('click', showGuidesPanel);
+guidesLink.addEventListener('click', () => showGuidesPanel());
 guidesBackBtn.addEventListener('click', showUploadPanel);
+
+// The same 5 guide buttons also appear directly on the landing page (not
+// just behind the header link), so "which return type am I even looking
+// at" has an answer before someone uploads anything or picks a sample.
+function renderLandingGuideLinks() {
+  const tabsEl = document.getElementById('landing-guides-tabs');
+  tabsEl.innerHTML = GUIDE_ORDER.map(key => `
+    <button type="button" class="secondary" data-guide-key="${key}">
+      ${FORM_GUIDES[key].title.split(' — ')[0]}
+    </button>
+  `).join('');
+  tabsEl.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => showGuidesPanel(btn.dataset.guideKey));
+  });
+}
+renderLandingGuideLinks();
 
 // Some schedule details nest inside another (e.g. Schedule C's own
 // depreciation line drills further into Form 4562), so "back" needs to
