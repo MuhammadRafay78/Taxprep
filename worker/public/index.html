@@ -8,18 +8,39 @@
   :root {
     --bg: #f7f7f5; --panel: #ffffff; --border: #e3e1db; --text: #2b2a27;
     --muted: #6b6a64; --accent: #1f6f5c; --accent-dim: #eef6f3; --warn: #b3541e; --warn-dim: #fbe9e0; --info: #2f5f8a;
+    --info-dim: #e7eff6; --divider: #f0efe9; --track: #eee; --btn-text: #fff;
+    color-scheme: light;
+  }
+  /* Dark ("black") theme: applied automatically when the OS is set to dark
+     and the user hasn't explicitly overridden it, or forced either way via
+     the toggle button (data-theme, persisted in localStorage). */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121212; --panel: #1b1b1b; --border: #333230; --text: #ececea;
+      --muted: #a3a19b; --accent: #3fae8d; --accent-dim: #17251f; --warn: #e08a52; --warn-dim: #3a2418; --info: #6fa3d6;
+      --info-dim: #1b2734; --divider: #2a2a28; --track: #2a2a28; --btn-text: #0e0e0e;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121212; --panel: #1b1b1b; --border: #333230; --text: #ececea;
+    --muted: #a3a19b; --accent: #3fae8d; --accent-dim: #17251f; --warn: #e08a52; --warn-dim: #3a2418; --info: #6fa3d6;
+    --info-dim: #1b2734; --divider: #2a2a28; --track: #2a2a28; --btn-text: #0e0e0e;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-  header { padding: 28px 24px 8px; max-width: 760px; margin: 0 auto; }
+  header { padding: 28px 24px 8px; max-width: 760px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  header .header-text { flex: 1; min-width: 0; }
   h1 { font-size: 1.5rem; margin: 0 0 4px; }
   header p { color: var(--muted); margin: 0; }
+  #theme-toggle { flex: none; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 8px 10px; font-size: 1.1rem; line-height: 1; border-radius: 8px; }
   main { max-width: 760px; margin: 0 auto; padding: 16px 24px 64px; }
   .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
   .dropzone { border: 2px dashed var(--border); border-radius: 10px; padding: 32px; text-align: center; cursor: pointer; }
   .dropzone.drag { border-color: var(--accent); background: var(--accent-dim); }
   .dropzone input { display: none; }
-  button { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 11px 18px; font-size: 0.95rem; cursor: pointer; }
+  button { background: var(--accent); color: var(--btn-text); border: none; border-radius: 8px; padding: 11px 18px; font-size: 0.95rem; cursor: pointer; min-height: 44px; }
   button:disabled { opacity: 0.5; cursor: default; }
   button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
   .explain { color: var(--muted); font-size: 0.85rem; }
@@ -29,7 +50,7 @@
   .scenario-btn { display: block; width: 100%; text-align: left; margin-bottom: 0; padding: 10px 14px; }
   .scenario-btn .scenario-title { font-weight: 600; display: block; }
   .scenario-btn .scenario-desc { font-weight: 400; font-size: 0.82rem; opacity: 0.85; display: block; margin-top: 2px; }
-  .scenario-check { flex: 0 0 36px; border: 1px solid var(--border); border-radius: 6px; background: #fff;
+  .scenario-check { flex: 0 0 36px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel);
     cursor: pointer; font-size: 1rem; color: var(--accent); line-height: 1; }
   .scenario-row.is-complete .scenario-check { background: var(--accent-dim); border-color: var(--accent); }
   .scenario-row.is-complete .scenario-btn { opacity: 0.6; }
@@ -67,7 +88,7 @@
   .category .narrative { font-size: 0.92rem; line-height: 1.5; margin: 14px 0; }
   .guide-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 20px; }
   .guide-tabs button { padding: 8px 14px; font-size: 0.9rem; }
-  .guide-tabs button.secondary.active { background: var(--accent); color: #fff; }
+  .guide-tabs button.secondary.active { background: var(--accent); color: var(--btn-text); }
   .guide-section h3 { margin-bottom: 4px; }
   .guide-section h4 { margin: 22px 0 6px; }
   .guide-section p, .guide-section li { font-size: 0.92rem; line-height: 1.55; }
@@ -75,7 +96,7 @@
   .guide-section li { margin-bottom: 6px; }
   .guide-example { background: var(--accent-dim); border-radius: 8px; padding: 12px 16px; margin: 14px 0; font-size: 0.9rem; line-height: 1.5; }
   .numbers-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-  .line-row td { padding: 10px 0; border-bottom: 1px solid #f0efe9; vertical-align: top; }
+  .line-row td { padding: 10px 0; border-bottom: 1px solid var(--divider); vertical-align: top; }
   .line-row:last-child td { border-bottom: none; }
   .line-row .line-info { }
   .line-row .line-label { font-size: 0.9rem; }
@@ -89,10 +110,10 @@
 
   .flag { padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 0.9rem; }
   .flag.warning { background: var(--warn-dim); color: var(--warn); }
-  .flag.info { background: #e7eff6; color: var(--info); }
+  .flag.info { background: var(--info-dim); color: var(--info); }
   .flow-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.88rem; }
   .flow-label { width: 180px; flex: none; color: var(--muted); }
-  .flow-bar-wrap { flex: 1; background: #eee; border-radius: 4px; overflow: hidden; height: 16px; }
+  .flow-bar-wrap { flex: 1; background: var(--track); border-radius: 4px; overflow: hidden; height: 16px; }
   .flow-bar { height: 100%; background: var(--accent); }
   .flow-bar.negative { background: var(--warn); }
   .flow-value { width: 100px; flex: none; text-align: right; font-variant-numeric: tabular-nums; font-size: 0.85rem; }
@@ -110,7 +131,7 @@
   .comp-header-facts { font-size: 0.9rem; color: var(--muted); margin-bottom: 4px; }
   .comp-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
   .comp-table th { text-align: left; padding: 6px; border-bottom: 2px solid var(--border); color: var(--muted); font-weight: 600; font-size: 0.8rem; }
-  .comp-table td { text-align: left; padding: 6px; border-bottom: 1px solid #f0efe9; }
+  .comp-table td { text-align: left; padding: 6px; border-bottom: 1px solid var(--divider); }
   .comp-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .comp-table tr.comp-total td { font-weight: 700; border-top: 2px solid var(--border); }
   .comp-note { color: var(--muted); font-size: 0.8rem; }
@@ -121,22 +142,49 @@
   .comp-tie.ok { background: var(--accent-dim); color: var(--accent); }
   .comp-tie.off { background: var(--warn-dim); color: var(--warn); }
   .compare-note { color: var(--muted); font-size: 0.85rem; margin-top: 10px; }
+
+  /* Mobile: tighter spacing, single-column flow rows, narrower fixed-width
+     table columns so labels don't get squeezed into two or three characters
+     of space on a 320-375px phone. */
+  @media (max-width: 480px) {
+    header { padding: 20px 16px 6px; gap: 10px; }
+    main { padding: 12px 16px 48px; }
+    .panel { padding: 16px; }
+    h1 { font-size: 1.25rem; }
+    #theme-toggle { padding: 8px; font-size: 1rem; }
+    .hero .amount { font-size: 2rem; }
+    .meta-row { gap: 16px; }
+    .flow-row { flex-wrap: wrap; row-gap: 2px; }
+    .flow-label { width: 100%; order: 1; }
+    .flow-bar-wrap { order: 3; flex-basis: 100%; }
+    .flow-value { order: 2; margin-left: auto; width: auto; }
+    .line-row .line-value { width: 84px; font-size: 0.9rem; }
+    .compare-table, .comp-table { font-size: 0.8rem; }
+    .compare-table th, .compare-table td { padding: 6px 4px; }
+    .comp-table th, .comp-table td { padding: 5px 4px; }
+    .scenario-btn .scenario-desc { font-size: 0.78rem; }
+    button { padding: 12px 16px; }
+    .guide-tabs button { flex: 1 1 auto; text-align: center; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>Understand Your Tax Return</h1>
-  <p>See a sample tax return get a clean, plain-language summary — tap any category to see the detail behind it.</p>
-  <p style="margin-top:10px"><button type="button" class="secondary" id="guides-link">Business return guides (1065 / 1120-S / 990-EZ)</button></p>
+  <div class="header-text">
+    <h1>Understand Your Tax Return</h1>
+    <p>See a sample tax return get a clean, plain-language summary — tap any category to see the detail behind it.</p>
+    <p style="margin-top:10px"><button type="button" class="secondary" id="guides-link">Return guides (1040 / 1065 / 1120-S / 1120 / 990)</button></p>
+  </div>
+  <button type="button" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
 </header>
 <main>
   <section class="panel hidden" id="guides-panel">
     <button type="button" class="secondary" id="guides-back-btn">&larr; Back</button>
-    <h2 style="margin-bottom:4px">Business return guides</h2>
-    <p class="explain">These aren't tied to any specific return — each is a full guide to how that entity type is
-      taxed, in general: eligibility, the pass-through mechanics, basis, distributions, entity-level tax traps, and
-      the filing mechanics that trip people up. For a walkthrough of an actual return's numbers, open one of the
-      sample returns instead.</p>
+    <h2 style="margin-bottom:4px">Return guides</h2>
+    <p class="explain">These aren't tied to any specific return — each is a full guide to how that return type is
+      taxed, in general: eligibility, the pass-through vs. double-taxation mechanics, basis, distributions,
+      entity-level tax traps, and the filing mechanics that trip people up. For a walkthrough of an actual return's
+      numbers, open one of the sample returns instead.</p>
     <div id="guides-tabs" class="guide-tabs"></div>
     <div id="guides-content"></div>
   </section>
@@ -438,7 +486,141 @@ const FORM_CONFIGS = {
 // distributions-vs-compensation line, the narrow cases where the entity
 // itself owes tax, filing mechanics, common pitfalls, and a small worked
 // example — not a line-by-line restatement of the IRS instructions.
+// Standalone master guides for the return types this app supports — not
+// tied to any particular return's numbers (that's what each
+// FORM_CONFIGS.guide one-liner and the category cards are for). Each is its
+// own full reference, organized into the sub-sections a preparer actually
+// needs: eligibility, the taxation mechanics, basis, the distributions-vs-
+// compensation line, the narrow/not-so-narrow cases of entity-level tax,
+// filing mechanics, common pitfalls, and a small worked example — not a
+// line-by-line restatement of the IRS instructions.
 const FORM_GUIDES = {
+  '1040': {
+    title: 'Form 1040 — Individual Income Tax Return',
+    html: `
+      <h4>What it is</h4>
+      <p>Form 1040 is the annual return every individual (or married couple
+      filing jointly) uses to report income from every source — wages,
+      interest, dividends, capital gains, retirement income, self-employment
+      and pass-through business income, and more — and arrive at a single tax
+      bill or refund for the year. Unlike the pass-through entity returns
+      below, this is a real tax return: whatever it computes is actually owed
+      (or refunded) by the person who files it.</p>
+
+      <h4>Filing status: the choice that shapes everything else</h4>
+      <p>Filing status (single, married filing jointly, married filing
+      separately, head of household, or qualifying surviving spouse)
+      determines the standard deduction amount, which tax brackets apply at
+      which income levels, and eligibility for numerous credits. Married
+      filing jointly usually produces the lowest combined tax for a married
+      couple, but married filing separately can occasionally help — most
+      often when one spouse has large itemized deductions tied to their own
+      income (like medical expenses) or when one spouse doesn't want joint
+      liability for the other's tax position. Head of household requires
+      paying more than half the cost of a home for a qualifying dependent and
+      generally beats single status on both the standard deduction and
+      bracket thresholds.</p>
+
+      <h4>Standard deduction vs. itemizing</h4>
+      <p>Every filer gets to subtract either the standard deduction (a fixed
+      amount by filing status and year) or their itemized deductions from
+      Schedule A (state and local taxes, up to the $10,000 SALT cap; mortgage
+      interest; charitable contributions; and medical expenses above 7.5% of
+      AGI) — whichever is larger. The Tax Cuts and Jobs Act nearly doubled the
+      standard deduction starting in 2018, which is why the large majority of
+      filers now take the standard deduction rather than itemizing; itemizing
+      only helps once those deductions, combined, clear the standard amount.</p>
+
+      <h4>AGI: the number everything else keys off</h4>
+      <p>Adjusted Gross Income — total income minus above-the-line adjustments
+      like traditional IRA contributions, student loan interest, and
+      self-employed health insurance — isn't itself a tax number, but a huge
+      number of other things phase in or out based on it: IRA deduction
+      eligibility, the Child Tax Credit, education credit phase-outs, whether
+      Social Security benefits are taxable, and eligibility for many other
+      credits and deductions. Two people with identical total income can end
+      up with very different AGI (and very different downstream eligibility)
+      depending on what adjustments they qualify for.</p>
+
+      <h4>Ordinary income vs. preferential-rate income</h4>
+      <p>Not all income is taxed at the same rate. Wages, interest, and most
+      retirement income are taxed at ordinary rates (the familiar 10%–37%
+      brackets). Long-term capital gains and qualified dividends are taxed
+      separately, at 0%, 15%, or 20% depending on total taxable income — rates
+      that can be substantially lower than the ordinary brackets the same
+      income would otherwise land in. This is computed via the Qualified
+      Dividends and Capital Gain Tax Worksheet, which effectively "stacks"
+      preferential-rate income on top of ordinary income and taxes each
+      portion at its own rate — which is why two returns with the same
+      taxable income can owe very different tax if one has a large capital
+      gain and the other doesn't.</p>
+
+      <h4>Deductions vs. credits — and why the difference matters so much</h4>
+      <p>A deduction reduces the income being taxed, so its value depends on
+      the filer's marginal tax bracket (a $1,000 deduction saves $220 for
+      someone in the 22% bracket, $370 for someone in the 37% bracket). A
+      credit reduces the tax bill dollar-for-dollar, regardless of bracket —
+      a $1,000 credit is worth exactly $1,000 to everyone who can claim it
+      (before considering whether it's refundable). Credits are further split
+      into nonrefundable (can reduce tax to zero, but any excess is lost —
+      most credits) and refundable (can generate a refund even beyond what
+      was withheld — the Earned Income Credit and the Additional Child Tax
+      Credit are the two big ones). Confusing a deduction's value with a
+      credit's value is one of the most common misunderstandings in personal
+      tax planning.</p>
+
+      <h4>Marginal rate vs. effective rate</h4>
+      <p>The marginal rate is the rate applied to the last dollar of income —
+      the bracket a filer is "in." The effective rate is total tax divided by
+      total income — almost always meaningfully lower than the marginal rate,
+      because the progressive bracket system only taxes each slice of income
+      at its own rate, not the whole amount at the top rate. "I'm in the 24%
+      bracket" does not mean 24% of all income went to tax.</p>
+
+      <h4>Withholding, estimated payments, and the underpayment penalty</h4>
+      <p>Tax is meant to be paid throughout the year, not just at filing time
+      — through payroll withholding for employees, or quarterly estimated tax
+      payments for anyone with income that isn't fully withheld on (self-
+      employment income, significant investment income, rental income). Pay
+      in too little relative to a safe-harbor threshold (generally the
+      smaller of 90% of the current year's tax or 100%/110% of last year's
+      tax, depending on income level) and an underpayment penalty applies —
+      essentially interest charged for paying late, calculated quarter by
+      quarter, independent of whether a balance is ultimately owed or
+      refunded at filing.</p>
+
+      <h4>Filing mechanics</h4>
+      <p>Form 1040 is due April 15 for a calendar-year filer, with an
+      automatic 6-month extension available via Form 4868 — but an extension
+      to file is <em>not</em> an extension to pay; any tax owed is still due
+      April 15, and interest and penalties accrue on an unpaid balance even
+      with a timely-filed extension.</p>
+
+      <h4>Common pitfalls</h4>
+      <ul>
+        <li>Assuming a refund means "I did well" or a balance due means "I did
+        something wrong" — both are really just a mismatch between
+        withholding/payments and the actual tax bill, which was often set by
+        a W-4 filled out years earlier.</li>
+        <li>Not adjusting withholding after a major life change (marriage, a
+        second job, a big bonus, a new dependent).</li>
+        <li>Missing that an extension to file isn't an extension to pay,
+        and getting hit with penalties despite filing "on time" via
+        extension.</li>
+        <li>Confusing a credit's flat-dollar value with a deduction's
+        bracket-dependent value when comparing two tax strategies.</li>
+      </ul>
+
+      <div class="guide-example"><strong>Small example.</strong> Two single
+      filers each have $70,000 in taxable income and are in the same 22%
+      marginal bracket. One has an ordinary $70,000 — mostly wages. The other
+      has $50,000 in wages and $20,000 in long-term capital gains. Even
+      though both show $70,000 of taxable income, the second filer owes less
+      tax overall, because the $20,000 of capital gains is taxed at the
+      preferential capital-gains rate (partly 0%, partly 15%, depending on
+      where it falls) rather than being stacked into the ordinary brackets.</div>
+    `,
+  },
   '1065': {
     title: 'Form 1065 — Partnerships',
     html: `
@@ -781,27 +963,163 @@ const FORM_GUIDES = {
       back payroll tax, penalties, and interest.</div>
     `,
   },
-  '990': {
-    title: 'Form 990-EZ — Tax-Exempt Organizations',
+  '1120': {
+    title: 'Form 1120 — C-Corporations',
     html: `
       <h4>What it is, and who files it</h4>
-      <p>Form 990-EZ is an annual information return for small-to-midsize
-      tax-exempt organizations — mostly 501(c)(3) charities, but other
-      501(c) categories too (social welfare organizations, business leagues,
-      etc.). It sits in the middle of a three-tier system based on size: the
-      smallest organizations (generally under $50,000 in gross receipts) file
-      the simple 990-N e-postcard; organizations under the 990-EZ thresholds
-      (gross receipts under $200,000 and total assets under $500,000, as of
-      current IRS thresholds — these are adjusted periodically) file the EZ;
-      larger organizations file the full Form 990. This isn't an income tax
-      return in the usual sense — filing it doesn't produce a tax bill on the
-      organization's regular program activities, which is the entire point
-      of being tax-exempt.</p>
+      <p>Form 1120 is the annual return for a "regular" C-corporation — the
+      default classification for a corporation that hasn't elected S status
+      (and available by election to an LLC as well). Unlike every other
+      return type on this page, a C-corp is a fully separate taxpayer: it
+      pays its own federal income tax at its own flat rate, and that tax is
+      entirely independent of what its shareholders separately owe on any
+      dividends they receive.</p>
+
+      <h4>The flat rate, and how it changed in 2018</h4>
+      <p>Since the Tax Cuts and Jobs Act, C-corporations pay a flat 21%
+      federal rate on taxable income — no brackets, the same rate whether the
+      corporation earns $10,000 or $10,000,000. Before 2018, corporate rates
+      were graduated up to 35%; the flat 21% rate was a central piece of that
+      legislation and is a large part of why C-corp status became more
+      attractive for some businesses (mainly ones that retain earnings rather
+      than distributing them) than it had been previously.</p>
+
+      <h4>Double taxation — the defining feature of this form</h4>
+      <p>A C-corp's income is taxed twice if it's ultimately paid out to
+      shareholders: once at the entity level (21%), and again at the
+      shareholder level when distributed as a dividend (0%/15%/20% for
+      qualified dividends, plus potentially the 3.8% Net Investment Income
+      Tax). A dollar of corporate profit distributed as a dividend can
+      therefore face a combined effective rate well above either rate alone.
+      This is the single biggest planning consideration that distinguishes a
+      C-corp from every pass-through entity covered elsewhere on this page,
+      where income is taxed only once, at the owner level.</p>
+
+      <h4>Reasonable compensation — the mirror image of the S-corp issue</h4>
+      <p>Because of double taxation, a closely held C-corp has the opposite
+      incentive from an S-corp: it wants to pay owner-employees as much
+      salary as possible (fully deductible to the corporation, taxed once at
+      the individual level) rather than dividends (not deductible to the
+      corporation, and taxed a second time). The IRS polices this direction
+      too — compensation to an owner-employee that's found to be
+      unreasonably <em>high</em> relative to the work performed can be
+      recharacterized as a disguised, nondeductible dividend, disallowing the
+      corporation's deduction and triggering the same double taxation the
+      structure was trying to avoid.</p>
+
+      <h4>The dividends received deduction (DRD)</h4>
+      <p>When one corporation owns stock in another and receives dividends
+      from it, a special deduction (generally 50%, 65%, or 100% of the
+      dividend depending on the ownership percentage) prevents that income
+      from being taxed a third or fourth time as it passes through a chain of
+      corporate ownership. This mechanism is specific to corporate
+      shareholders — it has no equivalent for an individual receiving
+      dividends.</p>
+
+      <h4>Net operating losses (NOLs) post-2017</h4>
+      <p>Current law lets a C-corp carry a net operating loss forward
+      indefinitely, but generally not back to prior years (with narrow
+      exceptions), and limits the NOL deduction in any one year to 80% of
+      that year's taxable income (computed before the NOL deduction itself).
+      A corporation with a large loss carryforward and a profitable year can
+      therefore still owe some tax that year, even with more than enough NOL
+      on the books to otherwise wipe it out.</p>
+
+      <h4>Book-tax differences: Schedule M-1 and M-2</h4>
+      <p>A corporation's financial-statement ("book") income and its taxable
+      income routinely diverge — different depreciation methods, expenses
+      that are deductible for book purposes but not tax (like most meals and
+      entertainment, or accrued but unpaid liabilities to related parties),
+      and tax-exempt income like municipal bond interest. Schedule M-1 (or
+      the more detailed M-3 for larger corporations) reconciles book income
+      to taxable income line by line; Schedule M-2 separately tracks the
+      corporation's retained earnings for book purposes. A corporation that
+      "looks profitable" on its financial statements can have meaningfully
+      different taxable income once these adjustments are made.</p>
+
+      <h4>Two penalty taxes aimed at accumulating income instead of paying it out</h4>
+      <ul>
+        <li><strong>Accumulated earnings tax</strong> — a penalty tax that
+        can apply if a corporation accumulates earnings beyond the reasonable
+        needs of the business specifically to let shareholders avoid the
+        second layer of dividend tax, rather than distributing or reinvesting
+        them.</li>
+        <li><strong>Personal holding company (PHC) tax</strong> — a separate
+        penalty tax aimed at closely held corporations (five or fewer people
+        own more than 50% of the stock) whose income is mostly passive
+        (dividends, interest, rents, royalties) — designed to prevent using a
+        corporate shell purely to warehouse investment income at the lower
+        corporate rate.</li>
+      </ul>
+      <p>Both are self-assessed (there's no automatic flag), which in
+      practice means they mostly surface on audit of a corporation that has
+      built up a large cash balance with no clear business purpose for it.</p>
+
+      <h4>Estimated tax requirements</h4>
+      <p>A corporation expecting to owe $500 or more in tax generally must
+      make quarterly estimated payments, similar in spirit to an individual's
+      estimated payments but with its own safe-harbor rules based on the
+      current or prior year's tax — a corporation that waits until the return
+      is filed to pay can face an underpayment penalty even though no
+      "withholding" concept exists for a corporation the way it does for an
+      employee.</p>
+
+      <h4>Filing mechanics</h4>
+      <p>Form 1120 is due the 15th day of the fourth month after year-end —
+      April 15 for a calendar-year corporation (note this is a different
+      deadline than the March 15 deadline that applies to partnerships and
+      S-corps) — with a 6-month extension available via Form 7004.</p>
+
+      <h4>Common pitfalls</h4>
+      <ul>
+        <li>Not planning around double taxation at all — distributing profit
+        as dividends by default when salary, retained earnings, or a
+        different entity structure might have been more efficient.</li>
+        <li>Owner-employee compensation set high enough to draw IRS scrutiny
+        as a disguised dividend.</li>
+        <li>Assuming a large NOL carryforward will fully offset a profitable
+        year, without accounting for the 80%-of-taxable-income limitation.</li>
+        <li>Accumulating cash with no documented business purpose, inviting
+        accumulated earnings tax exposure on audit.</li>
+      </ul>
+
+      <div class="guide-example"><strong>Small example.</strong> A C-corp
+      earns $200,000 of taxable income and pays $42,000 of federal tax at the
+      flat 21% rate, leaving $158,000. If all $158,000 is then distributed as
+      a dividend to a single shareholder in the 15% qualified-dividend
+      bracket, that shareholder owes another $23,700 — a combined federal tax
+      of $65,700 on the original $200,000, an effective rate above 32%, even
+      though neither the corporate rate (21%) nor the dividend rate (15%)
+      looks that high on its own. Retaining the $158,000 in the corporation
+      instead of distributing it avoids the second layer entirely, at least
+      until it's eventually paid out.</div>
+    `,
+  },
+  '990': {
+    title: 'Form 990 — Tax-Exempt Organizations',
+    html: `
+      <h4>What it is, and the three-tier filing system</h4>
+      <p>Form 990 is the family of annual information returns tax-exempt
+      organizations file — mostly 501(c)(3) charities, but other 501(c)
+      categories too (social welfare organizations, business leagues, etc.).
+      "Form 990" is really an umbrella: which version an organization actually
+      files depends on its size. The smallest organizations (generally under
+      $50,000 in gross receipts) file the simple 990-N e-postcard; mid-size
+      organizations under set thresholds (gross receipts under $200,000 and
+      total assets under $500,000, as of current IRS thresholds, adjusted
+      periodically) file the shorter Form 990-EZ; larger organizations file
+      the full Form 990. Private foundations file a different variant
+      entirely, Form 990-PF, regardless of size. This guide — and this app's
+      sample return — covers the 990-EZ variant specifically, but the
+      underlying tax concepts below apply across the whole family. None of
+      these is an income tax return in the usual sense: filing one doesn't
+      produce a tax bill on the organization's regular program activities,
+      which is the entire point of being tax-exempt.</p>
 
       <h4>Why the IRS requires it anyway</h4>
       <p>Exempt status is a privilege the organization has to keep earning,
-      not a one-time approval. The IRS (and the public — Form 990/990-EZ
-      filings are public record, searchable on sites like ProPublica's
+      not a one-time approval. The IRS (and the public — every version of
+      Form 990 is public record, searchable on sites like ProPublica's
       Nonprofit Explorer or Candid/GuideStar) uses the return to confirm the
       organization is still operating consistently with the exempt purpose it
       was originally granted, hasn't quietly shifted into something else, and
@@ -852,16 +1170,17 @@ const FORM_GUIDES = {
       <p>A 501(c)(3) organization is classified as either a public charity
       (broad public or governmental funding, or active program service
       revenue) or a private foundation (funding concentrated among a small
-      number of donors, often a single family or company). The distinction
-      matters a great deal: private foundations face a federal excise tax on
-      net investment income, mandatory minimum annual distribution
-      requirements, and much stricter self-dealing and excess-business-
-      holdings rules. Public charity status is maintained through a public
-      support test — the percentage of total support that comes from a broad
-      base of public/government sources versus concentrated sources —
-      measured on a rolling multi-year average. A single unusually large
-      donation, if not properly structured or disclosed, can shift an
-      organization's classification if nobody is tracking the ratio.</p>
+      number of donors, often a single family or company, and filing Form
+      990-PF rather than 990/990-EZ). The distinction matters a great deal:
+      private foundations face a federal excise tax on net investment income,
+      mandatory minimum annual distribution requirements, and much stricter
+      self-dealing and excess-business-holdings rules. Public charity status
+      is maintained through a public support test — the percentage of total
+      support that comes from a broad base of public/government sources
+      versus concentrated sources — measured on a rolling multi-year average.
+      A single unusually large donation, if not properly structured or
+      disclosed, can shift an organization's classification if nobody is
+      tracking the ratio.</p>
 
       <h4>Governance disclosures</h4>
       <p>The return also asks about governance practices that aren't
@@ -883,16 +1202,16 @@ const FORM_GUIDES = {
       on.</p>
 
       <h4>Filing mechanics</h4>
-      <p>Form 990-EZ is due the 15th day of the fifth month after the fiscal
-      year ends — May 15 for a calendar-year organization — with an
-      automatic extension available via Form 8868. Missing the filing for
-      three consecutive years triggers automatic revocation of exempt status
-      by operation of law, with no separate warning notice required before it
-      happens — a surprisingly common way small, all-volunteer nonprofits
-      lose their status without ever realizing a deadline was missed.
-      Reinstatement afterward requires re-applying for exemption, sometimes
-      retroactively, and is far more work than simply filing on time would
-      have been.</p>
+      <p>Every version of Form 990 is due the 15th day of the fifth month
+      after the fiscal year ends — May 15 for a calendar-year organization —
+      with an automatic extension available via Form 8868. Missing the
+      filing for three consecutive years triggers automatic revocation of
+      exempt status by operation of law, with no separate warning notice
+      required before it happens — a surprisingly common way small,
+      all-volunteer nonprofits lose their status without ever realizing a
+      deadline was missed. Reinstatement afterward requires re-applying for
+      exemption, sometimes retroactively, and is far more work than simply
+      filing on time would have been.</p>
 
       <h4>Common pitfalls</h4>
       <ul>
@@ -914,7 +1233,7 @@ const FORM_GUIDES = {
       arts nonprofit has $180,000 in program/donation revenue and runs a
       small gift shop selling unrelated novelty items that nets $8,000 a
       year. The $180,000 in mission-related revenue and donations is exempt
-      from tax as usual on Form 990-EZ. The $8,000 of gift-shop profit,
+      from tax as usual on its Form 990-EZ. The $8,000 of gift-shop profit,
       because it's a regularly carried on trade or business unrelated to the
       organization's exempt arts purpose, is reported and taxed separately on
       Form 990-T — even though the organization as a whole remains fully
@@ -1076,6 +1395,31 @@ function renderSampleScenarios() {
   });
 }
 renderSampleScenarios();
+
+// Theme toggle: defaults to following the OS light/dark setting, but a
+// manual click overrides that and persists (falls back gracefully — e.g. in
+// a private-browsing context that throws on localStorage access — to just
+// not persisting the choice across reloads rather than breaking the toggle).
+const themeToggle = document.getElementById('theme-toggle');
+function applyTheme(theme) {
+  if (theme === 'dark' || theme === 'light') {
+    document.documentElement.setAttribute('data-theme', theme);
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+  const isDark = theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  themeToggle.textContent = isDark ? '☀️' : '🌙';
+}
+let savedTheme = null;
+try { savedTheme = localStorage.getItem('theme'); } catch (e) { /* ignore */ }
+applyTheme(savedTheme);
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const isDarkNow = current === 'dark' || (!current && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const next = isDarkNow ? 'light' : 'dark';
+  try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+  applyTheme(next);
+});
 
 // dropzone/fileInput are absent on deployments that don't offer PDF
 // upload at all (e.g. the Cloudflare Worker, with no OCR to fall back on
@@ -1623,7 +1967,7 @@ backBtn.addEventListener('click', showUploadPanel);
 // whatever's currently shown in the upload/summary/results flow. Each form
 // type is its own full guide/section, switched via tabs rather than all
 // three stacked on one long page.
-const GUIDE_ORDER = ['1065', '1120s', '990'];
+const GUIDE_ORDER = ['1040', '1065', '1120s', '1120', '990'];
 let currentGuideKey = GUIDE_ORDER[0];
 
 function renderGuideTabs() {
