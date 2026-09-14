@@ -104,16 +104,22 @@
   .guide-tabs button { padding: 8px 14px; font-size: 0.9rem; }
   .guide-tabs button.secondary.active { background: var(--accent); color: var(--btn-text); }
   .guide-example-cta { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
-  .guide-section { max-width: 680px; }
-  .guide-section #guide-collapse-btn { margin-bottom: 16px; }
-  .guide-section h3 { margin: 0 0 12px; font-size: 1.15rem; }
-  .guide-section h4 { margin: 26px 0 8px; font-size: 1rem; color: var(--accent); }
-  .guide-section h4:first-of-type { margin-top: 4px; }
-  .guide-section p { font-size: 0.92rem; line-height: 1.6; margin: 0 0 14px; }
-  .guide-section li { font-size: 0.92rem; line-height: 1.6; }
-  .guide-section ul { margin: 8px 0; padding-left: 22px; }
-  .guide-section li { margin-bottom: 6px; }
-  .guide-example { background: var(--accent-dim); border-radius: 8px; padding: 12px 16px; margin: 14px 0; font-size: 0.9rem; line-height: 1.5; }
+  .guide-section { max-width: 700px; }
+  .guide-section #guide-collapse-btn { margin-bottom: 20px; }
+  .guide-section h3 { margin: 0 0 16px; font-size: 1.3rem; padding-bottom: 12px; border-bottom: 2px solid var(--border); }
+  .guide-section h4 { margin: 34px 0 10px; padding-left: 12px; border-left: 3px solid var(--accent); font-size: 1.02rem;
+    line-height: 1.35; color: var(--accent); }
+  .guide-section h4:first-of-type { margin-top: 18px; }
+  .guide-section p { font-size: 0.95rem; line-height: 1.7; margin: 0 0 16px; }
+  .guide-section li { font-size: 0.95rem; line-height: 1.7; }
+  .guide-section ul { margin: 10px 0 20px; padding-left: 22px; }
+  .guide-section li { margin-bottom: 8px; }
+  .guide-example { background: var(--accent-dim); border-left: 3px solid var(--accent); border-radius: 8px;
+    padding: 14px 18px; margin: 18px 0; font-size: 0.9rem; line-height: 1.6; }
+  .guide-table { width: 100%; border-collapse: collapse; margin: 10px 0 20px; font-size: 0.88rem; }
+  .guide-table th, .guide-table td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .guide-table th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .guide-table tr:last-child td { border-bottom: none; }
   .numbers-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
   .line-row td { padding: 10px 0; border-bottom: 1px solid var(--divider); vertical-align: top; }
   .line-row:last-child td { border-bottom: none; }
@@ -1381,23 +1387,27 @@ const FORM_GUIDES = {
   '990': {
     title: 'Form 990 — Tax-Exempt Organizations',
     html: `
-      <h4>What it is, and the three-tier filing system</h4>
+      <h4>What it is, and the four-tier filing system</h4>
       <p>Form 990 is the family of annual information returns tax-exempt
       organizations file — mostly 501(c)(3) charities, but other 501(c)
       categories too (social welfare organizations, business leagues, etc.).
-      "Form 990" is really an umbrella: which version an organization actually
-      files depends on its size. The smallest organizations (generally under
-      $50,000 in gross receipts) file the simple 990-N e-postcard; mid-size
-      organizations under set thresholds (gross receipts under $200,000 and
-      total assets under $500,000, as of current IRS thresholds, adjusted
-      periodically) file the shorter Form 990-EZ; larger organizations file
-      the full Form 990. Private foundations file a different variant
-      entirely, Form 990-PF, regardless of size. This guide — and this app's
-      sample return — covers the 990-EZ variant specifically, but the
-      underlying tax concepts below apply across the whole family. None of
-      these is an income tax return in the usual sense: filing one doesn't
-      produce a tax bill on the organization's regular program activities,
-      which is the entire point of being tax-exempt.</p>
+      None of these is an income tax return in the usual sense: filing one
+      doesn't produce a tax bill on the organization's regular program
+      activities, which is the entire point of being tax-exempt. "Form 990"
+      is really an umbrella — which variant an organization actually files
+      depends on its size:</p>
+      <table class="guide-table">
+        <thead><tr><th>Variant</th><th>Who files it</th><th>Threshold</th></tr></thead>
+        <tbody>
+          <tr><td>Form 990-N (e-Postcard)</td><td>Smallest organizations</td><td>Gross receipts generally $50,000 or less</td></tr>
+          <tr><td>Form 990-EZ</td><td>Mid-size organizations</td><td>Gross receipts under $200,000 and total assets under $500,000</td></tr>
+          <tr><td>Form 990 (full)</td><td>Larger organizations</td><td>Above the 990-EZ thresholds</td></tr>
+          <tr><td>Form 990-PF</td><td>Private foundations</td><td>Any size — foundations never use the other three variants</td></tr>
+        </tbody>
+      </table>
+      <p>This guide — and this app's sample return — covers the 990-EZ
+      variant specifically, but the underlying tax concepts below apply
+      across the whole family.</p>
 
       <h4>Why the IRS requires it anyway</h4>
       <p>Exempt status is a privilege the organization has to keep earning,
@@ -1410,15 +1420,20 @@ const FORM_GUIDES = {
 
       <h4>Revenue and expenses</h4>
       <p>The core financial section is simpler than a for-profit return: it
-      totals revenue by source (contributions and grants, program service
-      revenue, membership dues, investment income, gains from asset sales,
-      fundraising event income net of direct expenses, gaming income) and
-      expenses by category (grants and similar amounts paid, benefits paid to
-      or for members, salaries/wages/employee benefits, professional fees,
-      occupancy, printing/postage, and other expenses), landing on the change
-      in net assets for the year — revenue minus expenses — which is the
-      closest thing this return has to a bottom line. There's no tax computed
-      on that number in the ordinary case.</p>
+      totals revenue by source and expenses by category, landing on the
+      change in net assets for the year — revenue minus expenses — which is
+      the closest thing this return has to a bottom line. There's no tax
+      computed on that number in the ordinary case.</p>
+      <ul>
+        <li><strong>Revenue by source:</strong> contributions and grants,
+        program service revenue, membership dues, investment income, gains
+        from asset sales, fundraising event income (net of direct expenses),
+        gaming income.</li>
+        <li><strong>Expenses by category:</strong> grants and similar amounts
+        paid, benefits paid to or for members, salaries/wages/employee
+        benefits, professional fees, occupancy, printing/postage, and other
+        expenses.</li>
+      </ul>
 
       <h4>Unrelated business income tax (UBIT) — the case where tax really
       is owed</h4>
