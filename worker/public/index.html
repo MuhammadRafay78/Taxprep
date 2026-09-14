@@ -1338,102 +1338,6 @@ const FORM_GUIDES = {
       deadline than the March 15 deadline that applies to partnerships and
       S-corps) — with a 6-month extension available via Form 7004.</p>
 
-      <h4>Form 5472 — foreign ownership and related-party transaction reporting</h4>
-      <p>Form 5472 is an information return (it computes no tax itself) that
-      reports transactions between a U.S. corporation and its foreign owners
-      or other foreign related parties. It exists so the IRS can see
-      cross-border transactions that could otherwise shift profit out of the
-      U.S. tax base before it's ever reported — and it carries by far the
-      steepest penalty of any form on this page, applied regardless of
-      whether any U.S. tax is actually owed.</p>
-      <ul>
-        <li><strong>Who must file it:</strong> a "reporting corporation" —
-        either a U.S. corporation that is at least 25% foreign-owned, a
-        foreign corporation engaged in a U.S. trade or business, or (a
-        commonly missed case) a U.S. single-member LLC that is wholly owned
-        by a foreign person. That last case applies even though the LLC
-        would otherwise be a disregarded entity with no separate federal
-        filing obligation at all — the regulations require it to file a
-        pro forma Form 1120 (writing "Foreign-Owned U.S. DE" across the top,
-        per the instructions) solely as a vehicle to attach Form 5472,
-        purely for information-reporting purposes.</li>
-        <li><strong>What makes someone a "25% foreign shareholder":</strong>
-        any foreign person who owns, directly or indirectly (including
-        through family and entity attribution rules), at least 25% of the
-        reporting corporation's stock by vote or by value.</li>
-        <li><strong>What makes someone a "related party":</strong> broader
-        than just the 25% foreign shareholder — it also includes any person
-        related to the reporting corporation or to that 25% foreign
-        shareholder under the same constructive-ownership/attribution rules
-        used elsewhere in the tax code (family members, and corporations,
-        partnerships, trusts, or estates under common control). A foreign
-        sibling company under the same parent, for instance, is a related
-        party even though it holds no direct stock in the reporting
-        corporation itself.</li>
-        <li><strong>What counts as a "reportable transaction":</strong> any
-        monetary transaction during the year between the reporting
-        corporation and a foreign related party — sales and purchases of
-        goods, rents and royalties paid or received, management and
-        service fees, commissions, and loans (including the interest on
-        them). There's generally no minimum dollar threshold — even a
-        modest transaction must be reported — though the instructions carve
-        out a few narrow exceptions for small corporations engaged in only
-        one category of transaction below specific de minimis amounts.
-        Ordinary transactions with an unrelated foreign party (a vendor the
-        reporting corporation doesn't otherwise own or share ownership
-        with) are outside Form 5472's scope entirely, no matter how large —
-        the form is triggered by the relationship, not by the fact that a
-        counterparty happens to be foreign.</li>
-        <li><strong>How the form is organized:</strong> Part I identifies
-        the reporting corporation itself; Part II identifies each 25%
-        foreign shareholder; Part III identifies each related party a
-        reportable transaction was conducted with (a separate Form 5472 is
-        filed for each related party with reportable transactions); Part IV
-        lists the actual monetary transactions with that related party by
-        category and dollar amount; Part V covers additional disclosures
-        specific to a foreign-owned U.S. disregarded entity; and Part VI
-        covers a few additional required disclosures.</li>
-        <li><strong>Recordkeeping:</strong> the reporting corporation (or
-        foreign-owned disregarded entity) must keep permanent books and
-        records, in English, sufficient to establish the accuracy of the
-        return and make them available if the IRS asks — a real obligation
-        even for an entity, like a foreign-owned single-member LLC, that
-        would have no independent U.S. recordkeeping requirement otherwise.</li>
-        <li><strong>Filing mechanics and penalties:</strong> Form 5472 is
-        attached to the reporting corporation's income tax return (Form
-        1120, or the pro forma 1120 for a disregarded entity) and is due at
-        the same time, including extensions. The penalty for filing it late,
-        or filing it incomplete or inaccurate, is $25,000 per Form 5472 —
-        and if the failure continues more than 90 days after an IRS notice,
-        an additional $25,000 for every further 30-day period, with no cap.
-        This penalty applies even to an entity that owes zero U.S. income
-        tax, which is what makes it easy to underestimate.</li>
-      </ul>
-
-      <div class="guide-example"><strong>Example: a foreign-owned
-      disregarded entity's easy-to-miss obligation.</strong> A foreign
-      individual forms a U.S. single-member LLC to hold U.S. real estate and
-      doesn't elect corporate tax treatment, so under the normal
-      check-the-box rules it would simply be disregarded and file nothing
-      of its own. Because it's wholly owned by a foreign person, though, it
-      must still file a pro forma Form 1120 with Form 5472 attached,
-      reporting transactions with its owner — capital contributions,
-      distributions, and any loans between the LLC and the owner all count
-      as reportable transactions. Skipping this filing brings the same
-      $25,000 penalty that would apply to an active operating corporation,
-      even though the LLC itself may owe no U.S. income tax at all.</div>
-
-      <div class="guide-example"><strong>Example: related vs. unrelated
-      foreign counterparties.</strong> A U.S. corporation is 40%-owned by a
-      foreign parent company. It pays the foreign parent $500,000 in
-      management fees during the year — a related-party transaction that
-      must be reported on Form 5472, since the parent is a 25% foreign
-      shareholder. It separately pays an unrelated foreign vendor $200,000
-      for raw materials — not reportable on Form 5472 at all, because the
-      vendor holds no ownership stake and isn't otherwise a related party
-      under the attribution rules, even though the payment is larger and
-      the counterparty is equally foreign.</div>
-
       <h4>Related forms and schedules</h4>
       <ul>
         <li><strong>Form 1125-A</strong> — cost of goods sold detail:
@@ -1463,12 +1367,14 @@ const FORM_GUIDES = {
         for which a reserve was recorded in the financial statements,
         essentially flagging positions the company itself expects could be
         challenged.</li>
-        <li><strong>Form 5472</strong> — required of any corporation (or
-        foreign-owned disregarded entity, via a pro forma Form 1120) that is
-        at least 25% foreign-owned and had reportable transactions with a
-        foreign related party during the year — see the dedicated section
-        above for who must file, what counts as a related party and a
-        reportable transaction, and the penalty exposure.</li>
+        <li><strong>Form 5472</strong> — required of a 25%-foreign-owned
+        corporation with reportable transactions with a foreign related
+        party during the year. A foreign-owned single-member LLC — which
+        files no Form 1120 of its own otherwise — faces the same
+        requirement via a pro forma Form 1120 filed solely to attach it;
+        see the separate Form 5472 guide for who must file, the related-
+        party and reportable-transaction definitions, and the penalty
+        exposure.</li>
       </ul>
 
       <h4>Common pitfalls</h4>
@@ -1498,6 +1404,171 @@ const FORM_GUIDES = {
       looks that high on its own. Retaining the $158,000 in the corporation
       instead of distributing it avoids the second layer entirely, at least
       until it's eventually paid out.</div>
+    `,
+  },
+  '5472': {
+    title: 'Form 5472 — Foreign-Owned U.S. Entities',
+    html: `
+      <h4>What it is</h4>
+      <p>Form 5472 is an information return (it computes no tax itself) that
+      reports transactions between a U.S. "reporting corporation" and its
+      foreign owners or other foreign related parties. It exists so the IRS
+      can see cross-border transactions that could otherwise shift profit
+      out of the U.S. tax base before they're ever reported — and it
+      carries by far the steepest penalty of any form on this page, applied
+      regardless of whether any U.S. tax is actually owed.</p>
+
+      <h4>Two very different filers end up here — not just "a normal 1120"</h4>
+      <p>Form 5472 isn't a schedule that only real, income-earning
+      C-corporations deal with. It applies to two genuinely different
+      situations, and conflating them is the most common source of missed
+      filings:</p>
+      <ul>
+        <li><strong>An operating C-corporation that is 25% or more
+        foreign-owned.</strong> This is a normal Form 1120 filer in every
+        other respect — it computes its own income tax at the flat 21%
+        rate exactly as described in the Form 1120 guide — and Form 5472
+        is simply an additional attachment reporting its dealings with its
+        foreign owner(s).</li>
+        <li><strong>A foreign-owned U.S. disregarded entity (typically a
+        single-member LLC wholly owned by one foreign person).</strong>
+        This is a fundamentally different scenario from a normal Form 1120
+        filing. Under the regular check-the-box rules, a single-member LLC
+        that hasn't elected corporate treatment is disregarded for tax
+        purposes and would file nothing of its own at all — its owner
+        reports everything. But because the owner is foreign, a special
+        regulation overrides that: the LLC must file a <em>pro forma</em>
+        Form 1120 (with "Foreign-Owned U.S. DE" written across the top,
+        per the instructions) purely as a vehicle to attach Form 5472. This
+        pro forma return reports no income and computes no tax — it exists
+        solely to carry the information return — which is the key
+        difference from every other scenario covered under Form 1120.</li>
+      </ul>
+
+      <h4>What makes someone a "25% foreign shareholder"</h4>
+      <p>Any foreign person who owns, directly or indirectly (including
+      through family and entity attribution rules), at least 25% of the
+      reporting corporation's stock by vote or by value. For a
+      foreign-owned disregarded entity, the sole foreign owner automatically
+      meets this test by definition.</p>
+
+      <h4>What makes someone a "related party"</h4>
+      <p>Broader than just the 25% foreign shareholder — it also includes
+      any person related to the reporting corporation or to that 25%
+      foreign shareholder under the same constructive-ownership/attribution
+      rules used elsewhere in the tax code (family members, and
+      corporations, partnerships, trusts, or estates under common control).
+      A foreign sibling company under the same parent, for instance, is a
+      related party even though it holds no direct stock in the reporting
+      corporation itself.</p>
+
+      <h4>What counts as a "reportable transaction"</h4>
+      <p>Any monetary transaction during the year between the reporting
+      corporation and a foreign related party — sales and purchases of
+      goods, rents and royalties paid or received, management and service
+      fees, commissions, and loans (including the interest on them). For a
+      foreign-owned disregarded entity, this also includes capital
+      contributions and distributions between the LLC and its owner — the
+      kind of movement that would otherwise draw no tax-filing attention at
+      all for a wholly domestic-owned LLC. There's generally no minimum
+      dollar threshold — even a modest transaction must be reported —
+      though the instructions carve out a few narrow exceptions for small
+      corporations engaged in only one category of transaction below
+      specific de minimis amounts. Ordinary transactions with an unrelated
+      foreign party (a vendor the reporting corporation doesn't otherwise
+      own or share ownership with) are outside Form 5472's scope entirely,
+      no matter how large — the form is triggered by the relationship, not
+      by the fact that a counterparty happens to be foreign.</p>
+
+      <div class="guide-example"><strong>Example: related vs. unrelated
+      foreign counterparties.</strong> A U.S. corporation is 40%-owned by a
+      foreign parent company. It pays the foreign parent $500,000 in
+      management fees during the year — a related-party transaction that
+      must be reported on Form 5472, since the parent is a 25% foreign
+      shareholder. It separately pays an unrelated foreign vendor $200,000
+      for raw materials — not reportable on Form 5472 at all, because the
+      vendor holds no ownership stake and isn't otherwise a related party
+      under the attribution rules, even though the payment is larger and
+      the counterparty is equally foreign.</div>
+
+      <h4>How the form is organized</h4>
+      <p>Part I identifies the reporting corporation itself; Part II
+      identifies each 25% foreign shareholder; Part III identifies each
+      related party a reportable transaction was conducted with (a separate
+      Form 5472 is filed for each related party with reportable
+      transactions); Part IV lists the actual monetary transactions with
+      that related party by category and dollar amount; Part V covers
+      additional disclosures specific to a foreign-owned U.S. disregarded
+      entity; and Part VI covers a few additional required disclosures.</p>
+
+      <h4>Recordkeeping</h4>
+      <p>The reporting corporation (or foreign-owned disregarded entity)
+      must keep permanent books and records, in English, sufficient to
+      establish the accuracy of the return and make them available if the
+      IRS asks — a real obligation even for an entity, like a foreign-owned
+      single-member LLC, that would have no independent U.S. recordkeeping
+      requirement otherwise.</p>
+
+      <h4>Filing mechanics and penalties</h4>
+      <p>Form 5472 is attached to the reporting corporation's income tax
+      return — a real Form 1120 for an operating C-corp, or the pro forma
+      Form 1120 for a disregarded entity — and is due at the same time,
+      including the same automatic 6-month extension via Form 7004. The
+      penalty for filing it late, or filing it incomplete or inaccurate, is
+      $25,000 per Form 5472 — and if the failure continues more than 90
+      days after an IRS notice, an additional $25,000 for every further
+      30-day period, with no cap. This penalty applies even to an entity
+      that owes zero U.S. income tax, which is what makes it easy to
+      underestimate — a foreign-owned disregarded entity with no income can
+      still owe six figures in penalties for skipping this filing.</p>
+
+      <div class="guide-example"><strong>Example: a foreign-owned
+      disregarded entity's easy-to-miss obligation.</strong> A foreign
+      individual forms a U.S. single-member LLC to hold U.S. real estate and
+      doesn't elect corporate tax treatment, so under the normal
+      check-the-box rules it would simply be disregarded and file nothing
+      of its own. Because it's wholly owned by a foreign person, though, it
+      must still file a pro forma Form 1120 with Form 5472 attached,
+      reporting transactions with its owner — capital contributions,
+      distributions, and any loans between the LLC and the owner all count
+      as reportable transactions. Skipping this filing brings the same
+      $25,000 penalty that would apply to an active operating corporation,
+      even though the LLC itself may owe no U.S. income tax at all.</div>
+
+      <h4>Related forms</h4>
+      <ul>
+        <li><strong>Form 1120</strong> — the return Form 5472 attaches to.
+        For an operating C-corporation this is a real, tax-computing
+        return (see the separate Form 1120 guide); for a foreign-owned
+        disregarded entity it's a pro forma filing used solely to carry
+        Form 5472, reporting no income and computing no tax.</li>
+        <li><strong>Form 7004</strong> — the automatic 6-month extension
+        request for the underlying Form 1120 (real or pro forma), which
+        also extends the Form 5472 deadline along with it.</li>
+        <li><strong>Form 5471</strong> — the mirror-image form for the
+        opposite direction: reports a <em>U.S. person's</em> ownership in a
+        <em>foreign</em> corporation, rather than a foreign person's
+        ownership in a U.S. entity. Easy to confuse by number alone, but
+        the two forms serve opposite reporting directions.</li>
+      </ul>
+
+      <h4>Common pitfalls</h4>
+      <ul>
+        <li>A foreign-owned single-member LLC assuming it has no U.S.
+        filing obligation at all, since it would have none if its owner
+        were domestic — the disregarded-entity status that eliminates a
+        filing requirement for a U.S. owner doesn't do the same for a
+        foreign one.</li>
+        <li>Treating capital contributions and distributions between a
+        foreign-owned LLC and its owner as "not really transactions" since
+        no third party or price is involved — they're still reportable.</li>
+        <li>Filing the pro forma Form 1120 late or incomplete and not
+        realizing the $25,000 penalty is calculated per Form 5472, not
+        capped at one penalty per return.</li>
+        <li>Assuming a small or short-lived entity is below some reporting
+        threshold — Form 5472 generally has no minimum dollar amount for a
+        reportable transaction to require disclosure.</li>
+      </ul>
     `,
   },
   '990': {
@@ -2618,7 +2689,7 @@ backBtn.addEventListener('click', () => {
   else showGuidesPanel();
 });
 
-const GUIDE_ORDER = ['1040', '1065', '1120s', '1120', '990'];
+const GUIDE_ORDER = ['1040', '1065', '1120s', '1120', '5472', '990'];
 // Landing page shows just the picker — no guide is selected until the user
 // taps one, so the main page reads as a short list of options rather than
 // a wall of Form 1040 text. Clicking the active tab again deselects it.
