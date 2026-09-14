@@ -53,6 +53,12 @@
   .explain { color: var(--muted); font-size: 0.85rem; }
   #sample-scenarios { margin-top: 16px; }
   #sample-scenarios .scenario-heading { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+  .scenario-heading-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%;
+    background: none; border: none; padding: 0; margin-bottom: 8px; cursor: pointer; text-align: left; }
+  .scenario-heading-toggle .scenario-heading { font-size: 0.85rem; color: var(--muted); margin-bottom: 0; }
+  .scenario-heading-toggle .scenario-toggle-icon { color: var(--muted); font-size: 0.75rem; flex: 0 0 auto; margin-left: 8px; }
+  .scenario-heading-toggle:hover .scenario-heading,
+  .scenario-heading-toggle:hover .scenario-toggle-icon { color: var(--accent); }
   .scenario-row { display: flex; align-items: stretch; gap: 8px; margin-bottom: 8px; }
   .scenario-btn { display: block; width: 100%; text-align: left; margin-bottom: 0; padding: 10px 14px; }
   .scenario-btn .scenario-title { font-weight: 600; display: block; }
@@ -99,6 +105,7 @@
   .guide-tabs button.secondary.active { background: var(--accent); color: var(--btn-text); }
   .guide-example-cta { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
   .guide-section { max-width: 680px; }
+  .guide-section #guide-collapse-btn { margin-bottom: 16px; }
   .guide-section h3 { margin: 0 0 12px; font-size: 1.15rem; }
   .guide-section h4 { margin: 26px 0 8px; font-size: 1rem; color: var(--accent); }
   .guide-section h4:first-of-type { margin-top: 4px; }
@@ -1769,6 +1776,12 @@ function scenarioFormType(scenario) {
   return scenario.data.form_type || '1040';
 }
 
+// Collapsed by default (per guide) — a guide like 1040 has 11 samples, and
+// showing them all open by default buried the guide's own back button and
+// next-tab controls far down the page. Remembers the open/closed state per
+// form type across tab switches within the same page load.
+const guideSamplesExpanded = {};
+
 function renderGuideSamples(key) {
   const el = document.getElementById('guide-samples');
   if (!el) return;
@@ -1778,19 +1791,29 @@ function renderGuideSamples(key) {
     return;
   }
   const completed = getCompletedScenarios();
+  const expanded = !!guideSamplesExpanded[key];
   el.innerHTML = `
-    <p class="scenario-heading">Sample ${FORM_GUIDES[key].title.split(' — ')[0]} returns to try:</p>
-    ${matches.map(s => `
-      <div class="scenario-row ${completed.has(s.id) ? 'is-complete' : ''}">
-        <button type="button" class="scenario-check" data-scenario-check="${s.id}"
-          aria-pressed="${completed.has(s.id)}" title="${completed.has(s.id) ? 'Mark not reviewed' : 'Mark reviewed'}">${completed.has(s.id) ? '✓' : ''}</button>
-        <button type="button" class="secondary scenario-btn" data-scenario-id="${s.id}">
-          <span class="scenario-title">${s.title}</span>
-          <span class="scenario-desc">${s.description}</span>
-        </button>
-      </div>
-    `).join('')}
+    <button type="button" class="scenario-heading-toggle" id="guide-samples-toggle" aria-expanded="${expanded}">
+      <span class="scenario-heading">Sample ${FORM_GUIDES[key].title.split(' — ')[0]} returns to try (${matches.length})</span>
+      <span class="scenario-toggle-icon">${expanded ? '▲' : '▼'}</span>
+    </button>
+    <div class="scenario-list${expanded ? '' : ' hidden'}">
+      ${matches.map(s => `
+        <div class="scenario-row ${completed.has(s.id) ? 'is-complete' : ''}">
+          <button type="button" class="scenario-check" data-scenario-check="${s.id}"
+            aria-pressed="${completed.has(s.id)}" title="${completed.has(s.id) ? 'Mark not reviewed' : 'Mark reviewed'}">${completed.has(s.id) ? '✓' : ''}</button>
+          <button type="button" class="secondary scenario-btn" data-scenario-id="${s.id}">
+            <span class="scenario-title">${s.title}</span>
+            <span class="scenario-desc">${s.description}</span>
+          </button>
+        </div>
+      `).join('')}
+    </div>
   `;
+  document.getElementById('guide-samples-toggle').addEventListener('click', () => {
+    guideSamplesExpanded[key] = !guideSamplesExpanded[key];
+    renderGuideSamples(key);
+  });
   el.querySelectorAll('.scenario-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const scenario = SAMPLE_SCENARIOS.find(s => s.id === btn.dataset.scenarioId);
@@ -2389,7 +2412,10 @@ backBtn.addEventListener('click', () => {
 });
 
 const GUIDE_ORDER = ['1040', '1065', '1120s', '1120', '990'];
-let currentGuideKey = GUIDE_ORDER[0];
+// Landing page shows just the picker — no guide is selected until the user
+// taps one, so the main page reads as a short list of options rather than
+// a wall of Form 1040 text. Clicking the active tab again deselects it.
+let currentGuideKey = null;
 
 function renderGuideTabs() {
   const tabsEl = document.getElementById('guides-tabs');
@@ -2400,7 +2426,8 @@ function renderGuideTabs() {
   `).join('');
   tabsEl.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
-      currentGuideKey = btn.dataset.guideKey;
+      const key = btn.dataset.guideKey;
+      currentGuideKey = currentGuideKey === key ? null : key;
       renderGuideTabs();
       renderGuideContent();
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -2410,14 +2437,25 @@ function renderGuideTabs() {
 
 function renderGuideContent() {
   const el = document.getElementById('guides-content');
+  if (!currentGuideKey) {
+    el.innerHTML = '';
+    return;
+  }
   const guide = FORM_GUIDES[currentGuideKey];
   el.innerHTML = `
     <section class="guide-section">
+      <button type="button" class="secondary" id="guide-collapse-btn">← Back to return types</button>
       <h3>${guide.title}</h3>
       ${guide.html}
       <div id="guide-samples" class="guide-example-cta"></div>
     </section>
   `;
+  document.getElementById('guide-collapse-btn').addEventListener('click', () => {
+    currentGuideKey = null;
+    renderGuideTabs();
+    renderGuideContent();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  });
   renderGuideSamples(currentGuideKey);
 }
 
