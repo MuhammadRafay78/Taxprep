@@ -190,29 +190,30 @@
   <button type="button" id="theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
 </header>
 <main>
-  <section class="panel hidden" id="guides-panel">
-    <button type="button" class="secondary" id="guides-back-btn">&larr; Back</button>
-    <h2 style="margin-bottom:4px">Return guides</h2>
-    <p class="explain">These aren't tied to any specific return — each is a full guide to how that return type is
-      taxed, in general: eligibility, the pass-through vs. double-taxation mechanics, basis, distributions,
-      entity-level tax traps, and the filing mechanics that trip people up. For a walkthrough of an actual return's
-      numbers, open one of the sample returns instead.</p>
+  <section class="panel" id="guides-panel">
+    <h2 style="margin-bottom:4px">Understand a return type</h2>
+    <p class="explain">Pick a form below for a full guide to how it's taxed — eligibility, the pass-through vs.
+      double-taxation mechanics, basis, distributions, entity-level tax traps, and the filing mechanics that trip
+      people up — plus real sample returns of that type to try.</p>
     <div id="guides-tabs" class="guide-tabs"></div>
     <div id="guides-content"></div>
+    <div id="guides-upload-link" class="hidden">
+      <button type="button" class="secondary" id="upload-instead-btn">Or upload your own Form 1040 PDF instead</button>
+    </div>
   </section>
 
-  <section class="panel" id="upload-panel">
+  <section class="panel hidden" id="upload-panel">
+    <button type="button" class="secondary" id="upload-back-btn">&larr; Back to guides</button>
     <div class="dropzone" id="dropzone">
       <p>Drop a Form 1040 PDF here, or click to choose a file.</p>
       <p class="explain">Works with text-based PDFs — a fillable IRS form, or one exported from tax software. Scanned or photographed pages have no text to read, so anything on them will need to be entered by hand.</p>
       <input type="file" id="file-input" accept="application/pdf" />
     </div>
     <p id="status"></p>
-    <div id="sample-scenarios"></div>
   </section>
 
   <section class="panel hidden" id="summary-panel">
-    <button type="button" class="secondary" id="back-btn">&larr; Back to sample returns</button>
+    <button type="button" class="secondary" id="back-btn">&larr; Back</button>
     <!-- Only ever shown for a PDF you uploaded yourself, from the exact
          bytes you gave the browser — never for a sample return, and
          nothing here is ever sent anywhere or stored on a server. -->
@@ -277,7 +278,6 @@ const resultsPanel = document.getElementById('results-panel');
 const uploadPanel = document.getElementById('upload-panel');
 const guidesPanel = document.getElementById('guides-panel');
 const guidesLink = document.getElementById('guides-link');
-const guidesBackBtn = document.getElementById('guides-back-btn');
 const backBtn = document.getElementById('back-btn');
 const detailPanel = document.getElementById('detail-panel');
 const detailContent = document.getElementById('detail-content');
@@ -1756,13 +1756,27 @@ function setScenarioComplete(id, done) {
   } catch (e) { /* private browsing / storage disabled — completion just won't persist */ }
 }
 
-function renderSampleScenarios() {
-  const el = document.getElementById('sample-scenarios');
-  const heading = dropzone ? 'Or try a sample return:' : 'Try a sample return:';
+// Sample returns now live inside each guide (filtered by form type) rather
+// than as one flat list on the landing page — the landing page is the
+// guides themselves. A scenario's form type comes from its own embedded
+// data (business/exempt-org scenarios set form_type explicitly; the 1040
+// scenarios omit it, defaulting to '1040' the same way renderSummary does).
+function scenarioFormType(scenario) {
+  return scenario.data.form_type || '1040';
+}
+
+function renderGuideSamples(key) {
+  const el = document.getElementById('guide-samples');
+  if (!el) return;
+  const matches = SAMPLE_SCENARIOS.filter(s => scenarioFormType(s) === key);
+  if (matches.length === 0) {
+    el.innerHTML = `<p class="explain">No interactive sample return for ${FORM_GUIDES[key].title.split(' — ')[0]} yet — this app doesn't parse that form.</p>`;
+    return;
+  }
   const completed = getCompletedScenarios();
   el.innerHTML = `
-    <p class="scenario-heading">${heading}</p>
-    ${SAMPLE_SCENARIOS.map(s => `
+    <p class="scenario-heading">Sample ${FORM_GUIDES[key].title.split(' — ')[0]} returns to try:</p>
+    ${matches.map(s => `
       <div class="scenario-row ${completed.has(s.id) ? 'is-complete' : ''}">
         <button type="button" class="scenario-check" data-scenario-check="${s.id}"
           aria-pressed="${completed.has(s.id)}" title="${completed.has(s.id) ? 'Mark not reviewed' : 'Mark reviewed'}">${completed.has(s.id) ? '✓' : ''}</button>
@@ -1787,11 +1801,10 @@ function renderSampleScenarios() {
     btn.addEventListener('click', () => {
       const id = btn.dataset.scenarioCheck;
       setScenarioComplete(id, !getCompletedScenarios().has(id));
-      renderSampleScenarios();
+      renderGuideSamples(key);
     });
   });
 }
-renderSampleScenarios();
 
 // Theme toggle: defaults to following the OS light/dark setting, but a
 // manual click overrides that and persists (falls back gracefully — e.g. in
@@ -2329,6 +2342,21 @@ function renderSummary(data) {
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
+// The guides panel is the landing page now — reachable at any time via the
+// header link, and the default view on load. Uploading a real PDF is a
+// secondary path reached via a link from here (only shown when the dropzone
+// actually exists on this deployment — the Cloudflare Worker has no upload
+// endpoint at all).
+function showGuidesPanel() {
+  uploadPanel.classList.add('hidden');
+  summaryPanel.classList.add('hidden');
+  resultsPanel.classList.add('hidden');
+  detailPanel.classList.add('hidden');
+  guidesPanel.classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+guidesLink.addEventListener('click', showGuidesPanel);
+
 function showUploadPanel() {
   summaryPanel.classList.add('hidden');
   resultsPanel.classList.add('hidden');
@@ -2337,13 +2365,25 @@ function showUploadPanel() {
   status.textContent = '';
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
-backBtn.addEventListener('click', showUploadPanel);
+const uploadBackBtn = document.getElementById('upload-back-btn');
+if (uploadBackBtn) uploadBackBtn.addEventListener('click', showGuidesPanel);
 
-// The business-return guides are static reference content, not tied to any
-// particular return — reachable from the header at any time, independent of
-// whatever's currently shown in the upload/summary/results flow. Each form
-// type is its own full guide/section, switched via tabs rather than all
-// three stacked on one long page.
+const uploadInsteadBtn = document.getElementById('upload-instead-btn');
+if (dropzone && uploadInsteadBtn) {
+  document.getElementById('guides-upload-link').classList.remove('hidden');
+  uploadInsteadBtn.addEventListener('click', showUploadPanel);
+}
+
+// A scenario click always clears currentUploadedFile (see renderGuideSamples
+// above), so the back button can tell "came from a sample, launched from a
+// guide" (currentUploadedFile null → back to guides) apart from "came from
+// an actual uploaded PDF" (back to the upload panel) without any separate
+// state to track.
+backBtn.addEventListener('click', () => {
+  if (currentUploadedFile) showUploadPanel();
+  else showGuidesPanel();
+});
+
 const GUIDE_ORDER = ['1040', '1065', '1120s', '1120', '990'];
 let currentGuideKey = GUIDE_ORDER[0];
 
@@ -2359,60 +2399,22 @@ function renderGuideTabs() {
       currentGuideKey = btn.dataset.guideKey;
       renderGuideTabs();
       renderGuideContent();
-      document.getElementById('guides-content').scrollIntoView({ behavior: 'instant', block: 'start' });
+      window.scrollTo({ top: 0, behavior: 'instant' });
     });
   });
 }
 
-// Which sample return (if any) best illustrates each guide, so "go deeper"
-// has somewhere concrete to land. Form 1040 has 11 samples rather than one
-// obvious pick, so its button opens the sample-return list instead of a
-// single scenario; Form 1120 has no interactive sample yet (this app has no
-// 1120 parser support), so its guide gets an explanatory note instead of a
-// button that would go nowhere.
-const GUIDE_EXAMPLE_SCENARIO = {
-  '1065': 'sample-1065-small-llc-loss',
-  '1120s': 'sample-1120s-profitable-scorp',
-  '990': 'sample-990ez-small-nonprofit',
-};
-
 function renderGuideContent() {
   const el = document.getElementById('guides-content');
   const guide = FORM_GUIDES[currentGuideKey];
-  let exampleHtml;
-  if (currentGuideKey === '1040') {
-    exampleHtml = `<button type="button" class="secondary" id="guide-example-btn">See Form 1040 example returns</button>`;
-  } else if (GUIDE_EXAMPLE_SCENARIO[currentGuideKey]) {
-    exampleHtml = `<button type="button" class="secondary" id="guide-example-btn">See an example ${guide.title.split(' — ')[0]} return</button>`;
-  } else {
-    exampleHtml = `<p class="explain">No interactive example return for ${guide.title.split(' — ')[0]} yet — this app doesn't parse that form.</p>`;
-  }
   el.innerHTML = `
     <section class="guide-section">
       <h3>${guide.title}</h3>
       ${guide.html}
-      <div class="guide-example-cta">${exampleHtml}</div>
+      <div id="guide-samples" class="guide-example-cta"></div>
     </section>
   `;
-  const exampleBtn = document.getElementById('guide-example-btn');
-  if (exampleBtn) {
-    exampleBtn.addEventListener('click', () => {
-      const scenarioId = GUIDE_EXAMPLE_SCENARIO[currentGuideKey];
-      if (scenarioId) {
-        const scenario = SAMPLE_SCENARIOS.find(s => s.id === scenarioId);
-        if (scenario) {
-          currentUploadedFile = null;
-          renderSummary(scenario.data);
-          updateDownloadButton();
-          return;
-        }
-      }
-      // Form 1040 (or a missing scenario, defensively): land on the sample
-      // list itself rather than one specific return.
-      showUploadPanel();
-      document.getElementById('sample-scenarios').scrollIntoView({ behavior: 'instant', block: 'start' });
-    });
-  }
+  renderGuideSamples(currentGuideKey);
 }
 
 function renderGuides() {
@@ -2420,17 +2422,6 @@ function renderGuides() {
   renderGuideContent();
 }
 renderGuides();
-
-function showGuidesPanel() {
-  uploadPanel.classList.add('hidden');
-  summaryPanel.classList.add('hidden');
-  resultsPanel.classList.add('hidden');
-  detailPanel.classList.add('hidden');
-  guidesPanel.classList.remove('hidden');
-  window.scrollTo({ top: 0, behavior: 'instant' });
-}
-guidesLink.addEventListener('click', showGuidesPanel);
-guidesBackBtn.addEventListener('click', showUploadPanel);
 
 // Some schedule details nest inside another (e.g. Schedule C's own
 // depreciation line drills further into Form 4562), so "back" needs to
