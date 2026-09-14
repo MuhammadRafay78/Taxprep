@@ -115,7 +115,13 @@
   .guide-section ul { margin: 10px 0 20px; padding-left: 22px; }
   .guide-section li { margin-bottom: 8px; }
   .guide-example { background: var(--accent-dim); border-left: 3px solid var(--accent); border-radius: 8px;
-    padding: 14px 18px; margin: 18px 0; font-size: 0.9rem; line-height: 1.6; }
+    padding: 12px 18px; margin: 18px 0; font-size: 0.9rem; line-height: 1.6; }
+  .guide-example > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 8px; padding: 2px 0; }
+  .guide-example > summary::-webkit-details-marker { display: none; }
+  .guide-example > summary::before { content: '▶'; font-size: 0.65em; color: var(--accent); flex: 0 0 auto;
+    transition: transform 0.15s ease; }
+  .guide-example[open] > summary::before { transform: rotate(90deg); }
+  .guide-example .guide-example-body { margin-top: 10px; }
   .guide-table { width: 100%; border-collapse: collapse; margin: 10px 0 20px; font-size: 0.88rem; }
   .guide-table th, .guide-table td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
   .guide-table th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -1620,6 +1626,28 @@ const FORM_GUIDES = {
         some organizations aren't required to make this schedule public even
         though the rest of the 990 is — donor privacy versus transparency has
         been genuinely litigated and legislated on this exact schedule.</li>
+        <li><strong>Schedule C</strong> — required if the organization
+        engaged in any lobbying or political campaign activity. 501(c)(3)
+        charities face an absolute ban on political campaign intervention
+        and tight limits on lobbying; other 501(c) categories have more
+        room, but still have to disclose it here.</li>
+        <li><strong>Schedule G</strong> — required once fundraising-event
+        revenue or gaming income crosses set thresholds (generally over
+        $15,000 for either). Breaks out the gross revenue, direct expenses,
+        and net income from professional fundraisers, individual fundraising
+        events, and gaming activities separately from the summary numbers on
+        the main form.</li>
+        <li><strong>Schedule L (Transactions with Interested Persons)</strong>
+        — required whenever there's an excess benefit transaction, a loan to
+        or from an officer/director/key employee, or another business
+        transaction with an interested party — the schedule that actually
+        reports the kind of excess benefit transaction described above,
+        rather than just the yes/no question on the main form.</li>
+        <li><strong>Schedule N</strong> — required if the organization
+        dissolved, liquidated, terminated, or significantly contracted its
+        operations during the year — describes how remaining assets were
+        distributed, which for a 501(c)(3) generally must go to another
+        exempt organization, not to individuals.</li>
         <li><strong>Schedule O</strong> — required narrative supplement
         whenever the return itself says "see Schedule O" next to a yes/no
         question — governance policy descriptions, explanations of unusual
@@ -1638,6 +1666,21 @@ const FORM_GUIDES = {
         covers the period back to the organization's formation if filed
         within 27 months of it).</li>
       </ul>
+
+      <div class="guide-example"><strong>Example: which schedules one
+      mid-size charity actually triggers.</strong> A 501(c)(3) food bank
+      files Form 990-EZ. During the year it: ran an annual gala that
+      grossed $22,000 against $6,000 of direct event costs (over the
+      $15,000 threshold, so Schedule G is required to break out the gross
+      revenue, expenses, and net); made a $10,000 no-interest loan to its
+      executive director to cover a personal emergency (an interested-party
+      transaction, so Schedule L is required regardless of whether the loan
+      was reasonable); and sent a mailer urging supporters to contact their
+      representative about a pending bill (lobbying activity, so Schedule C
+      is required even though the amount spent was small). None of these
+      three activities is prohibited outright — each is common and legal —
+      but each has its own disclosure schedule, and skipping one because it
+      seemed minor is exactly how a filing ends up incomplete.</div>
 
       <h4>Common pitfalls</h4>
       <ul>
@@ -2453,6 +2496,32 @@ function renderGuideTabs() {
   });
 }
 
+// Guide content is authored as plain `<div class="guide-example">` blocks —
+// turning each into a native <details>/<summary> here (rather than hand-
+// editing every example across every guide) keeps the markup simple to
+// write while making every example collapsed by default, with just its
+// bold lead sentence showing, so a long guide doesn't read as a wall of
+// worked examples the reader has to scroll past.
+function enhanceGuideExamples(container) {
+  container.querySelectorAll('.guide-example').forEach(div => {
+    const lead = div.querySelector('strong');
+    const details = document.createElement('details');
+    details.className = 'guide-example';
+    const summary = document.createElement('summary');
+    if (lead) {
+      summary.appendChild(lead);
+    } else {
+      summary.textContent = 'Example';
+    }
+    const body = document.createElement('div');
+    body.className = 'guide-example-body';
+    while (div.firstChild) body.appendChild(div.firstChild);
+    details.appendChild(summary);
+    details.appendChild(body);
+    div.replaceWith(details);
+  });
+}
+
 function renderGuideContent() {
   const el = document.getElementById('guides-content');
   if (!currentGuideKey) {
@@ -2468,6 +2537,7 @@ function renderGuideContent() {
       <div id="guide-samples" class="guide-example-cta"></div>
     </section>
   `;
+  enhanceGuideExamples(el);
   document.getElementById('guide-collapse-btn').addEventListener('click', () => {
     currentGuideKey = null;
     renderGuideTabs();
