@@ -1948,6 +1948,28 @@ const FORM_GUIDES = {
       under the "debt-financed property" rules, even though a simple cash
       rental of the same space would have been fully exempt.</div>
 
+      <h4>UBIT "silos" — one activity's loss can't offset another's income</h4>
+      <p>Since 2018, an organization with more than one unrelated trade or
+      business can't net them together into a single UBIT computation. Each
+      unrelated activity is its own "silo," computed separately (generally
+      by activity/industry code) — a loss from one unrelated business can no
+      longer offset income from a different, unrelated business, though a
+      single activity's own losses can still carry forward against that
+      same activity's future income. This significantly increased UBIT
+      exposure for organizations running several unrelated side activities,
+      since a profitable one is no longer shielded by a money-losing one.</p>
+
+      <div class="guide-example"><strong>Example: two unrelated activities,
+      no netting.</strong> A museum's parking garage (rented commercially,
+      unrelated to its exempt purpose) nets $40,000 of taxable income for
+      the year. The same museum's separate advertising business in its
+      member magazine (also unrelated) loses $15,000 for the year. Before
+      2018, the two would have netted to $25,000 of taxable UBTI. Under the
+      silo rules, they're computed separately: the museum owes tax on the
+      full $40,000 from the garage, and the $15,000 advertising loss is
+      simply carried forward to offset only future advertising income, not
+      the garage's income.</div>
+
       <h4>Compensation, private inurement, and excess benefit transactions</h4>
       <p>Officers, directors, key employees, and other "disqualified
       persons" can't be paid excessively or otherwise receive improper
@@ -1976,6 +1998,28 @@ const FORM_GUIDES = {
       10% of the excess, capped per transaction) for approving it. None of
       this excise tax is paid by the organization itself; it's assessed on
       the individuals.</div>
+
+      <h4>Executive compensation excise tax (Section 4960)</h4>
+      <p>Separate from the excess benefit transaction rules above, an
+      applicable tax-exempt organization owes a flat 21% excise tax on two
+      things: compensation over $1,000,000 paid to any of its five
+      highest-compensated employees for the year (a fixed threshold, not
+      tied to what's "reasonable" for the role), and any "excess parachute
+      payment" — a severance-type payment triggered by an employee's
+      separation that's worth three times or more their average annual
+      compensation. Unlike the intermediate-sanctions excise tax on excess
+      benefit transactions, which is assessed on the individual who
+      received the benefit, this excise tax is owed by the organization
+      itself.</p>
+
+      <div class="guide-example"><strong>Example: the $1 million threshold
+      applied.</strong> A large hospital system pays its CEO $1,400,000 in
+      total compensation for the year. The organization — not the CEO
+      personally — owes a 21% excise tax on the $400,000 above the
+      $1,000,000 threshold, or $84,000. This applies regardless of whether
+      the compensation would otherwise be considered "reasonable" under the
+      separate excess-benefit-transaction analysis above; the two rules
+      test different things and can both apply to the same paycheck.</div>
 
       <h4>Public charity vs. private foundation, and the public support test</h4>
       <p>A 501(c)(3) organization is classified as either a public charity
@@ -2017,6 +2061,23 @@ const FORM_GUIDES = {
       transactions. These questions don't generate a tax liability on their
       own, but consistently answering "no" across the board is a pattern the
       IRS has flagged in the past as correlating with higher audit risk.</p>
+
+      <h4>Donor-advised funds (DAFs)</h4>
+      <p>A donor-advised fund is an account held at a sponsoring charity
+      (often a community foundation, or a fund like Fidelity Charitable or
+      Schwab Charitable) that lets a donor contribute, take an immediate
+      tax deduction, and then recommend — not direct, technically — grants
+      out of the fund to specific charities over time. The sponsoring
+      organization is the one that actually carries Form 990 reporting
+      obligations around it (via Schedule D), disclosing the aggregate
+      value of DAFs it holds and the grants made from them; the underlying
+      donor doesn't file anything about the DAF itself. A recipient charity
+      receiving a DAF grant treats it like any other contribution — but
+      since the grant comes from the sponsoring organization's fund rather
+      than the original donor directly, the recipient's own donor
+      acknowledgment and public-support-test treatment can get more
+      complicated if it isn't tracked carefully back to the original source
+      for large gifts.</p>
 
       <h4>Public disclosure requirements</h4>
       <p>An exempt organization must make its three most recent annual
@@ -2100,6 +2161,12 @@ const FORM_GUIDES = {
         computation described above. An organization that fails the test two
         years running is reclassified as a private foundation going
         forward.</li>
+        <li><strong>Schedule D (Supplemental Financial Statements)</strong>
+        — required on the full Form 990 (not the -EZ) for organizations
+        with donor-advised funds, conservation easements, certain
+        endowment funds, or various balance-sheet items above set
+        thresholds — this is where the DAF disclosures described above
+        actually get reported.</li>
         <li><strong>Schedule B (Schedule of Contributors)</strong> — lists
         donors who gave above a threshold (generally the greater of $5,000 or
         2% of total contributions). Historically a point of controversy since
@@ -2111,6 +2178,12 @@ const FORM_GUIDES = {
         charities face an absolute ban on political campaign intervention
         and tight limits on lobbying; other 501(c) categories have more
         room, but still have to disclose it here.</li>
+        <li><strong>Schedule F (Statement of Activities Outside the United
+        States)</strong> — required once an organization has more than
+        $10,000 total in grants, other assistance, or program activities
+        conducted outside the U.S. during the year, region by region — a
+        common trigger for any charity with even modest international
+        grantmaking or overseas program work.</li>
         <li><strong>Schedule G</strong> — required once fundraising-event
         revenue or gaming income crosses set thresholds (generally over
         $15,000 for either). Breaks out the gross revenue, direct expenses,
