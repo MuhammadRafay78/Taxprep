@@ -1444,6 +1444,15 @@ const FORM_GUIDES = {
         solely to carry the information return — which is the key
         difference from every other scenario covered under Form 1120.</li>
       </ul>
+      <table class="guide-table">
+        <thead><tr><th></th><th>25%-foreign-owned C-corp</th><th>Foreign-owned disregarded entity</th></tr></thead>
+        <tbody>
+          <tr><td>Underlying Form 1120</td><td>Real — computes actual income tax</td><td>Pro forma — reports no income, computes no tax</td></tr>
+          <tr><td>Why it exists</td><td>Operates a real business</td><td>Exists solely to carry Form 5472</td></tr>
+          <tr><td>U.S. income tax owed</td><td>21% flat rate on taxable income</td><td>None, from this filing itself</td></tr>
+          <tr><td>Form 5472's role</td><td>An additional attachment</td><td>The entire reason the filing exists</td></tr>
+        </tbody>
+      </table>
 
       <h4>What makes someone a "25% foreign shareholder"</h4>
       <p>Any foreign person who owns, directly or indirectly (including
@@ -1491,6 +1500,37 @@ const FORM_GUIDES = {
       under the attribution rules, even though the payment is larger and
       the counterparty is equally foreign.</div>
 
+      <h4>Why it matters: arm's-length pricing (Section 482)</h4>
+      <p>Form 5472 is a disclosure form, but the substantive tax rule behind
+      it is Section 482: every reportable transaction must be priced as if
+      it had occurred between unrelated parties dealing at arm's length —
+      the same fair value a stranger would have charged or paid. This is
+      the entire reason the IRS wants these transactions disclosed in the
+      first place: a related party controls both sides of the transaction,
+      so nothing stops it from setting a price (or an interest rate, or a
+      fee) that shifts profit out of the U.S. entity and into a foreign one
+      with a lower tax rate, or out of a foreign-owned LLC without going
+      through any taxable event at all. Reporting the transaction on Form
+      5472 doesn't itself prove the price was arm's-length — the IRS can
+      still reprice a related-party transaction under Section 482 and
+      assess additional tax (plus penalties) on the difference, even for a
+      transaction that was fully and accurately disclosed.</p>
+
+      <div class="guide-example"><strong>Example: an interest-free loan
+      that isn't really interest-free.</strong> A foreign parent lends its
+      25%-owned U.S. subsidiary $1,000,000, charging no interest, calling
+      it a favor between related companies. Because loans between related
+      parties are covered by both Form 5472's reporting rules and Section
+      482's arm's-length standard, the IRS treats the loan as if it carried
+      a market interest rate anyway — imputing, say, $50,000 of annual
+      interest income to the foreign parent (taxable to it as U.S.-source
+      income, generally subject to withholding) and disallowing nothing for
+      the U.S. subsidiary, since it never actually paid the interest. The
+      $0 that changed hands on paper and the $50,000 the IRS treats as
+      having changed hands for tax purposes are two different numbers, and
+      only reporting the loan on Form 5472 without also pricing the
+      interest correctly leaves the arm's-length gap unresolved.</div>
+
       <h4>How the form is organized</h4>
       <p>Part I identifies the reporting corporation itself; Part II
       identifies each 25% foreign shareholder; Part III identifies each
@@ -1513,14 +1553,24 @@ const FORM_GUIDES = {
       <p>Form 5472 is attached to the reporting corporation's income tax
       return — a real Form 1120 for an operating C-corp, or the pro forma
       Form 1120 for a disregarded entity — and is due at the same time,
-      including the same automatic 6-month extension via Form 7004. The
-      penalty for filing it late, or filing it incomplete or inaccurate, is
-      $25,000 per Form 5472 — and if the failure continues more than 90
-      days after an IRS notice, an additional $25,000 for every further
-      30-day period, with no cap. This penalty applies even to an entity
-      that owes zero U.S. income tax, which is what makes it easy to
-      underestimate — a foreign-owned disregarded entity with no income can
-      still owe six figures in penalties for skipping this filing.</p>
+      including the same automatic 6-month extension via Form 7004. Unlike
+      a real Form 1120, a foreign-owned DE's pro forma 1120 with Form 5472
+      generally can't be e-filed through the normal channels and is instead
+      mailed or faxed to a specific IRS service center named in the
+      instructions — an easy detail to miss for anyone assuming every
+      modern filing goes in electronically. The penalty for filing it late,
+      or filing it incomplete or inaccurate, is $25,000 per Form 5472 — and
+      if the failure continues more than 90 days after an IRS notice, an
+      additional $25,000 for every further 30-day period, with no cap. This
+      penalty applies even to an entity that owes zero U.S. income tax,
+      which is what makes it easy to underestimate — a foreign-owned
+      disregarded entity with no income can still owe six figures in
+      penalties for skipping this filing. The penalty isn't automatic in
+      every case, though: it can be abated if the filer shows reasonable
+      cause for the failure (rather than willful neglect) — but reasonable
+      cause has to be affirmatively established and documented, not simply
+      assumed because the entity is small or the owner wasn't aware of the
+      requirement.</p>
 
       <div class="guide-example"><strong>Example: a foreign-owned
       disregarded entity's easy-to-miss obligation.</strong> A foreign
