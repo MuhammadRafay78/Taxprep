@@ -1849,6 +1849,31 @@ const FORM_GUIDES = {
       C-corp from every pass-through entity covered elsewhere on this page,
       where income is taxed only once, at the owner level.</p>
 
+      <h4>Section 1202 — the Qualified Small Business Stock exclusion</h4>
+      <p>Gain from selling Qualified Small Business Stock (QSBS) — stock
+      in a C-corp (not an S-corp) with aggregate gross assets under $50
+      million at issuance, acquired directly from the corporation, and
+      held more than five years — can be excluded from federal tax
+      entirely, up to the greater of $10 million or 10 times the
+      shareholder's basis in the stock. This is one of the few ways a
+      C-corp shareholder avoids the double-taxation structure entirely on
+      exit, rather than just softening it, and is a major reason many
+      venture-backed startups deliberately organize (or convert to) C-corp
+      status specifically to make their founders' and early investors'
+      stock eligible.</p>
+
+      <div class="guide-example"><strong>Example: a founder's exit under
+      Section 1202.</strong> A founder receives stock directly from a
+      newly formed C-corp when its assets are well under the $50 million
+      threshold, and holds it for six years before the company is
+      acquired. Their $50,000 investment grows to $8,000,000 at sale — a
+      $7,950,000 gain. Because the stock qualifies as QSBS and was held
+      more than five years, the gain is excludable up to the greater of
+      $10 million or 10× the $50,000 basis ($500,000) — here, the full
+      $7,950,000 gain falls under the $10 million cap and is excluded from
+      federal tax entirely, an outcome no S-corp or partnership interest
+      can replicate.</div>
+
       <h4>Reasonable compensation — the mirror image of the S-corp issue</h4>
       <p>Because of double taxation, a closely held C-corp has the opposite
       incentive from an S-corp: it wants to pay owner-employees as much
@@ -1860,6 +1885,28 @@ const FORM_GUIDES = {
       recharacterized as a disguised, nondeductible dividend, disallowing the
       corporation's deduction and triggering the same double taxation the
       structure was trying to avoid.</p>
+
+      <h4>Golden parachute payments (Section 280G)</h4>
+      <p>A large severance-type payment to an executive or highly
+      compensated individual, triggered by a change in corporate control,
+      can be treated as an "excess parachute payment" once it reaches
+      three times the individual's average annual compensation over the
+      prior five years. The consequences hit both sides: the corporation
+      loses its deduction for the excess amount, and the recipient owes a
+      20% excise tax on top of ordinary income tax — a rare case where
+      both sides of the same payment are penalized simultaneously,
+      specifically to discourage using change-in-control payments to drain
+      value out of a company being acquired.</p>
+
+      <div class="guide-example"><strong>Example: a severance package that
+      crosses the line.</strong> An executive with $500,000 of average
+      annual compensation over the prior five years receives a $2,000,000
+      change-in-control severance payment. The threshold is 3 × $500,000 =
+      $1,500,000; the payment exceeds it, so the excess above one times
+      the base amount ($500,000) — $1,500,000 of the payment — is treated
+      as an excess parachute payment. The corporation can't deduct that
+      $1,500,000, and the executive owes a 20% excise tax on it ($300,000)
+      in addition to regular income tax on the full $2,000,000.</div>
 
       <h4>The dividends received deduction (DRD)</h4>
       <p>When one corporation owns stock in another and receives dividends
@@ -1904,6 +1951,24 @@ const FORM_GUIDES = {
       — using the subsidiary's loss immediately instead of stranding it as
       a carryforward.</div>
 
+      <h4>GILTI and FDII (Section 951A / Section 250)</h4>
+      <p>A U.S. C-corp that owns 10%+ of a foreign subsidiary generally
+      must include its share of that subsidiary's Global Intangible
+      Low-Taxed Income (GILTI) in income every year, whether or not any
+      cash is actually distributed back to the U.S. parent — the same
+      foreign subsidiary already reported via Form 5471. GILTI exists to
+      discourage shifting income into low-tax foreign jurisdictions:
+      income from a foreign sub taxed below a certain effective rate gets
+      pulled into the U.S. parent's return currently, with a partial
+      deduction and foreign tax credit that soften but don't eliminate the
+      hit. On the flip side, the Foreign-Derived Intangible Income (FDII)
+      deduction offers a lower effective rate on a domestic corporation's
+      own export-related intangible income — the idea being to balance
+      GILTI's pull-in of foreign earnings with an incentive to keep
+      intangible-generating activity and exports inside the U.S.
+      corporation itself. Both are computed together on Form 8993 and
+      share the same Section 250 deduction mechanism.</p>
+
       <h4>Net operating losses (NOLs) post-2017</h4>
       <p>Current law lets a C-corp carry a net operating loss forward
       indefinitely, but generally not back to prior years (with narrow
@@ -1920,6 +1985,29 @@ const FORM_GUIDES = {
       $160,000 — not the full $200,000 — so $40,000 remains taxable at 21%
       ($8,400 of tax) even though $340,000 of NOL is still sitting unused on
       the books, carried forward again to next year.</div>
+
+      <h4>Section 382 — NOL limitation after an ownership change</h4>
+      <p>The NOL carryforward described above isn't unlimited once
+      ownership changes hands. If more than 50 percentage points of the
+      corporation's stock ownership shifts among 5%-or-greater
+      shareholders within a rolling three-year period (an "ownership
+      change"), Section 382 caps how much of the pre-change NOL can be
+      used in any single future year — generally the corporation's value
+      at the time of the ownership change multiplied by a published
+      long-term tax-exempt rate. A target corporation with a large NOL
+      carryforward can find most of its practical value locked away by an
+      acquisition, which is why NOL carryforwards are diligenced carefully
+      in M&amp;A rather than simply assumed to be usable at face value.</p>
+
+      <div class="guide-example"><strong>Example: an NOL that survives the
+      deal on paper but not in practice.</strong> A corporation with a
+      $10,000,000 NOL carryforward is acquired in a transaction that
+      triggers a Section 382 ownership change. At the time of the change,
+      the corporation is valued at $4,000,000, and the applicable
+      long-term tax-exempt rate is 3% — capping usable NOL to $120,000 per
+      year ($4,000,000 × 3%) going forward. Using the full $10,000,000 NOL
+      at that rate would take over 83 years, effectively stranding most of
+      its value even though the NOL itself wasn't eliminated on paper.</div>
 
       <h4>The Section 163(j) business interest expense limitation</h4>
       <p>A corporation's deduction for net business interest expense is
