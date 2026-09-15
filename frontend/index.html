@@ -2150,6 +2150,35 @@ const FORM_GUIDES = {
       $1,500,000, and the executive owes a 20% excise tax on it ($300,000)
       in addition to regular income tax on the full $2,000,000.</div>
 
+      <h4>Earnings and profits (E&amp;P) — the yardstick for what's really a dividend</h4>
+      <p>Taxable income and earnings and profits (E&amp;P) are different
+      numbers computed under different rules, and it's E&amp;P — not
+      taxable income — that determines whether a corporate distribution to
+      a shareholder is a taxable dividend at all. E&amp;P starts from
+      taxable income but is adjusted to better reflect real economic
+      ability to pay a dividend: tax-exempt income is added back in, items
+      like the net operating loss deduction and accelerated depreciation
+      are recomputed on a more economic basis, and federal income tax paid
+      is subtracted. A distribution is a taxable dividend to the extent of
+      current and accumulated E&amp;P; once E&amp;P is exhausted, the
+      distribution is instead treated as a nontaxable return of the
+      shareholder's stock basis, and only after basis is fully recovered
+      does any further distribution become capital gain. A corporation
+      with substantial taxable income can still have little or no E&amp;P
+      (or vice versa), so the two numbers have to be tracked completely
+      separately — a common source of confusion for anyone assuming a
+      profitable year automatically means dividend treatment.</p>
+
+      <div class="guide-example"><strong>Example: a distribution that
+      isn't fully a dividend.</strong> A corporation has accumulated
+      E&amp;P of $60,000 and distributes $100,000 to its sole shareholder,
+      whose stock basis is $30,000. The first $60,000 is a taxable
+      dividend (limited to E&amp;P). The next $30,000 is a tax-free return
+      of the shareholder's stock basis, reducing that basis to zero. The
+      remaining $10,000 — since basis is now exhausted — is taxed as
+      capital gain, even though the whole $100,000 came out of the same
+      distribution from the same corporation.</div>
+
       <h4>The dividends received deduction (DRD)</h4>
       <p>When one corporation owns stock in another and receives dividends
       from it, a special deduction (generally 50%, 65%, or 100% of the
@@ -2168,6 +2197,33 @@ const FORM_GUIDES = {
       30% ownership stake, the DRD is 65%, so only $35,000 of the dividend is
       taxable to Corporation A ($7,350 of tax) — still some layering, but far
       less than taxing the whole amount again.</div>
+
+      <h4>Section 304 — stock sales between related corporations</h4>
+      <p>Selling stock of one corporation to a related corporation (rather
+      than to an unrelated buyer) can be recast from a sale into a deemed
+      distribution under Section 304, specifically to prevent shareholders
+      from using related-corporation structures to bail out corporate
+      earnings at capital gain rates instead of dividend rates. When a
+      shareholder who controls both corporations sells stock in one ("the
+      issuing corporation") to the other ("the acquiring corporation") for
+      cash or property, the transaction is treated as if the acquiring
+      corporation had redeemed its own stock from the shareholder using
+      the sale proceeds — taxed as a dividend to the extent of the
+      combined E&amp;P of both corporations, under the same Section 302
+      redemption tests described elsewhere in this guide, rather than as a
+      straightforward sale generating capital gain.</p>
+
+      <div class="guide-example"><strong>Example: a sale that becomes a
+      dividend.</strong> A shareholder owns 100% of both Corporation A and
+      Corporation B. The shareholder sells their A stock to B for $200,000
+      cash, with a $50,000 basis in the A stock. Absent Section 304, this
+      would look like a straightforward sale producing a $150,000 capital
+      gain. Because the shareholder controls both corporations, Section
+      304 instead treats the payment as a distribution from B (tested
+      against B and A's combined E&amp;P), which — since the shareholder's
+      overall ownership hasn't meaningfully changed (they still indirectly
+      control both companies) — is taxed as an ordinary dividend rather
+      than capital gain.</div>
 
       <h4>Consolidated returns for affiliated groups</h4>
       <p>An affiliated group of corporations connected by at least 80%
@@ -2192,6 +2248,100 @@ const FORM_GUIDES = {
       $200,000 of consolidated taxable income, taxed once at 21% ($42,000)
       — using the subsidiary's loss immediately instead of stranding it as
       a carryforward.</div>
+
+      <h4>Corporate liquidations (Sections 331 and 332)</h4>
+      <p>When a corporation liquidates and distributes its remaining
+      assets to its shareholders, the default rule under Section 331
+      treats it as a taxable event on both sides: the corporation
+      recognizes gain or loss as if it sold its assets at fair market
+      value, and each shareholder separately recognizes gain or loss equal
+      to the difference between what they receive and their stock basis.
+      A narrow but important exception applies when the liquidating
+      corporation is at least 80% owned by a single corporate parent:
+      under Section 332, the liquidation of a subsidiary into its parent
+      is entirely tax-free to both the parent (no gain or loss on the
+      stock) and the subsidiary (no gain or loss on distributing its
+      assets, with the parent simply stepping into the subsidiary's own
+      tax basis in the assets under Section 334(b)). This
+      parent-subsidiary exception is why winding up an unneeded wholly
+      owned subsidiary is generally far less costly than liquidating a
+      corporation with unrelated shareholders.</p>
+
+      <div class="guide-example"><strong>Example: the same liquidation,
+      two different shareholders.</strong> A corporation liquidates and
+      distributes its only asset, land worth $500,000 with a $200,000
+      basis, to its shareholders. If the shareholder is an unrelated
+      individual with $100,000 of stock basis, Section 331 applies: the
+      corporation recognizes a $300,000 gain on the deemed sale of the
+      land, and the shareholder separately recognizes a $400,000 gain
+      ($500,000 received minus $100,000 basis). If instead the sole
+      shareholder is a parent corporation owning 100% of the liquidating
+      subsidiary, Section 332 applies instead: no gain or loss to either
+      the parent or the subsidiary, with the parent simply taking over the
+      subsidiary's original $200,000 basis in the land.</div>
+
+      <h4>Tax-free reorganizations (Section 368)</h4>
+      <p>Certain corporate combinations qualify as tax-free
+      "reorganizations" under Section 368, letting shareholders exchange
+      stock in one corporation for stock in another (typically as part of
+      a merger or acquisition) without immediately recognizing gain, as
+      long as the transaction fits one of several defined statutory
+      patterns and satisfies judicial doctrines requiring genuine
+      continuity of the shareholders' proprietary interest and continuity
+      of the acquired business. The most common types include a Type A
+      statutory merger, a Type B stock-for-stock acquisition (the acquirer
+      must use only its own voting stock, with essentially no cash or
+      other consideration allowed), and a Type C acquisition of
+      substantially all of a target's assets in exchange for the
+      acquirer's voting stock. Gain is only deferred, not eliminated: the
+      shareholders carry over their old basis into the new stock received,
+      so the built-in gain resurfaces whenever they eventually sell the
+      new stock.</p>
+
+      <div class="guide-example"><strong>Example: deferred, not
+      eliminated.</strong> A shareholder holds stock with a $200,000 basis
+      and $800,000 fair market value in a target corporation that's
+      acquired in a qualifying Type A merger, receiving only acquirer
+      stock worth $800,000 in exchange. No gain is recognized at the time
+      of the merger despite the $600,000 of built-in appreciation. That
+      $600,000 of gain doesn't disappear — it's preserved in the
+      shareholder's $200,000 carryover basis in the new acquirer stock,
+      and will be taxed whenever the shareholder eventually sells those
+      new shares.</div>
+
+      <h4>Section 338(h)(10) and Section 336(e) — turning a stock sale into an asset sale</h4>
+      <p>A buyer purchasing the stock of a target corporation normally
+      inherits the target's existing (often low) tax basis in its assets,
+      since a stock purchase doesn't itself step up asset basis. A Section
+      338(h)(10) election (available when the target is a subsidiary of a
+      selling consolidated group or an S-corp) lets the buyer and seller
+      jointly elect to treat what is legally a stock purchase as if it
+      were instead an asset purchase followed by a liquidation, for tax
+      purposes only — the buyer gets a stepped-up basis in the target's
+      assets equal to the purchase price, while the seller reports gain at
+      the corporate level (often offset by the seller's own consolidated
+      attributes) instead of the shareholder level. A Section 336(e)
+      election works similarly but doesn't require the buyer to be a
+      corporation, extending comparable treatment to sales to a
+      non-corporate or otherwise ineligible buyer that couldn't use
+      Section 338(h)(10). Both elections require specific ownership
+      thresholds and a joint election to be met — a buyer can't
+      unilaterally decide asset treatment applies just because it prefers
+      the higher basis.</p>
+
+      <div class="guide-example"><strong>Example: the basis step-up buyers
+      want.</strong> A buyer purchases 100% of a subsidiary's stock for
+      $10,000,000, but the subsidiary's assets carry only a $3,000,000
+      aggregate tax basis. Without an election, the buyer's future
+      depreciation deductions and eventual gain calculations are still
+      based on that old $3,000,000 basis, even though it paid
+      $10,000,000. With a valid Section 338(h)(10) election, the
+      transaction is treated as if the subsidiary sold its assets for
+      $10,000,000 and liquidated, giving the buyer a fresh $10,000,000
+      basis in the assets to depreciate going forward — a meaningfully
+      more favorable tax position purchased at the cost of the seller
+      recognizing gain on the deemed asset sale instead of a simple stock
+      sale.</div>
 
       <h4>GILTI and FDII (Section 951A / Section 250)</h4>
       <p>A U.S. C-corp that owns 10%+ of a foreign subsidiary generally
