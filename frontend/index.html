@@ -641,6 +641,126 @@ const FORM_GUIDES = {
       below the 22% marginal rate this filer would (incorrectly) quote if
       asked "what tax bracket are you in."</div>
 
+      <h4>The QBI deduction (Section 199A)</h4>
+      <p>An individual with qualified business income from a sole
+      proprietorship (Schedule C), a partnership or S-corp K-1, rental real
+      estate that rises to a trade or business, or certain REIT dividends
+      can deduct up to 20% of that income directly on Form 1040 — without
+      itemizing, and without the underlying business paying any
+      entity-level tax to make it happen. Below a taxable-income threshold
+      that adjusts annually, the deduction is a straightforward 20% of
+      QBI, computed on Form 8995. Above the threshold, Form 8995-A applies
+      two additional tests: the deduction can't apply at all to income
+      from a "specified service trade or business" (law, accounting,
+      health, consulting, and similar fields) once income is high enough,
+      and even for a non-SSTB, the deduction is capped based on W-2 wages
+      paid and the unadjusted basis of qualified property the business
+      owns — the same wage/UBIA limitation described in the 1065 and
+      1120-S guides, just landing on the individual's own return instead
+      of a K-1.</p>
+
+      <div class="guide-example"><strong>Example: a sole proprietor
+      claiming the full 20%.</strong> A freelance consultant's Schedule C
+      nets $80,000, and their total taxable income is well below the QBI
+      threshold. Since they're below the threshold, neither the SSTB
+      exclusion nor the wage/UBIA limitation applies regardless of the
+      nature of the business — they simply deduct 20% × $80,000 = $16,000
+      on Form 8995, directly reducing taxable income without itemizing
+      anything.</div>
+
+      <h4>Net Investment Income Tax (NIIT) — a 3.8% surtax on investment income</h4>
+      <p>Once modified AGI exceeds a threshold ($200,000 single, $250,000
+      married filing jointly — not indexed for inflation, so it captures
+      more filers every year as incomes rise), an additional 3.8% tax
+      applies to the lesser of net investment income (interest, dividends,
+      capital gains, rental and passive income) or the amount MAGI exceeds
+      the threshold. This is entirely separate from, and stacks on top of,
+      the regular tax computed on that same income at ordinary or
+      capital-gains rates — reported on Form 8960.</p>
+
+      <div class="guide-example"><strong>Example: NIIT on top of capital
+      gains tax.</strong> A single filer has $220,000 of MAGI, including
+      $60,000 of net investment income (mostly capital gains). MAGI
+      exceeds the $200,000 threshold by $20,000. NIIT applies to the
+      smaller of the two numbers — $20,000, not the full $60,000 — so the
+      surtax is 3.8% × $20,000 = $760, on top of whatever capital-gains-
+      rate tax already applies to that $60,000.</div>
+
+      <h4>Additional Medicare Tax — the 0.9% counterpart on earned income</h4>
+      <p>A separate 0.9% surtax applies to wages and self-employment income
+      above the same-shaped thresholds ($200,000 single, $250,000 married
+      filing jointly) — easy to confuse with NIIT since both arrived with
+      the Affordable Care Act in 2013 and use similar-looking thresholds,
+      but this one applies to earned income (wages, SE earnings) rather
+      than investment income, and the two never apply to the same dollar
+      of income. An employer must withhold the extra 0.9% once wages from
+      that employer alone cross $200,000, regardless of the employee's
+      filing status or other income — which can leave a married couple
+      under-withheld if each spouse earns under $200,000 individually but
+      their combined wages exceed the $250,000 joint threshold, since
+      neither employer sees the other spouse's wages.</p>
+
+      <div class="guide-example"><strong>Example: under-withholding from
+      having two jobs.</strong> A married couple files jointly with each
+      spouse earning $160,000 in wages ($320,000 combined) — well above the
+      $250,000 joint threshold. Neither employer withholds Additional
+      Medicare Tax, since neither spouse's individual wages from that one
+      job cross the $200,000 per-employer trigger. The couple still owes
+      the full 0.9% on the amount over $250,000 ($70,000 × 0.9% = $630)
+      when they file, reported on Form 8959 — a gap between withholding and
+      actual liability that a couple filing jointly with two incomes has to
+      watch for.</div>
+
+      <h4>Alternative Minimum Tax (AMT)</h4>
+      <p>AMT is a parallel tax computation with its own, more limited set
+      of deductions — no SALT deduction, no deduction for certain itemized
+      items, and certain income (like the bargain-element spread on
+      incentive stock options at exercise) counted that the regular tax
+      doesn't count — applied against a separate AMT exemption amount that
+      phases out at higher income. A filer computes both the regular tax
+      and the tentative AMT, and pays whichever is higher; Form 6251 does
+      this parallel computation. The Tax Cuts and Jobs Act's much larger
+      standard deduction and the $10,000 SALT cap sharply reduced how many
+      filers actually pay AMT compared to before 2018 — the SALT cap now
+      does much of what AMT used to target (large state tax deductions)
+      directly in the regular tax computation — but it still catches
+      filers with large ISO exercises or certain other AMT preference
+      items regardless of the SALT cap's effect.</p>
+
+      <div class="guide-example"><strong>Example: an ISO exercise
+      triggering AMT.</strong> An employee exercises incentive stock
+      options, paying $10 per share for stock worth $60 on the exercise
+      date, on 10,000 shares — a $500,000 bargain-element spread. That
+      spread isn't taxed for regular tax purposes at exercise (only when
+      the shares are eventually sold), but it is added to income for AMT
+      purposes in the year of exercise. If the resulting tentative AMT
+      exceeds the regular tax for the year, the filer owes AMT on a paper
+      gain from stock they still hold and haven't sold — a classic AMT
+      trap for early startup employees.</div>
+
+      <h4>The "kiddie tax" — a child's unearned income taxed at the parent's rate</h4>
+      <p>A dependent child's unearned income (interest, dividends, capital
+      gains — not wages from an actual job) above a small annual threshold
+      is taxed at the child's parent's marginal tax rate rather than the
+      child's own bracket, computed on Form 8615 and attached to the
+      child's own return. This exists specifically to stop parents from
+      shifting income-producing investments into a child's name purely to
+      have that income taxed at the child's much lower bracket. It
+      generally applies to dependents under 19 (or under 24 if a full-time
+      student), regardless of how the underlying asset was actually
+      funded.</p>
+
+      <div class="guide-example"><strong>Example: shifting investments
+      doesn't shift the tax rate.</strong> A parent in the 32% bracket
+      transfers a stock portfolio into their 16-year-old's custodial
+      account, and the account generates $5,000 of dividends and interest
+      for the year. Rather than being taxed at the child's own low bracket
+      (which might otherwise apply if the child had no other significant
+      income), the amount above the small kiddie-tax threshold is taxed at
+      the parent's 32% rate on the child's own Form 8615 — largely
+      defeating the point of moving the assets into the child's name in
+      the first place.</div>
+
       <h4>Withholding, estimated payments, and the underpayment penalty</h4>
       <p>Tax is meant to be paid throughout the year, not just at filing time
       — through payroll withholding for employees, or quarterly estimated tax
@@ -727,6 +847,24 @@ const FORM_GUIDES = {
         Lifetime Learning Credit (up to $2,000 per return, nonrefundable, no
         year limit) — a filer can use one or the other per student per year,
         never both.</li>
+        <li><strong>Form 8995 / 8995-A (Qualified Business Income Deduction)</strong>
+        — computes the QBI deduction described above; 8995 is the simplified
+        version for filers below the taxable-income threshold, 8995-A adds
+        the SSTB and wage/UBIA limitation tests for filers above it.</li>
+        <li><strong>Form 8960 (Net Investment Income Tax)</strong> —
+        computes the 3.8% NIIT surtax described above once modified AGI
+        exceeds the threshold.</li>
+        <li><strong>Form 8959 (Additional Medicare Tax)</strong> —
+        computes the 0.9% surtax on wages and self-employment income above
+        the threshold, and reconciles it against whatever an employer
+        already withheld.</li>
+        <li><strong>Form 6251 (Alternative Minimum Tax)</strong> — the
+        parallel AMT computation described above; required whenever certain
+        preference items or a large enough gap between regular and AMT
+        taxable income makes it necessary to check.</li>
+        <li><strong>Form 8615 ("Kiddie Tax")</strong> — computes tax on a
+        dependent child's unearned income above the annual threshold at
+        the parent's marginal rate, attached to the child's own return.</li>
       </ul>
 
       <h4>Common pitfalls</h4>
