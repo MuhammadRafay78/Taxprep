@@ -796,6 +796,66 @@ const FORM_GUIDES = {
       and joint-return tests) matters more here than for most other
       credits.</p>
 
+      <h4>Schedule C business expenses: the home office deduction, vehicle expenses, and start-up costs</h4>
+      <p>A sole proprietor reports business income and expenses on
+      Schedule C, with several categories carrying their own specific
+      rules. The home office deduction (Form 8829) requires the space to
+      be used regularly and exclusively for business — a spare room used
+      for both a home office and a guest bedroom doesn't qualify — and can
+      be computed either under the actual-expense method (a percentage of
+      the home's actual utilities, insurance, depreciation, and similar
+      costs, based on the business-use square footage) or a simplified
+      $5-per-square-foot safe harbor capped at 300 square feet. Vehicle
+      expenses can be deducted using the standard mileage rate (a flat
+      cents-per-mile figure set annually by the IRS, covering gas,
+      maintenance, depreciation, and insurance in one number) or the
+      actual-expense method (the business-use percentage of actual gas,
+      repairs, insurance, and depreciation) — once actual expenses are
+      used for a vehicle, switching back to the standard mileage rate in
+      a later year is restricted. Start-up costs incurred before the
+      business begins operating can't simply be deducted as ordinary
+      expenses in the year paid; up to $5,000 can be deducted immediately
+      (phased out for total start-up costs above $50,000), with the
+      remainder amortized over 15 years.</p>
+
+      <div class="guide-example"><strong>Example: choosing standard
+      mileage over actual expenses.</strong> A consultant drives 12,000
+      business miles for the year. Using the standard mileage rate (67
+      cents per mile for 2024), the deduction is $8,040 — a single number
+      requiring only a mileage log, no receipts for gas or maintenance.
+      Had the same consultant tracked actual vehicle costs (gas,
+      insurance, repairs, depreciation) and business-use percentage
+      instead, the computation would require substantially more
+      recordkeeping for a result that may or may not exceed the simpler
+      mileage-rate figure.</div>
+
+      <h4>The $25,000 special allowance for active participation in rental real estate</h4>
+      <p>Rental real estate losses are passive by default, but a taxpayer
+      who actively participates in the rental activity (a lower bar than
+      material participation — generally just making management
+      decisions like approving tenants or setting rental terms, without
+      needing regular, continuous, substantial involvement) can deduct up
+      to $25,000 of rental losses against nonpassive income like wages,
+      even without being a real estate professional. This special
+      allowance phases out entirely between $100,000 and $150,000 of
+      modified AGI, disappearing completely above that range regardless
+      of how actively the taxpayer participates — a materially lower
+      threshold than many of the AGI limits found elsewhere in the tax
+      code, which is why the allowance in practice mostly benefits
+      middle-income filers with a rental property or two rather than
+      higher earners.</p>
+
+      <div class="guide-example"><strong>Example: the allowance phasing
+      out.</strong> A married couple with $120,000 of modified AGI and a
+      $30,000 rental loss actively participates in managing their one
+      rental property. The $25,000 allowance is reduced by 50% of the
+      amount their AGI exceeds $100,000 — a $10,000 excess × 50% = $5,000
+      reduction — leaving a $20,000 allowance available against their
+      other income, with the remaining $10,000 of loss suspended as a
+      passive loss carryforward. Had their AGI instead been $160,000, the
+      allowance would be fully phased out and none of the $30,000 loss
+      could be used currently no matter how actively they participated.</div>
+
       <h4>The QBI deduction (Section 199A)</h4>
       <p>An individual with qualified business income from a sole
       proprietorship (Schedule C), a partnership or S-corp K-1, rental real
@@ -940,6 +1000,23 @@ const FORM_GUIDES = {
       phasing out at moderate income levels — a deduction, not a credit,
       so its value depends on the filer's marginal bracket unlike the two
       credits above.</p>
+
+      <h4>The foreign tax credit (Form 1116) for individuals</h4>
+      <p>A U.S. taxpayer who pays or accrues foreign income tax on
+      foreign-source income can generally claim a credit for it (rather
+      than merely a deduction) to avoid double taxation on the same
+      income, computed on Form 1116. The credit is limited to the U.S.
+      tax attributable to the foreign-source income — a taxpayer can't
+      use foreign taxes paid at a higher rate than the U.S. rate to
+      shelter unrelated U.S.-source income from tax — and excess credit
+      that can't be used in the current year due to that limitation
+      carries back one year and forward ten. A taxpayer with $300 or less
+      ($600 married filing jointly) of foreign tax, all from passive
+      income reported on a qualified payee statement like a 1099-DIV, can
+      skip Form 1116 entirely and claim the credit directly, a common
+      simplification for filers whose only foreign tax exposure is
+      withholding on foreign stock dividends inside a diversified
+      fund.</p>
 
       <div class="guide-example"><strong>Example: choosing between the two
       credits for the same family.</strong> A couple has one child who is
@@ -1405,6 +1482,22 @@ const FORM_GUIDES = {
       partnership for $250,000, recognizing gain on that amount instead of
       getting tax-free contribution treatment.</div>
 
+      <h4>Partner health insurance premiums as guaranteed payments</h4>
+      <p>When a partnership pays for a partner's health insurance (rather
+      than the partner paying for it personally), the premium is treated
+      as a guaranteed payment to that partner — deductible by the
+      partnership and included in the partner's ordinary income, subject
+      to self-employment tax like any other guaranteed payment for
+      services. The partner can then generally deduct an equivalent
+      amount on their own Form 1040 as the self-employed health insurance
+      deduction, an above-the-line adjustment available only if the
+      partnership (not the partner individually) established the plan
+      and the premium amount was properly reported as a guaranteed
+      payment on the partner's K-1 in the first place — mirroring the
+      same structure used for a more-than-2% S-corp shareholder's health
+      insurance, just routed through a guaranteed payment instead of W-2
+      wages.</p>
+
       <h4>Guaranteed payments vs. distributive share</h4>
       <p>A partnership can agree to pay a partner a fixed amount for services
       rendered or for the use of their capital, regardless of whether the
@@ -1714,6 +1807,27 @@ const FORM_GUIDES = {
       Matters Partner" role, and one that's easy to overlook when drafting or
       reviewing a partnership agreement.</p>
 
+      <h4>Section 736(a) and 736(b) payments to a retiring or deceased partner</h4>
+      <p>When a partnership makes payments to liquidate a departing
+      partner's entire interest — on retirement or death — Section 736
+      splits those payments into two categories with very different tax
+      treatment. Section 736(b) payments are for the departing partner's
+      share of partnership property, including their share of any
+      unrealized receivables and substantially appreciated inventory
+      (subject to the Section 751 hot-assets rules described elsewhere in
+      this guide) — taxed to the recipient as a distribution, generally
+      capital gain to the extent it exceeds outside basis. Section 736(a)
+      payments are for everything else — most commonly a share of
+      partnership goodwill not provided for in the partnership agreement,
+      or payments that are really disguised continuing compensation —
+      taxed to the recipient as either a guaranteed payment (ordinary
+      income, deductible by the partnership) or a distributive share of
+      partnership income, depending on how it's structured. Because the
+      partnership agreement's treatment of goodwill controls which bucket
+      a payment falls into, drafting that provision carefully at
+      partnership formation has real tax consequences years later when a
+      partner eventually leaves.</p>
+
       <h4>Partnership termination — only cessation counts now</h4>
       <p>Before 2018, selling 50% or more of the total partnership
       interests within a 12-month period forced a "technical termination"
@@ -1896,6 +2010,25 @@ const FORM_GUIDES = {
       year); the IRS does have a well-used late-election relief procedure
       (Rev. Proc. 2013-30) for a late filing with reasonable cause, so a
       missed deadline isn't automatically fatal.</p>
+
+      <h4>Late S-election relief mechanics (Rev. Proc. 2013-30)</h4>
+      <p>A corporation that intended to be an S-corp from a certain date
+      but never filed Form 2553 on time — or filed it but it was never
+      processed — isn't necessarily stuck as a C-corp for the missed
+      years. Rev. Proc. 2013-30 provides a simplified, no-user-fee
+      procedure for requesting late-election relief, available as long as
+      the request is filed within three years and 75 days of the intended
+      effective date, the corporation and its shareholders have
+      consistently reported income as if the S election were in effect
+      the whole time (filing individual returns consistent with
+      pass-through treatment even though the corporate election was never
+      formally in place), and the failure to file on time was due to
+      reasonable cause. The relief request is typically made by filing a
+      late Form 2553 with a statement explaining the reasonable cause for
+      the delay, either attached to the first S-corp return being filed
+      or submitted independently — a far simpler path than the private
+      letter ruling process that would otherwise be required outside the
+      procedure's relief window.</p>
 
       <h4>QSSTs and ESBTs — the trusts that can actually hold S-corp stock</h4>
       <p>"Certain trusts" can be S-corp shareholders, but only if they fit
@@ -2608,6 +2741,34 @@ const FORM_GUIDES = {
       federal tax entirely, an outcome no S-corp or partnership interest
       can replicate.</div>
 
+      <h4>Section 267 — deferring accrued expenses owed to a related cash-basis party</h4>
+      <p>An accrual-basis C-corporation that accrues (but hasn't yet paid)
+      an expense owed to a related cash-basis taxpayer — commonly a
+      majority shareholder — can't deduct that accrued amount until the
+      related party actually includes it in their own income, which for a
+      cash-basis recipient generally means until it's actually paid. This
+      matching rule prevents a corporation from deducting a bonus,
+      interest, or fee currently while the related recipient defers
+      reporting the corresponding income until a later year, effectively
+      creating a mismatch that Section 267 exists specifically to close.
+      The rule applies to a wide range of related parties — not just
+      majority shareholders, but family members and related entities
+      under attribution rules similar to those used elsewhere in the tax
+      code — so accrued year-end bonuses or fees to insiders need to
+      actually be paid before year-end, not merely accrued, if the
+      corporation wants the current-year deduction.</p>
+
+      <div class="guide-example"><strong>Example: an accrued bonus that
+      isn't deductible yet.</strong> A corporation accrues a $100,000
+      year-end bonus for its majority shareholder-employee on December 31
+      but doesn't actually pay it until March of the following year.
+      Because the shareholder reports income on the cash basis, Section
+      267 disallows the corporation's deduction for the full $100,000 in
+      the year it was accrued — the deduction is instead deferred to the
+      year the shareholder actually receives and reports the payment,
+      aligning the corporation's deduction with the shareholder's income
+      inclusion.</div>
+
       <h4>Reasonable compensation — the mirror image of the S-corp issue</h4>
       <p>Because of double taxation, a closely held C-corp has the opposite
       incentive from an S-corp: it wants to pay owner-employees as much
@@ -2670,6 +2831,28 @@ const FORM_GUIDES = {
       remaining $10,000 — since basis is now exhausted — is taxed as
       capital gain, even though the whole $100,000 came out of the same
       distribution from the same corporation.</div>
+
+      <h4>The charitable contribution deduction limit for a C-corporation</h4>
+      <p>A C-corporation's charitable contribution deduction is capped at
+      10% of taxable income (computed before the charitable deduction
+      itself and a few other specific adjustments), a meaningfully
+      tighter limit than the AGI-based percentages available to an
+      individual. A contribution exceeding the 10% cap in the year it's
+      made isn't lost — it carries forward up to five years, tested
+      against the 10% limit in each of those future years — but if the
+      carryforward isn't used within that five-year window, it expires
+      permanently, unlike an individual's charitable carryforward under
+      the same five-year rule but against a much higher AGI percentage
+      ceiling.</p>
+
+      <div class="guide-example"><strong>Example: a large gift capped and
+      carried forward.</strong> A corporation with $1,000,000 of taxable
+      income (before the charitable deduction) donates $150,000 to a
+      qualified charity. Only $100,000 (10% of $1,000,000) is deductible
+      in the current year; the remaining $50,000 carries forward,
+      available to be deducted in one of the next five years to the
+      extent the corporation has room under that future year's own 10%
+      cap.</div>
 
       <h4>The dividends received deduction (DRD)</h4>
       <p>When one corporation owns stock in another and receives dividends
@@ -3662,6 +3845,41 @@ const FORM_GUIDES = {
       participation risks both UBIT exposure on the organization's share
       of venture income and, in an extreme case, the private-benefit
       doctrine threatening exempt status itself.</p>
+
+      <h4>Schedule L — transactions with interested persons</h4>
+      <p>An organization discloses certain financial transactions with
+      "interested persons" — current or former officers, directors,
+      trustees, key employees, substantial contributors, and their family
+      members or controlled entities — on Schedule L. This covers several
+      distinct categories: excess benefit transactions already subject to
+      Section 4958 (cross-referencing the private inurement rules
+      described elsewhere in this guide), loans to or from interested
+      persons, grants or other assistance benefiting an interested
+      person, and business transactions (purchases, leases, or other
+      dealings) between the organization and an interested person or an
+      entity they control. The schedule exists to surface exactly the
+      kind of insider dealing that, even when priced fairly and legally
+      permissible, the IRS and the public want visible on the face of the
+      return rather than buried in the organization's internal
+      records.</p>
+
+      <h4>Schedule F — activities outside the United States</h4>
+      <p>An organization that maintains offices, employees, or agents
+      outside the U.S., or that spends more than a set threshold
+      (generally $10,000 in the aggregate) on grants, program services,
+      fundraising, or other activities conducted outside the U.S. during
+      the year, reports the detail on Schedule F — broken down by region,
+      type of activity, and amount spent, with more granular reporting
+      required for larger grants to any one foreign organization or
+      individual. Beyond the disclosure itself, foreign grantmaking
+      raises its own compliance layer: a U.S. charity making grants to
+      foreign organizations generally has to exercise some form of due
+      diligence or "expenditure responsibility" (formal oversight and
+      reporting requirements on how the grant funds are used) to ensure
+      the funds are actually used for charitable purposes and don't
+      inadvertently support activities — political, or otherwise outside
+      the scope of U.S. tax-exempt purposes — that would jeopardize the
+      granting organization's own exempt status.</p>
 
       <h4>Compensation, private inurement, and excess benefit transactions</h4>
       <p>Officers, directors, key employees, and other "disqualified
