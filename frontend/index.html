@@ -796,6 +796,39 @@ const FORM_GUIDES = {
       their own capital-loss limitations, would lose that ability. Separately
       stating them lets each partner apply their own rules downstream.</p>
 
+      <h4>The QBI deduction (Section 199A)</h4>
+      <p>Qualified Business Income (QBI) is the pass-through-specific
+      deduction that lets an individual partner deduct up to 20% of their
+      share of the partnership's qualified business income directly on
+      their own Form 1040 — without the partnership itself doing anything
+      special beyond reporting the right numbers on Schedule K-1. The
+      partnership computes and reports each partner's share of QBI, W-2
+      wages paid, and the unadjusted basis immediately after acquisition
+      (UBIA) of qualified property in dedicated K-1 boxes/statements; the
+      20% computation, and whether any limitation applies, happens entirely
+      at the partner's individual level.</p>
+      <p>Below a taxable-income threshold that adjusts annually, a partner
+      simply gets 20% of their QBI, full stop. Above the threshold, two
+      things start to matter: the deduction can't apply to a "specified
+      service trade or business" (law, accounting, health, consulting, and
+      similar personal-service fields) once income is high enough, and even
+      for a non-SSTB, the deduction gets capped at the greater of 50% of the
+      partner's share of W-2 wages paid by the business, or 25% of W-2
+      wages plus 2.5% of UBIA of qualified property — which is exactly why
+      the partnership has to report wages and UBIA on the K-1 even though
+      the partnership itself pays no tax.</p>
+
+      <div class="guide-example"><strong>Example: the wage limitation
+      biting a high-income partner.</strong> A partner's share of QBI is
+      $200,000, giving a full 20% deduction of $40,000 in isolation. But the
+      business pays very little in W-2 wages (mostly hires contractors) and
+      owns little qualified property, so the partner's share of the
+      wage/UBIA limit works out to only $15,000. Once the partner's taxable
+      income is above the phase-in range, the QBI deduction is capped at
+      $15,000, not $40,000 — the same $200,000 of QBI produces a very
+      different deduction depending on how labor-intensive (in W-2 terms)
+      the underlying business is.</div>
+
       <h4>Special allocations</h4>
       <p>Unlike an S-corp, a partnership isn't required to split every item
       strictly by ownership percentage. The partnership agreement can
@@ -820,6 +853,31 @@ const FORM_GUIDES = {
       economic effect" — the investor gets an outsized paper loss to shelter
       other income, which is exactly why real estate deals are so often
       structured as partnerships rather than S-corps.</div>
+
+      <h4>Disguised sales (Section 707(a)(2)(B))</h4>
+      <p>A contribution of property to a partnership followed by a related
+      distribution can be recharacterized as a taxable sale of that
+      property to the partnership, rather than a tax-free contribution —
+      the "disguised sale" rules exist specifically to stop partners from
+      using the contribution/distribution mechanism to cash out appreciated
+      property without recognizing gain. A distribution within two years of
+      a contribution is presumed to be part of a disguised sale unless the
+      facts show otherwise (and a contribution within two years of a prior
+      distribution draws the same scrutiny in reverse), though the
+      presumption can be rebutted with evidence the two were genuinely
+      independent, not pre-arranged.</p>
+
+      <div class="guide-example"><strong>Example: a distribution that looks
+      like a sale.</strong> A partner contributes land with a $50,000 basis
+      and a $300,000 fair market value to a partnership, and six months
+      later the partnership distributes $250,000 cash to that same partner,
+      with no other partner receiving a proportional distribution. Because
+      the cash distribution happened so soon after the contribution and
+      looks like payment for the land rather than an independent
+      transaction, the IRS can treat it as a disguised sale: the
+      contributing partner is treated as having sold the land to the
+      partnership for $250,000, recognizing gain on that amount instead of
+      getting tax-free contribution treatment.</div>
 
       <h4>Guaranteed payments vs. distributive share</h4>
       <p>A partnership can agree to pay a partner a fixed amount for services
@@ -868,6 +926,43 @@ const FORM_GUIDES = {
       gain to the partner. A loss allocated in excess of basis simply isn't
       deductible in the current year — it's suspended and carries forward
       until basis is restored.</p>
+
+      <h4>Section 754 election and the inside/outside basis mismatch</h4>
+      <p>Outside basis, above, is what each partner separately tracks.
+      "Inside basis" is a different number entirely: the partnership's own
+      basis in the assets it holds. These two numbers can diverge — most
+      commonly when a partner buys their interest from an existing partner
+      (rather than contributing directly to the partnership) or when a
+      partner dies and their heirs get a stepped-up outside basis under
+      Section 1014. Without doing anything about it, the new partner's
+      outside basis reflects what they actually paid, but the
+      partnership's inside basis in its assets stays exactly what it
+      always was — meaning the new partner effectively inherits someone
+      else's built-in gain (or loss) they never economically benefited
+      from, or suffered.</p>
+      <p>A Section 754 election fixes this mismatch by letting the
+      partnership step up (or down) its inside basis in its assets to
+      match, specifically for the incoming or affected partner, using a
+      Section 743(b) adjustment (for a purchased or inherited interest) or
+      a Section 734(b) adjustment (for certain distributions). Once made,
+      the election applies to all future years and all future basis
+      adjustments of this kind — it can't be turned on for one transaction
+      and dropped afterward — which is part of why it isn't made
+      automatically or lightly.</p>
+
+      <div class="guide-example"><strong>Example: buying into built-in
+      gain.</strong> A partnership's only asset is land with a $100,000
+      inside basis but a $500,000 fair market value. A new partner buys a
+      25% interest for $125,000 (25% of FMV) directly from an existing
+      partner. Without a Section 754 election, if the partnership later
+      sells the land, the new partner is allocated 25% of the full
+      $400,000 gain ($100,000) — even though they only economically
+      benefited from appreciation after they bought in, none of which has
+      happened yet. With a valid Section 754 election, a Section 743(b)
+      adjustment gives that new partner an extra $100,000 of basis specific
+      to them, so their allocated gain on an immediate sale would be close
+      to zero, reflecting that they paid full value and haven't seen any
+      appreciation of their own yet.</div>
 
       <h4>The three-step loss gate</h4>
       <p>Even once a loss clears the basis limitation above, two more tests
@@ -919,6 +1014,22 @@ const FORM_GUIDES = {
       resulting state credit at the partner level has to be tracked
       carefully.</p>
 
+      <h4>Schedules K-2 and K-3 — foreign transaction reporting</h4>
+      <p>Added starting with the 2021 tax year, Schedule K-2 (partnership-
+      level) and Schedule K-3 (partner-level, a K-1 supplement) report
+      items of international tax relevance — foreign-source income, foreign
+      taxes paid, and the information partners need for their own foreign
+      tax credit computations. The surprising part is how broadly they
+      apply: even a domestic partnership with no foreign partners, no
+      foreign income, and no foreign operations can still be required to
+      file them if any partner needs the information to complete their own
+      international tax forms (a partner that itself invests in foreign
+      assets or claims a foreign tax credit, for example). A narrow filing
+      exception exists for a partnership with no foreign activity and no
+      partner requesting the information, but it has to be affirmatively
+      established, not simply assumed because the partnership "has nothing
+      foreign going on."</p>
+
       <h4>Filing mechanics</h4>
       <p>Form 1065 is due the 15th day of the third month after year-end —
       March 15 for a calendar-year partnership — with a 6-month extension
@@ -963,6 +1074,21 @@ const FORM_GUIDES = {
         related parties) owns 50% or more of profits or capital — the IRS
         uses it to identify ownership concentration and foreign-partner
         withholding obligations.</li>
+        <li><strong>Schedules K-2 and K-3</strong> — foreign transaction
+        reporting; see the dedicated section above for how broadly these
+        now apply, including to partnerships with no obvious foreign
+        activity of their own.</li>
+        <li><strong>Form 8582</strong> — the individual partner's own
+        computation of allowed vs. suspended passive activity losses,
+        filed on their 1040 using the character (passive vs. nonpassive)
+        the partnership reported on the K-1 — the form that actually
+        applies the passive activity loss rules described above.</li>
+        <li><strong>Form 8990</strong> — computes the Section 163(j)
+        business interest expense limitation (generally 30% of adjusted
+        taxable income) at the partnership level; any interest expense
+        disallowed here is carried forward and allocated to partners as a
+        separately stated item rather than being deducted against ordinary
+        business income.</li>
       </ul>
 
       <h4>Common pitfalls</h4>
