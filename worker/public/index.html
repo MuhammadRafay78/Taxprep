@@ -1558,6 +1558,38 @@ const FORM_GUIDES = {
       S election is later found invalid because an ineligible trust was
       technically holding stock.</p>
 
+      <h4>Qualified Subchapter S Subsidiaries (QSubs)</h4>
+      <p>An S-corp that owns 100% of another domestic corporation can elect
+      to treat that subsidiary as a Qualified Subchapter S Subsidiary
+      (QSub) under Section 1361(b)(3). The election causes the subsidiary
+      to be disregarded entirely for federal tax purposes — its assets,
+      liabilities, income, and deductions are treated as belonging directly
+      to the parent S-corp, with no separate federal return filed for the
+      subsidiary at all, similar in effect to a single-member LLC being
+      disregarded from its owner. This lets a business group operate
+      through multiple legal entities (for liability separation, licensing,
+      or operational reasons) while still filing and being taxed as a
+      single consolidated S-corp for federal purposes. Making a QSub
+      election is itself treated as a deemed liquidation of the subsidiary
+      into the parent immediately before the election takes effect, which
+      can trigger its own tax consequences if the subsidiary holds
+      appreciated assets or has liabilities exceeding basis.</p>
+
+      <h4>100%-ESOP-owned S-corps — the rare truly tax-free structure</h4>
+      <p>When an Employee Stock Ownership Plan (ESOP) — a tax-exempt
+      retirement trust — owns 100% of an S-corp's stock, the S-corp's
+      entire pass-through income allocated to that ESOP shareholder is
+      allocated to a tax-exempt entity, and so is never actually taxed at
+      the federal level at all, at either the corporate or the individual
+      level, until participants eventually take taxable distributions from
+      the ESOP itself decades later. This is a materially different result
+      from a typical S-corp, where income always flows through currently
+      to some taxable shareholder's return. A shareholder selling stock to
+      an ESOP can also potentially defer their own gain under a separate
+      Section 1042 rollover if the ESOP acquires at least 30% of the
+      company and specific reinvestment requirements are met, though that
+      election is more commonly associated with C-corp sales.</p>
+
       <h4>Page 1: income and deductions</h4>
       <p>The front of the form computes ordinary business income much like a
       C-corporation would: gross receipts less cost of goods sold, plus other
@@ -1622,6 +1654,22 @@ const FORM_GUIDES = {
       basis, then at-risk, then passive activity loss rules — applies to
       S-corp shareholders as well; clearing the basis limitation doesn't by
       itself guarantee a loss is currently deductible.</p>
+
+      <h4>Debt-basis restoration ordering when there are multiple loans</h4>
+      <p>Debt basis that's been reduced by prior losses gets restored by
+      later income before stock basis does — net increases in a year first
+      restore any reduced debt basis up to its original amount, and only
+      the excess increases stock basis. When a shareholder has made more
+      than one loan to the corporation over time and some loans have had
+      their basis reduced by losses while others haven't, restoration is
+      allocated among the loans in proportion to how much each one's basis
+      was previously reduced, not simply to whichever loan is oldest or
+      largest. Getting this allocation right matters most when a
+      shareholder is repaid on one specific loan — repayment on a loan
+      whose basis hasn't been fully restored can trigger capital gain to
+      the extent the repayment exceeds that loan's own reduced basis, even
+      while the shareholder's combined debt basis across all loans looks
+      sufficient at first glance.</p>
 
       <h4>Reasonable compensation — the single biggest audit target here</h4>
       <p>A shareholder who actively works for the company is required to be
@@ -1818,6 +1866,23 @@ const FORM_GUIDES = {
       taxed very differently, and far less favorably if the corporation
       has leftover C-corp E&amp;P.</div>
 
+      <h4>F reorganizations — the standard structure for an S-corp sale</h4>
+      <p>When an S-corp is being sold, buyers often want to acquire assets
+      (for a stepped-up tax basis) while sellers often prefer to sell stock
+      (for cleaner capital gain treatment and to avoid re-titling contracts
+      and licenses). An "F reorganization" — a mere change in identity,
+      form, or place of organization under Section 368(a)(1)(F) — is
+      commonly used to reconcile the two: the S-corp shareholders
+      contribute their stock to a new holding company, the original S-corp
+      converts to a single-member LLC (disregarded for tax purposes) owned
+      by that holding company, and the buyer then purchases the LLC
+      interest, which is treated for tax purposes as an asset purchase
+      even though legally it's a sale of an entity interest. The result is
+      a deal that closes cleanly at the legal level as an entity sale while
+      still giving the buyer the stepped-up asset basis of an asset deal —
+      which is why the F reorganization structure has become close to the
+      market standard for private-equity acquisitions of S-corps.</p>
+
       <h4>Terminating the S election</h4>
       <p>An S election doesn't last forever automatically. It can end two
       ways:</p>
@@ -1843,6 +1908,33 @@ const FORM_GUIDES = {
       deliberately dropping S status, and a real risk when an inadvertent
       violation (like the one-class-of-stock issue above) goes unnoticed
       until it's found on audit.</p>
+
+      <h4>Inadvertent termination relief (Section 1362(f))</h4>
+      <p>Not every disqualifying event has to be fatal. If an S election
+      (or a QSST/ESBT election) terminates because of an event the IRS
+      determines was inadvertent — a good-faith mistake rather than a
+      deliberate choice to end S status — the corporation can request
+      relief that treats the election as never having terminated at all,
+      as long as the disqualifying condition is corrected within a
+      reasonable period after discovery and the affected shareholders agree
+      to any adjustments needed to reflect S-corp treatment for the period
+      in question. This relief is why finding a one-class-of-stock
+      violation or an ineligible shareholder on audit isn't automatically
+      the disaster it first appears to be — but relief has to be
+      affirmatively requested and isn't automatic just because the mistake
+      was unintentional.</p>
+
+      <div class="guide-example"><strong>Example: a fixable slip-up.</strong>
+      An S-corp discovers that one of its shareholders quietly transferred
+      shares to a nonresident-alien family member two years ago, an
+      ineligible shareholder that technically terminated the S election on
+      the transfer date without anyone noticing. Because the transfer was
+      an innocent oversight rather than a deliberate attempt to violate
+      eligibility, and the corporation promptly has the shares transferred
+      back to an eligible shareholder once the issue is discovered, it can
+      request inadvertent termination relief — preserving two years of
+      S-corp filings that would otherwise have to be unwound and refiled as
+      C-corp returns.</div>
 
       <h4>State pass-through entity tax (PTET) elections</h4>
       <p>As with partnerships, many states allow an S-corp to elect to pay
