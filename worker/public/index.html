@@ -1215,6 +1215,68 @@ const FORM_GUIDES = {
       salary numbers can be reclassified as wages, with back FICA, penalties,
       and interest assessed on top.</div>
 
+      <h4>The QBI deduction (Section 199A) and its link to reasonable compensation</h4>
+      <p>Qualified Business Income (QBI) lets an individual shareholder
+      deduct up to 20% of their pro rata share of the S-corp's qualified
+      business income directly on their own Form 1040. Officer compensation
+      isn't itself QBI — W-2 wages paid to a shareholder-employee reduce
+      the ordinary business income that flows through as QBI — but those
+      same wages also count toward the W-2 wage limitation that can cap the
+      deduction at higher income levels (the greater of 50% of W-2 wages,
+      or 25% of wages plus 2.5% of UBIA of qualified property).</p>
+      <p>That creates a genuine tension at higher income: paying too little
+      reasonable compensation to save FICA, as described above, also
+      shrinks the W-2 wage base used for the QBI wage limitation — which
+      can end up costing more in a lost QBI deduction than it saves in
+      payroll tax once a shareholder's income is in the phase-in range.
+      Reasonable compensation isn't just an audit-risk question — for a
+      shareholder near the QBI phase-out, it can be a real dollar
+      tradeoff.</p>
+
+      <div class="guide-example"><strong>Example: the salary/QBI tradeoff
+      at higher income.</strong> A sole shareholder's S-corp has $300,000 of
+      income before officer compensation, and the shareholder's taxable
+      income is well above the QBI phase-in range. Paying a $60,000 salary
+      leaves $240,000 of QBI, but the wage limitation caps the deduction at
+      50% of $60,000 = $30,000 — well below the $48,000 that 20% of
+      $240,000 would otherwise allow. Paying a more defensible $120,000
+      salary instead leaves $180,000 of QBI (20% = $36,000) but raises the
+      wage limit to $60,000, so the full $36,000 deduction is available.
+      The higher salary costs more in FICA but can still leave the
+      shareholder better off overall once the QBI effect is included — a
+      reason "reasonable compensation" analysis shouldn't stop at FICA
+      alone.</div>
+
+      <h4>Fringe benefits for a more-than-2% shareholder</h4>
+      <p>A shareholder who owns more than 2% of the S-corp's stock
+      (directly or through attribution) is treated similarly to a partner,
+      not a regular employee, for most fringe benefit purposes — even
+      though they're paid through payroll and issued a W-2. The most common
+      example: health insurance premiums the corporation pays on behalf of
+      a more-than-2% shareholder-employee must be included in that
+      shareholder's W-2 Box 1 wages (though not Social Security/Medicare
+      wages), rather than being excluded from income the way it would be
+      for a regular rank-and-file employee. The shareholder then typically
+      deducts the same amount above the line on their own Form 1040 via the
+      self-employed health insurance deduction — so the net effect is
+      usually a wash, but only if both steps (adding it to W-2 wages, then
+      claiming the personal deduction) actually happen; forgetting the
+      first step means the health insurance was effectively paid with
+      pre-tax corporate dollars with no corresponding income pickup at
+      all.</p>
+
+      <div class="guide-example"><strong>Small example.</strong> An S-corp
+      pays $18,000 of health insurance premiums for its sole
+      shareholder-employee, who owns 100% of the stock. That $18,000 must
+      be added to the shareholder's W-2 Box 1 wages (but not Boxes 3/5, so
+      no extra FICA), and the shareholder then claims an $18,000
+      self-employed health insurance deduction directly on their 1040 —
+      assuming they aren't otherwise eligible for employer-subsidized
+      coverage through a spouse. Skipping the W-2 addition entirely, a
+      common oversight when a bookkeeper treats the premiums as a normal
+      deductible business expense, understates the shareholder's wages and
+      overstates the corporation's payroll-related exclusions.</div>
+
       <h4>The exceptions where the entity itself does owe tax</h4>
       <p>An S-corp isn't always tax-free at the entity level. Three
       situations create entity-level tax, all specific to a corporation that
@@ -1272,6 +1334,32 @@ const FORM_GUIDES = {
       terminate the S election retroactively, which is a far bigger problem
       than the underlying distribution issue itself.</p>
 
+      <h4>Terminating the S election</h4>
+      <p>An S election doesn't last forever automatically. It can end two
+      ways:</p>
+      <ul>
+        <li><strong>Voluntary revocation</strong> — shareholders holding
+        more than 50% of the outstanding shares consent to revoke,
+        effective on a date they choose (or the first day of the tax year
+        if filed within the first two and a half months of that year;
+        otherwise generally effective the following year).</li>
+        <li><strong>Involuntary termination</strong> — the corporation
+        simply stops qualifying as a small business corporation (issuing
+        stock to a disqualified shareholder like a nonresident alien or a
+        corporation, creating a second class of stock as described above,
+        or exceeding the shareholder cap), or the excess net passive
+        income condition continues for three consecutive years while the
+        corporation still has C-corp E&amp;P. Termination is generally
+        effective on the date the disqualifying event actually occurred,
+        which can create a short S-corp year and a short C-corp year
+        within the same calendar year.</li>
+      </ul>
+      <p>Either way, the corporation generally can't re-elect S status for
+      five years without IRS consent — a real cost to weigh before
+      deliberately dropping S status, and a real risk when an inadvertent
+      violation (like the one-class-of-stock issue above) goes unnoticed
+      until it's found on audit.</p>
+
       <h4>State pass-through entity tax (PTET) elections</h4>
       <p>As with partnerships, many states allow an S-corp to elect to pay
       state income tax at the entity level, working around the $10,000 SALT
@@ -1279,6 +1367,18 @@ const FORM_GUIDES = {
       is deductible as a business expense federally. The election mechanics
       and the resulting shareholder-level credit vary significantly by
       state.</p>
+
+      <h4>Schedules K-2 and K-3 — foreign transaction reporting</h4>
+      <p>As with partnerships, S-corps have filed Schedules K-2
+      (entity-level) and K-3 (shareholder-level, a K-1 supplement) since
+      the 2021 tax year, reporting items of international tax relevance —
+      foreign-source income, foreign taxes paid, and the information
+      shareholders need for their own foreign tax credit computations. A
+      domestic S-corp with no foreign shareholders or operations can still
+      be required to file if any shareholder needs the information for
+      their own international tax reporting; a narrow filing exception
+      exists only where no shareholder has foreign-reporting needs and none
+      has requested the schedule.</p>
 
       <h4>Filing mechanics</h4>
       <p>Form 1120-S is due March 15 for a calendar-year corporation, with a
@@ -1313,6 +1413,21 @@ const FORM_GUIDES = {
         Subchapter S Subsidiary" (QSub), letting an S-corp own another
         corporation that's then disregarded for federal tax purposes and
         folded into the parent's own return.</li>
+        <li><strong>Schedule B-1 (Form 1120-S)</strong> — required when a
+        trust or estate is a shareholder, identifying the trust/estate and
+        (for certain trusts) the beneficiaries the IRS treats as the
+        actual shareholders for eligibility purposes — the S-corp analog
+        to a partnership's Schedule B-1.</li>
+        <li><strong>Schedules K-2 and K-3</strong> — foreign transaction
+        reporting; see the dedicated section above for how broadly these
+        now apply, including to S-corps with no obvious foreign activity
+        of their own.</li>
+        <li><strong>Form 8990</strong> — computes the Section 163(j)
+        business interest expense limitation (generally 30% of adjusted
+        taxable income) at the corporate level; any interest expense
+        disallowed here is carried forward and allocated to shareholders as
+        a separately stated item rather than being deducted against
+        ordinary business income.</li>
       </ul>
 
       <h4>Common pitfalls</h4>
