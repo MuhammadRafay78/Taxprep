@@ -992,6 +992,41 @@ const FORM_GUIDES = {
       other income, which is exactly why real estate deals are so often
       structured as partnerships rather than S-corps.</div>
 
+      <h4>Section 704(c) — allocating built-in gain or loss on contributed property</h4>
+      <p>When a partner contributes property with a fair market value
+      different from its tax basis, the built-in gain or loss that existed
+      at the time of contribution must be allocated back to the
+      contributing partner when the partnership later sells the property
+      or claims depreciation on it — the contributing partner can't shift
+      a built-in tax attribute onto the other partners just by dropping
+      the property into the partnership. The traditional method allocates
+      tax depreciation and gain to track this as closely as possible, but
+      a "ceiling rule" limitation means the total tax depreciation or gain
+      allocated among all partners can never exceed what the partnership
+      itself actually has available — sometimes leaving non-contributing
+      partners with less tax depreciation than their book/economic share
+      would suggest. The curative and remedial allocation methods exist
+      specifically to correct that ceiling-rule distortion, either by
+      shifting other tax items to compensate (curative) or by creating
+      notional additional tax items just for allocation purposes
+      (remedial).</p>
+
+      <div class="guide-example"><strong>Example: the ceiling rule in
+      action.</strong> A partner contributes equipment with a $40,000 tax
+      basis and $100,000 fair market value to a 50/50 partnership with a
+      cash-contributing partner. The equipment has a 5-year remaining tax
+      life ($8,000/year of tax depreciation) but a 5-year remaining book
+      life at the $100,000 value ($20,000/year of book depreciation).
+      Under the traditional method, all $8,000 of actual tax depreciation
+      goes to the non-contributing (cash) partner, to make up for the
+      $60,000 of built-in gain baked into the contributed equipment — but
+      the ceiling rule caps total tax depreciation allocated at the $8,000
+      the partnership actually has, even though matching the $20,000 book
+      allocation would call for more. The non-contributing partner ends up
+      with less tax depreciation than their book capital account reflects,
+      a mismatch the partnership could address with a curative or remedial
+      allocation if it wants to avoid.</div>
+
       <h4>The varying interests rule (Section 706(d))</h4>
       <p>When a partner's ownership percentage changes during the year —
       someone buys in, sells out, or the partnership issues new units — the
@@ -1067,6 +1102,34 @@ const FORM_GUIDES = {
       $10,000 loss — the guaranteed payment and the distributive share are
       computed and taxed completely independently of each other.</div>
 
+      <h4>Self-charged interest — lending money to your own partnership</h4>
+      <p>When a partner lends money directly to the partnership (or the
+      partnership lends to a partner), the interest income and interest
+      expense sit on two different sides of the same coin, but they don't
+      automatically net against each other for passive-activity purposes.
+      Without a special rule, a partner in a passive activity could end up
+      paying tax on interest income received in full (as portfolio income,
+      not offset by anything) while the matching interest expense the
+      partnership deducts is trapped as a passive loss the partner can't
+      currently use. The self-charged interest regulations fix this
+      mismatch by allowing the lending partner to recharacterize a
+      matching portion of that interest income as passive income (to the
+      extent the borrowing entity's activity is passive to that partner),
+      so the deduction and the income can offset within the passive basket
+      instead of leaking past each other.</p>
+
+      <div class="guide-example"><strong>Example: a partner-financed
+      loan.</strong> A partner who doesn't materially participate in a
+      partnership's rental activity lends the partnership $200,000 at 6%
+      interest, earning $12,000 of interest income for the year —
+      normally portfolio income, taxed regardless of the partner's passive
+      losses elsewhere. Under the self-charged interest rules, because the
+      partnership's use of the funds is a passive activity to this
+      partner, the $12,000 is recharacterized as passive income, letting
+      it be offset by the partner's suspended passive losses from that
+      same partnership instead of being taxed in full alongside portfolio
+      interest.</div>
+
       <h4>Family partnership rules (Section 704(e))</h4>
       <p>When capital is a material income-producing factor for the
       business (a real estate or investment partnership, as opposed to a
@@ -1116,6 +1179,36 @@ const FORM_GUIDES = {
       gain to the partner. A loss allocated in excess of basis simply isn't
       deductible in the current year — it's suspended and carries forward
       until basis is restored.</p>
+
+      <h4>Section 752 — how partnership liabilities get allocated to basis</h4>
+      <p>A partnership's debt increases every partner's outside basis, but
+      how much of a given liability each partner picks up depends on
+      whether the debt is recourse or nonrecourse. A recourse liability —
+      one at least one partner or related person is personally on the hook
+      for if the partnership can't pay — is allocated to the partner(s)
+      who bear the economic risk of loss, often heavily or entirely to a
+      general partner rather than pro rata across all partners. A
+      nonrecourse liability — one no partner is personally liable for,
+      typically secured only by partnership property — is instead
+      allocated using a three-tier system tied to partnership minimum gain
+      and the partners' shares of profits, generally spreading it more
+      broadly across all partners regardless of who's a general or limited
+      partner. Getting this allocation right matters directly for how much
+      loss each partner can currently deduct, since basis is the first
+      gate in the loss chain described below.</p>
+
+      <div class="guide-example"><strong>Example: the same debt, two
+      different allocations.</strong> A partnership has a $500,000
+      mortgage on its only asset. If the general partner has personally
+      guaranteed the loan, the debt is recourse and generally allocated
+      entirely to that general partner's outside basis, giving the limited
+      partners no basis increase from it at all. If instead the same
+      $500,000 loan is secured only by the property with no personal
+      guarantee from anyone, it's nonrecourse and gets spread across all
+      the partners' outside basis under the nonrecourse allocation rules —
+      the identical loan amount produces a completely different basis
+      outcome depending on who, if anyone, is personally liable for
+      it.</div>
 
       <h4>Section 754 election and the inside/outside basis mismatch</h4>
       <p>Outside basis, above, is what each partner separately tracks.
@@ -1203,6 +1296,37 @@ const FORM_GUIDES = {
       subject to SE tax regardless of whether the recipient is styled a
       general or limited partner.</p>
 
+      <h4>Profits interests — equity compensation without buying in</h4>
+      <p>A partnership can grant a service provider a "profits interest" —
+      the right to share in future partnership profits and appreciation,
+      but with no claim on the partnership's existing capital or value at
+      the time of the grant — as compensation for services, without the
+      recipient paying anything or recognizing immediate taxable income.
+      This is different from a "capital interest," which does entitle the
+      holder to a share of the partnership's existing value and is taxable
+      as compensation when granted. Under the safe harbor in Rev. Proc.
+      93-27 and Rev. Proc. 2001-43, a profits interest granted for services
+      to or for the benefit of the partnership is treated as having no
+      value at grant (so no immediate tax), as long as it isn't disposed of
+      within two years and doesn't relate to a substantially certain and
+      predictable income stream. This makes profits interests a common way
+      for operating partnerships — private equity and hedge funds, in
+      particular, as "carried interest" — to compensate managers and key
+      employees with an equity stake instead of cash.</p>
+
+      <div class="guide-example"><strong>Example: capital interest vs.
+      profits interest.</strong> A partnership worth $1,000,000 today
+      grants a new manager a 10% interest as compensation. If it's a
+      capital interest, the manager is treated as receiving $100,000 of
+      taxable compensation immediately (10% of current value), even though
+      no cash changed hands. If instead it's structured as a profits
+      interest — entitling the manager only to 10% of future profits and
+      appreciation above today's $1,000,000 value, with no claim on the
+      existing $1,000,000 — the grant is generally tax-free at the time
+      it's made under the safe harbor, with the manager only picking up
+      tax as the partnership actually generates the future profits the
+      interest entitles them to.</div>
+
       <h4>Publicly traded partnership (PTP) rules (Section 7704)</h4>
       <p>A partnership whose interests are traded on an established
       securities market (or readily tradable on a secondary market) is
@@ -1240,6 +1364,36 @@ const FORM_GUIDES = {
       by any of its partners — a much narrower standard. A large ownership
       turnover by itself, even a complete one, no longer forces a
       technical termination the way it once did.</p>
+
+      <h4>Partnership mergers and divisions</h4>
+      <p>When two partnerships combine, the transaction is generally
+      structured one of two ways for tax purposes: "assets-over," where
+      the merging partnership contributes all its assets and liabilities
+      to the surviving partnership in exchange for an interest, then
+      liquidates and distributes that interest to its own partners; or
+      "assets-up," where the merging partnership first distributes its
+      assets to its own partners, who then individually contribute them to
+      the surviving partnership. The two forms can produce different basis
+      and holding-period results for the same economic transaction, which
+      is why the default under the regulations is the assets-over form
+      unless the partners affirmatively structure it as assets-up. A
+      partnership division works in reverse — one partnership splitting
+      into two or more — and is analyzed the same way, tracking which
+      partners end up as partners in which resulting partnership to
+      determine the tax treatment of the split.</p>
+
+      <div class="guide-example"><strong>Example: choosing assets-over by
+      default.</strong> Two real estate partnerships combine, with
+      Partnership A merging into Partnership B. Absent an affirmative
+      election to use the assets-up form, the transaction defaults to
+      assets-over: Partnership A contributes all its properties and debts
+      to Partnership B in exchange for an interest in B, then immediately
+      liquidates and distributes that B interest to A's own partners. A's
+      partners end up holding interests in B without ever having
+      personally held an interest in the underlying properties along the
+      way — a structural detail that matters if the partners wanted to
+      argue for a different basis or holding-period result under the
+      assets-up form instead.</div>
 
       <h4>State pass-through entity tax (PTET) elections</h4>
       <p>Many states now let a partnership elect to pay state income tax at
