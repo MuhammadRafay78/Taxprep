@@ -641,6 +641,35 @@ const FORM_GUIDES = {
       which is a common and entirely avoidable mistake when someone is close
       to the one-year mark and doesn't realize the date matters.</p>
 
+      <h4>Reporting capital gains and losses (Schedule D and Form 8949) and the wash sale rule</h4>
+      <p>Every sale of a capital asset is generally listed individually on
+      Form 8949 — description, dates acquired and sold, proceeds, and
+      basis — grouped into short-term and long-term categories, with the
+      totals then carrying to Schedule D where they're combined with any
+      transactions that don't require Form 8949 detail (typically covered
+      securities with basis already reported to the IRS, which can be
+      summarized directly on Schedule D itself). The wash sale rule
+      disallows a loss on a security sold at a loss if the same or a
+      substantially identical security is purchased within 30 days before
+      or after the sale — the disallowed loss doesn't vanish, but is
+      instead added to the basis of the newly purchased replacement
+      shares, deferring the loss rather than eliminating it. This rule
+      exists specifically to stop a taxpayer from selling a losing
+      position purely to harvest the tax loss while immediately buying
+      back into the same economic position.</p>
+
+      <div class="guide-example"><strong>Example: a loss deferred, not
+      lost.</strong> An investor sells 100 shares of a stock at a $2,000
+      loss on December 15, then repurchases 100 shares of the same stock
+      on January 2 of the following year — within the 30-day window. The
+      $2,000 loss is disallowed for the current year under the wash sale
+      rule, but is added to the basis of the newly purchased shares,
+      which now have a $2,000 higher basis than they were actually
+      purchased for. The loss isn't gone; it will reduce the taxable gain
+      (or increase the loss) whenever those replacement shares are
+      eventually sold, assuming no further wash sale occurs at that
+      point.</div>
+
       <h4>Capital loss limitations and carryovers (Sections 1211 and 1212)</h4>
       <p>Capital losses first offset capital gains dollar-for-dollar, with
       no limit at that stage — a large loss can wipe out an equally large
@@ -726,6 +755,50 @@ const FORM_GUIDES = {
       that by $60,000 and the effective rate is about 13.8% — nearly 8 points
       below the 22% marginal rate this filer would (incorrectly) quote if
       asked "what tax bracket are you in."</div>
+
+      <h4>The Child Tax Credit and Additional Child Tax Credit</h4>
+      <p>The Child Tax Credit is worth up to $2,000 per qualifying child
+      under age 17 with a valid Social Security number, phasing out at
+      higher modified AGI ($200,000 single, $400,000 married filing
+      jointly). Up to $1,700 of the credit is refundable as the Additional
+      Child Tax Credit — computed generally as 15% of earned income above
+      a threshold, capped at the refundable amount — meaning a filer with
+      little or no tax liability can still receive a meaningful refund
+      from the credit even after the nonrefundable portion has zeroed out
+      their tax. A separate $500 nonrefundable Credit for Other Dependents
+      covers dependents who don't qualify for the full Child Tax Credit —
+      a child 17 or older, or a qualifying relative such as an elderly
+      parent the filer supports.</p>
+
+      <div class="guide-example"><strong>Example: getting a refund from
+      the credit.</strong> A single parent with two qualifying children
+      and $30,000 of earned income has a $1,800 tax liability before
+      credits. The $4,000 Child Tax Credit ($2,000 × 2) first wipes out
+      the $1,800 of tax owed. Of the remaining $2,200, the Additional
+      Child Tax Credit refunds up to $1,700 per child (capped by 15% of
+      earned income above the threshold) — meaning the parent can receive
+      a substantial refund beyond what was withheld, purely from the
+      refundable portion of a credit that started out mostly
+      nonrefundable.</div>
+
+      <h4>The Earned Income Tax Credit (EITC)</h4>
+      <p>The EITC is a refundable credit for low-to-moderate-income earned
+      income, with the credit amount and phase-out thresholds varying by
+      the number of qualifying children (zero, one, two, or three or more)
+      and filing status. The credit phases in as earned income rises from
+      zero, plateaus at its maximum over a range of income, and then
+      phases out as income rises further — both earned income and AGI are
+      tested, with the smaller resulting credit generally controlling if
+      the two produce different results. A filer with investment income
+      above a set threshold is disqualified from the EITC entirely
+      regardless of how low their earned income is, a rule aimed at
+      preventing the credit from being claimed by someone who's simply
+      choosing to report little wage income while living off substantial
+      investment wealth. The IRS pays particular audit attention to EITC
+      claims given historically high error and fraud rates, so accurately
+      determining qualifying-child status (relationship, age, residency,
+      and joint-return tests) matters more here than for most other
+      credits.</p>
 
       <h4>The QBI deduction (Section 199A)</h4>
       <p>An individual with qualified business income from a sole
@@ -1540,6 +1613,41 @@ const FORM_GUIDES = {
       activities, not wages or portfolio income). A loss can be fully
       supported by basis and still be stuck behind either of these gates.</p>
 
+      <h4>The at-risk rules in depth (Form 6198)</h4>
+      <p>The at-risk limitation above is computed in detail on Form 6198:
+      a partner's at-risk amount generally includes cash and the adjusted
+      basis of property contributed, plus amounts borrowed for use in the
+      activity for which the partner is personally liable or has pledged
+      property (other than property used in the activity itself) as
+      security. Nonrecourse financing generally doesn't count toward the
+      at-risk amount at all, with one significant carve-out: "qualified
+      nonrecourse financing" secured by real property used in an activity
+      of holding real estate does count, which is why real estate
+      partnerships can support much larger loss deductions through
+      heavily leveraged nonrecourse financing than a partnership in most
+      other industries could. A loss suspended under the at-risk rules
+      carries forward indefinitely and becomes deductible in a future year
+      the partner's at-risk amount increases enough to absorb it, or when
+      the partner disposes of the activity entirely.</p>
+
+      <h4>The real estate professional exception to passive-activity treatment</h4>
+      <p>Rental real estate activities are passive by default for the
+      passive activity loss rules regardless of the owner's participation
+      level, with one major exception: a taxpayer who qualifies as a "real
+      estate professional" (more than half of their personal services for
+      the year, and more than 750 hours, spent in real property trades or
+      businesses in which they materially participate) can treat their
+      rental real estate activities as nonpassive, letting losses offset
+      wages and other nonpassive income without being trapped behind the
+      passive activity loss limitation. A married couple only needs one
+      spouse to independently meet the real estate professional test, but
+      that spouse's hours can't be combined with the other spouse's hours
+      to reach the 750-hour threshold — one spouse has to clear the bar
+      alone. Simply owning several rental properties, without meeting both
+      the time and material-participation tests, doesn't make someone a
+      real estate professional no matter how much personal wealth is tied
+      up in real estate.</p>
+
       <h4>Self-employment tax</h4>
       <p>A general partner's distributive share of ordinary business income
       is typically subject to self-employment tax, the same as a sole
@@ -2137,6 +2245,23 @@ const FORM_GUIDES = {
       or never converted from a C-corp to begin with (started as an S-corp),
       no entity-level built-in gains tax would apply at all.</div>
 
+      <h4>Computing net unrealized built-in gain (NUBIG) for the BIG tax</h4>
+      <p>The built-in gains tax is capped, in the aggregate over the whole
+      recognition period, at the corporation's net unrealized built-in
+      gain (NUBIG) — the aggregate excess of the fair market value of all
+      the corporation's assets over their aggregate adjusted basis,
+      measured at the moment of S conversion. Recognizing built-in gain in
+      a given year during the recognition period reduces the remaining
+      NUBIG pool dollar for dollar, and once the full NUBIG has been
+      recognized (through actual sales or other recognition events), no
+      further BIG tax applies even if the recognition period technically
+      hasn't expired yet and even if the corporation has more built-in
+      gain assets it hasn't yet sold. A corporation that had some assets
+      with built-in losses at conversion nets those against built-in gain
+      assets in computing NUBIG, so the tax targets the corporation's
+      aggregate net appreciation at conversion, not simply the gain on
+      whichever specific asset happens to be sold first.</p>
+
       <h4>Installment sales during the built-in-gains recognition period</h4>
       <p>Selling a built-in-gain asset on an installment basis doesn't let
       a former C-corp escape the BIG tax by spreading the sale outside the
@@ -2732,6 +2857,21 @@ const FORM_GUIDES = {
       corporation itself. Both are computed together on Form 8993 and
       share the same Section 250 deduction mechanism.</p>
 
+      <h4>Net capital losses for a corporation</h4>
+      <p>Unlike an individual, a corporation gets no preferential rate on
+      capital gains — they're simply taxed at the regular 21% corporate
+      rate alongside ordinary income — and a corporation with a net
+      capital loss for the year can't deduct any of it against ordinary
+      income at all, not even the $3,000 an individual can. A corporate
+      net capital loss is instead carried back three years and forward
+      five years, usable only against capital gains in those other years,
+      and if not used within the carryforward window it expires unused
+      entirely. This asymmetry — full-rate taxation on gains, but a much
+      more restrictive loss rule with a firm expiration — makes
+      capital-loss planning meaningfully more urgent for a corporation
+      than for an individual, whose capital losses at least carry forward
+      indefinitely.</p>
+
       <h4>Net operating losses (NOLs) post-2017</h4>
       <p>Current law lets a C-corp carry a net operating loss forward
       indefinitely, but generally not back to prior years (with narrow
@@ -2875,6 +3015,20 @@ const FORM_GUIDES = {
       is filed to pay can face an underpayment penalty even though no
       "withholding" concept exists for a corporation the way it does for an
       employee.</p>
+
+      <h4>The Form 2220 estimated tax underpayment penalty</h4>
+      <p>Form 2220 computes any underpayment penalty owed if a
+      corporation's quarterly installments fell short of the required
+      amount — generally the smaller of 100% of the current year's tax or
+      100% of the prior year's tax (with a higher threshold for a "large
+      corporation," which must base its estimates on the current year
+      alone rather than being allowed to rely on the prior year's tax).
+      The penalty is calculated on a quarter-by-quarter basis using the
+      federal short-term rate plus a few percentage points, compounding
+      for each period the shortfall remained outstanding, similar in
+      mechanical structure to the individual underpayment penalty
+      described in the Form 1040 guide but computed on its own separate
+      form and schedule of due dates.</p>
 
       <h4>State corporate income tax and apportionment</h4>
       <p>Nothing about the federal Form 1120 addresses state tax at all,
@@ -3107,6 +3261,21 @@ const FORM_GUIDES = {
       treaty position is taken can itself trigger a separate penalty,
       independent of whatever penalty applies to a missing or incomplete
       Form 5472.</p>
+
+      <h4>One Form 5472 per related party — not one per reporting corporation</h4>
+      <p>A reporting corporation with reportable transactions across
+      several different foreign related parties in the same year doesn't
+      consolidate them onto a single Form 5472 — a separate Form 5472 is
+      required for each related party the corporation had reportable
+      transactions with during the year, even though all of them attach
+      to the same underlying Form 1120 (or pro forma 1120 for a
+      disregarded entity). A corporation that transacted with three
+      different related foreign entities during the year files three
+      separate Forms 5472, each identifying that one related party in
+      Part III and listing only the transactions conducted with that
+      specific party in Part IV — a structural detail easy to miss for a
+      filer assuming one form captures the whole relationship picture at
+      once.</p>
 
       <h4>Why it matters: arm's-length pricing (Section 482)</h4>
       <p>Form 5472 is a disclosure form, but the substantive tax rule behind
@@ -3722,6 +3891,42 @@ const FORM_GUIDES = {
       repeated case, revocation of exempt status for the hospital
       facility involved — a far more prescriptive set of rules than most
       other 501(c)(3) organizations ever encounter.</p>
+
+      <h4>Schedule B — contributor disclosure</h4>
+      <p>An organization receiving contributions from any one donor
+      exceeding a set threshold during the year (generally the greater of
+      $5,000 or 2% of total contributions, with different, generally
+      lower, thresholds for certain organizations) must disclose that
+      donor's name, address, and the amount given on Schedule B. For most
+      501(c)(3) public charities, Schedule B is not made available for
+      public inspection the way the rest of Form 990 is — donor names and
+      addresses stay confidential even though the return itself is a
+      public record — while certain other organization types (notably
+      many 501(c)(4), (5), and (6) organizations) have historically faced
+      different disclosure treatment, an area that has shifted with
+      changing IRS guidance and litigation over the years. Getting
+      Schedule B's threshold and disclosure treatment wrong is a common
+      point of confusion, since it's one of the only schedules where the
+      general "everything on Form 990 is public" rule doesn't fully
+      apply.</p>
+
+      <h4>Schedule G — fundraising events and gaming</h4>
+      <p>An organization that reports meaningful fundraising event revenue
+      or gaming (bingo, raffles, casino nights) activity completes
+      Schedule G, separately reporting gross revenue, direct expenses, and
+      net income for its two largest fundraising events and for gaming
+      activities as a whole. This detail matters because fundraising
+      event revenue is reported net of direct expenses on the core Form
+      990 revenue statement, but the gross figures still have to be
+      disclosed on Schedule G — letting a reader see, for instance, that
+      a gala reporting only $20,000 of net revenue on the main form
+      actually took in $200,000 of gross ticket sales against $180,000 of
+      event costs, a very different picture of fundraising efficiency than
+      the net number alone would suggest. Gaming activity carries its own
+      additional wrinkle: it can trigger state and local licensing
+      requirements and, if conducted extensively enough or with
+      insufficient volunteer involvement, unrelated business income tax
+      exposure separate from the Schedule G disclosure itself.</p>
 
       <h4>Governance disclosures</h4>
       <p>The return also asks about governance practices that aren't
