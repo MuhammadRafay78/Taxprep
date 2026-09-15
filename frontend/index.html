@@ -556,6 +556,44 @@ const FORM_GUIDES = {
       filers now take the standard deduction rather than itemizing; itemizing
       only helps once those deductions, combined, clear the standard amount.</p>
 
+      <h4>Itemized deductions in depth: medical, SALT, mortgage interest, and charitable limits</h4>
+      <p>Several major itemized categories carry their own separate
+      limitations that cap how much of each actually counts, on top of the
+      overall standard-vs-itemized comparison above. Medical and dental
+      expenses are deductible only to the extent they exceed 7.5% of AGI —
+      a floor that keeps most filers with routine medical costs from
+      getting any benefit at all, since the first 7.5% of AGI worth of
+      expenses simply doesn't count. State and local taxes (SALT) — income
+      or sales tax, plus property tax, combined — are capped at $10,000
+      total ($5,000 if married filing separately), regardless of how much
+      was actually paid, a limitation introduced by the Tax Cuts and Jobs
+      Act that disproportionately affects filers in high-tax states with
+      significant property tax bills. Home mortgage interest is deductible
+      only on acquisition debt up to $750,000 ($1,000,000 for debt
+      incurred before December 16, 2017, under grandfathered treatment) —
+      interest on debt above that limit, or on home equity debt not used
+      to buy, build, or substantially improve the home, isn't deductible
+      at all under current law. Charitable contributions of cash are
+      generally deductible up to 60% of AGI, and contributions of
+      appreciated property up to 30% of AGI, with any excess carried
+      forward up to five years — a filer making an unusually large gift in
+      one year doesn't lose the excess deduction, just has to spread it
+      out.</p>
+
+      <div class="guide-example"><strong>Example: three limitations
+      hitting the same return.</strong> A married couple filing jointly
+      has $18,000 of unreimbursed medical expenses, $14,000 of combined
+      state income and property tax, $30,000 of mortgage interest on a
+      $900,000 acquisition loan (originated in 2022, so subject to the
+      $750,000 cap), and $200,000 AGI. Only $4,500 of the medical expenses
+      is deductible ($18,000 minus 7.5% × $200,000 = $15,000 floor). Only
+      $10,000 of the $14,000 SALT is deductible, capped regardless of the
+      extra $4,000 actually paid. Only 5/6 of the mortgage interest is
+      deductible ($750,000 ÷ $900,000), or $25,000, with the remaining
+      $5,000 nondeductible. None of these limitations interact with each
+      other — each is computed and capped independently before the totals
+      are added together and compared to the standard deduction.</div>
+
       <h4>AGI: the number everything else keys off</h4>
       <p>Adjusted Gross Income — total income minus above-the-line adjustments
       like traditional IRA contributions, student loan interest, and
@@ -809,6 +847,39 @@ const FORM_GUIDES = {
       growth in a taxable brokerage account, which would have been taxed
       on any dividends or interest along the way and again on the gain
       when sold.</div>
+
+      <h4>Education credits (AOTC and Lifetime Learning) and the student loan interest deduction</h4>
+      <p>The American Opportunity Tax Credit (AOTC) covers up to $2,500
+      per eligible student per year for the first four years of
+      postsecondary education, is 40% refundable (up to $1,000 can be
+      refunded even if it exceeds tax owed), and phases out at higher
+      modified AGI. The Lifetime Learning Credit (LLC) covers up to $2,000
+      per <em>return</em> (not per student), has no limit on the number
+      of years it can be claimed, applies to graduate school and even
+      non-degree coursework, but is entirely nonrefundable and phases out
+      at lower income levels than the AOTC. The same student's expenses in
+      the same year can't be used for both credits — a filer with several
+      students in different stages of education may claim the AOTC for
+      one and the LLC for another, but not both credits on the same
+      student's same expenses. Separately, the student loan interest
+      deduction allows up to $2,500 of interest paid on a qualified
+      student loan to be deducted above-the-line (no itemizing required),
+      phasing out at moderate income levels — a deduction, not a credit,
+      so its value depends on the filer's marginal bracket unlike the two
+      credits above.</p>
+
+      <div class="guide-example"><strong>Example: choosing between the two
+      credits for the same family.</strong> A couple has one child who is
+      a sophomore in college (four-year-eligible) and another child in a
+      graduate program. The sophomore's $6,000 of qualified tuition
+      supports a $2,500 AOTC (100% of the first $2,000 plus 25% of the
+      next $2,000, up to the $2,500 cap). The graduate student's $6,000 of
+      tuition isn't eligible for the AOTC at all (graduate study doesn't
+      qualify), but supports a $1,200 Lifetime Learning Credit (20% of
+      $6,000). The two credits stack because they cover different
+      students and different credit types — $3,700 combined — but
+      claiming the LLC on the sophomore's expenses too would not be
+      allowed since it's already been used for the AOTC.</div>
 
       <h4>Alternative Minimum Tax (AMT)</h4>
       <p>AMT is a parallel tax computation with its own, more limited set
@@ -1088,6 +1159,66 @@ const FORM_GUIDES = {
       $15,000, not $40,000 — the same $200,000 of QBI produces a very
       different deduction depending on how labor-intensive (in W-2 terms)
       the underlying business is.</div>
+
+      <h4>Schedule L, M-1, and M-2 — the balance sheet and book-tax reconciliation</h4>
+      <p>Schedule L is the partnership's balance sheet — assets,
+      liabilities, and partners' capital — reported at the beginning and
+      end of the tax year, generally required unless the partnership meets
+      narrow small-partnership exceptions (total receipts and total assets
+      each under $250,000, among other conditions). Schedule M-1
+      reconciles the partnership's book income (per its financial records)
+      to the taxable income reported on the return, adding back book
+      expenses that aren't deductible for tax purposes (like certain meals
+      and entertainment, or book depreciation in excess of tax
+      depreciation) and subtracting tax-exempt income and other book-only
+      items. Schedule M-2 then rolls forward the partners' total capital
+      accounts for the year — beginning balance, plus contributions and
+      income, minus distributions and losses, equals the ending balance —
+      which should tie out to the sum of the individual capital account
+      figures reported on each partner's Schedule K-1.</p>
+
+      <div class="guide-example"><strong>Example: a simple book-tax
+      difference.</strong> A partnership's books show $500,000 of net
+      income, which includes $20,000 of nondeductible meals expense (only
+      50% deductible for tax purposes on most meals) and $5,000 of
+      tax-exempt municipal bond interest. Schedule M-1 adds back $10,000
+      (the nondeductible half of the meals) and subtracts $5,000 (the
+      tax-exempt interest), reconciling the $500,000 book figure to
+      $505,000 of taxable income reported on the return — the two numbers
+      differ by $5,000 net, and Schedule M-1 is what documents exactly
+      why.</div>
+
+      <h4>Depreciation, Section 179, and bonus depreciation (Form 4562)</h4>
+      <p>A partnership generally depreciates its own capital assets under
+      MACRS over their applicable recovery periods, but two accelerated
+      write-off provisions let much or all of an asset's cost be deducted
+      immediately instead of over time. Section 179 allows the
+      partnership to elect to expense the full cost of qualifying property
+      (up to an annual dollar cap, phased out once total qualifying
+      purchases for the year exceed a much higher threshold) in the year
+      it's placed in service — but the deduction can't exceed the
+      partnership's aggregate net income from all its trades or
+      businesses, and it flows through to partners subject to their own
+      separate dollar-cap and business-income limitations at the
+      individual level, meaning a partnership can pass through more
+      Section 179 than a particular partner can actually use. Bonus
+      depreciation, by contrast, isn't capped by a dollar limit or by
+      business income, applies automatically unless the partnership elects
+      out, but has been phasing down from 100% under prior law to a lower
+      percentage in current years, with the non-bonus remainder of the
+      asset's cost depreciated under ordinary MACRS.</p>
+
+      <div class="guide-example"><strong>Example: Section 179 limited at
+      the partner level.</strong> A partnership passes through $200,000 of
+      Section 179 deduction to a partner who also has a Schedule C
+      business with a $150,000 loss for the year. Even though the
+      partnership's own income easily supported the full $200,000
+      deduction, the partner's Section 179 deduction is limited to their
+      aggregate business income from all sources — with a $150,000 loss
+      from the other business, little or none of the passed-through
+      Section 179 may be currently usable at the partner's individual
+      level, with the disallowed portion carrying forward to a future
+      year instead.</div>
 
       <h4>Special allocations</h4>
       <p>Unlike an S-corp, a partnership isn't required to split every item
@@ -1728,6 +1859,34 @@ const FORM_GUIDES = {
       less judgment involved here than on a partnership K-1 — the main
       complexity is making sure the allocation percentages and holding
       periods for shares that changed hands mid-year are actually correct.</p>
+
+      <h4>Schedule L — the S-corp's balance sheet</h4>
+      <p>Like a partnership, an S-corp reports a balance sheet on Schedule
+      L — assets, liabilities, and shareholders' equity at the beginning
+      and end of the year — unless it meets the same narrow
+      small-corporation exceptions (total receipts and total assets each
+      under $250,000). Because an S-corp's book equity accounts don't map
+      directly onto the tax concepts used elsewhere in the return (stock
+      basis, the Accumulated Adjustments Account, and any leftover C-corp
+      earnings and profits are all tracked separately from what Schedule L
+      shows), Schedule L's shareholders'-equity figure is a book number
+      and shouldn't be confused with any individual shareholder's own
+      stock basis — the two are computed under completely different rules
+      and routinely diverge.</p>
+
+      <h4>Section 179 passthrough limits for S-corp shareholders</h4>
+      <p>An S-corp's Section 179 election is subject to the same dollar
+      cap and business-income limitation described for partnerships, and
+      the deduction similarly passes through to shareholders on Schedule
+      K-1 subject to a further limitation at the shareholder level: no
+      shareholder can deduct more Section 179 than their own aggregate
+      business income (from the S-corp and any other trades or
+      businesses) supports, regardless of how much the corporation itself
+      passed through. A shareholder whose S-corp wages and K-1 income
+      together are modest, but who receives a large Section 179 allocation
+      from a profitable acquisition year, may find a meaningful chunk of
+      that allocation suspended at the individual level until they have
+      enough business income in a future year to absorb it.</p>
 
       <h4>Interim closing of the books (Section 1377(a)(2))</h4>
       <p>The default allocation method spreads each year's income and loss
@@ -2629,6 +2788,51 @@ const FORM_GUIDES = {
       tested against future years' 30% limit — which only helps if a
       future year has room under its own cap.</div>
 
+      <h4>Depreciation, Section 179, and bonus depreciation for a C-corporation (Form 4562)</h4>
+      <p>A C-corporation applies the same MACRS depreciation, Section 179
+      expensing, and bonus depreciation framework used elsewhere in the
+      tax code, but without the pass-through complications a partnership
+      or S-corp has to track at the owner level — the corporation simply
+      applies its own dollar caps and business-income limitation directly
+      against its own taxable income, since there's no further owner-level
+      limitation layered on top. This is one of the more significant
+      book-tax differences reported on Schedule M-1: book depreciation
+      (often straight-line, reflecting an asset's realistic useful life
+      for financial statement purposes) rarely matches tax depreciation
+      (which front-loads deductions through MACRS, Section 179, and bonus
+      depreciation), producing a temporary difference that reverses over
+      the asset's life as tax depreciation eventually falls below book
+      depreciation in later years.</p>
+
+      <div class="guide-example"><strong>Example: front-loaded tax
+      depreciation vs. book depreciation.</strong> A corporation buys
+      $500,000 of qualifying equipment and elects 100% bonus depreciation,
+      deducting the full $500,000 for tax purposes in year one. For book
+      purposes, the same equipment is depreciated straight-line over 5
+      years, or $100,000 per year. In year one, taxable income is
+      $400,000 lower than book income purely from this timing difference
+      ($500,000 tax deduction vs. $100,000 book deduction) — a difference
+      reported on Schedule M-1 that will reverse in years two through
+      five, when book depreciation continues at $100,000 per year while
+      the asset has no remaining tax basis left to depreciate at all.</div>
+
+      <h4>The general business credit (Form 3800)</h4>
+      <p>Dozens of separate business tax credits — the research credit,
+      the work opportunity credit, the low-income housing credit, the
+      disabled access credit, and many others — are combined and claimed
+      together through Form 3800 as the "general business credit," rather
+      than each one existing as a completely standalone claim. The
+      combined credit is nonrefundable and limited based on the
+      corporation's tax liability (roughly, tax liability above a
+      threshold amount, though the mechanics vary by credit type), and any
+      credit that can't be used in the current year due to that limitation
+      is carried back one year and then forward up to 20 years. Because
+      the credits are combined into a single limitation calculation, a
+      corporation generating several different credits in the same year
+      has to compute the aggregate limitation across all of them
+      together, not test each credit separately against the full tax
+      liability.</p>
+
       <h4>Book-tax differences: Schedule M-1 and M-2</h4>
       <p>A corporation's financial-statement ("book") income and its taxable
       income routinely diverge — different depreciation methods, expenses
@@ -2883,6 +3087,22 @@ const FORM_GUIDES = {
       transaction, and Section 482 principles call for pricing it as if
       an unrelated licensee had paid a market royalty rate, disclosed on
       Form 5472 even though the actual cash flow was zero.</div>
+
+      <h4>Treaty-based return positions (Form 8833) and reportable transactions</h4>
+      <p>A related-party transaction priced or structured based on a U.S.
+      tax treaty position — claiming a reduced withholding rate on
+      cross-border interest or royalties, for instance, or asserting that
+      a treaty's permanent-establishment rules change how income is
+      sourced — often has to be separately disclosed on Form 8833, in
+      addition to (not instead of) reporting the transaction itself on
+      Form 5472. The two filings serve different purposes: Form 5472
+      discloses that a reportable transaction with a foreign related party
+      happened at all, while Form 8833 discloses that the taxpayer is
+      relying on a treaty to override the default statutory tax treatment
+      that would otherwise apply. Skipping the Form 8833 disclosure when a
+      treaty position is taken can itself trigger a separate penalty,
+      independent of whatever penalty applies to a missing or incomplete
+      Form 5472.</p>
 
       <h4>Why it matters: arm's-length pricing (Section 482)</h4>
       <p>Form 5472 is a disclosure form, but the substantive tax rule behind
@@ -3237,6 +3457,24 @@ const FORM_GUIDES = {
       it), even though the rental activity itself is not "unrelated" in
       the ordinary sense.</div>
 
+      <h4>Computing unrelated business taxable income on Form 990-T</h4>
+      <p>Form 990-T doesn't simply tax an unrelated activity's gross
+      revenue — UBTI is computed much like ordinary business taxable
+      income, with the organization allowed to deduct expenses directly
+      connected to carrying on the unrelated trade or business
+      (proportionally allocated, for expenses like rent or utilities that
+      serve both the unrelated activity and the organization's exempt
+      operations). A flat $1,000 "specific deduction" is subtracted from
+      UBTI before computing tax, meaning an organization with only modest
+      unrelated business activity below that threshold may owe no UBIT at
+      all even though it technically has unrelated business income. The
+      resulting UBTI (after the silo rules described above keep each
+      unrelated activity's computation separate) is taxed at the regular
+      corporate rate for a corporate filer, or at trust rates for a
+      trust-form exempt organization — one of the few places the
+      exempt-organization tax code borrows directly from the regular
+      for-profit rate structure.</p>
+
       <h4>Joint ventures with for-profit partners</h4>
       <p>An exempt organization can enter a joint venture with a for-profit
       partner — jointly operating a hospital, a research facility, or a
@@ -3357,6 +3595,24 @@ const FORM_GUIDES = {
       math ahead of time), it can find itself reclassified as a private
       foundation the following year — with a whole different, stricter set
       of rules attached, triggered by what looked like great news.</div>
+
+      <h4>The public support test computed (Schedule A, Part II)</h4>
+      <p>The public support test described above isn't just a general
+      legal standard — Schedule A Part II computes it as an explicit
+      fraction using a rolling five-year total (the current year plus the
+      four preceding years): the numerator is total public support
+      (government grants, contributions from the general public,
+      membership fees — with each individual donor's contributions capped
+      for this purpose at 2% of the five-year total support), and the
+      denominator is total support from all sources, including investment
+      income and unrelated business income. An organization needs the
+      resulting percentage to be at least 33⅓% to automatically pass, or
+      it can still qualify under a "facts and circumstances" test if it's
+      at least 10% and the organization can show other supporting factors
+      (a broadly based governing board, continuous fundraising efforts,
+      and similar indicators). Falling under even the 10% floor with no
+      way to make the facts-and-circumstances case means reclassification
+      as a private foundation.</p>
 
       <h4>Private foundation excise taxes (Sections 4940-4945)</h4>
       <p>A private foundation faces a whole layer of excise taxes a public
