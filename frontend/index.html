@@ -2651,6 +2651,31 @@ const FORM_GUIDES = {
       under the attribution rules, even though the payment is larger and
       the counterparty is equally foreign.</div>
 
+      <h4>Monetary vs. non-monetary reportable transactions</h4>
+      <p>Most reportable transactions are straightforward monetary ones —
+      an amount of cash changes hands or is owed, like a sale, a loan, or
+      a fee. But Form 5472 also requires disclosing certain non-monetary
+      transactions with a foreign related party: the use of tangible or
+      intangible property without a stated charge, and services performed
+      for less than full consideration (or for none at all), where no
+      cash amount was ever agreed to but real economic value moved between
+      the parties anyway. These have to be identified and, where
+      feasible, assigned a fair market value for reporting purposes — the
+      absence of an invoice or a stated price doesn't take the
+      transaction out of scope, since the whole point of Section 482 is
+      to catch exactly this kind of value transfer that a formal price
+      tag would otherwise disclose on its own.</p>
+
+      <div class="guide-example"><strong>Example: free use of a
+      trademark.</strong> A foreign parent lets its 30%-owned U.S.
+      subsidiary use the parent's trademark and brand name at no charge,
+      with no royalty invoiced or paid during the year. Because no cash
+      changed hands, it might look like there's nothing to report — but
+      the free use of the intangible is itself a non-monetary reportable
+      transaction, and Section 482 principles call for pricing it as if
+      an unrelated licensee had paid a market royalty rate, disclosed on
+      Form 5472 even though the actual cash flow was zero.</div>
+
       <h4>Why it matters: arm's-length pricing (Section 482)</h4>
       <p>Form 5472 is a disclosure form, but the substantive tax rule behind
       it is Section 482: every reportable transaction must be priced as if
@@ -2681,6 +2706,56 @@ const FORM_GUIDES = {
       having changed hands for tax purposes are two different numbers, and
       only reporting the loan on Form 5472 without also pricing the
       interest correctly leaves the arm's-length gap unresolved.</div>
+
+      <h4>Advance Pricing Agreements (APAs) — getting ahead of a Section 482 dispute</h4>
+      <p>Rather than pricing related-party transactions and hoping the IRS
+      agrees on audit years later, a taxpayer can proactively negotiate an
+      Advance Pricing Agreement (APA) with the IRS, agreeing in advance on
+      the transfer pricing method that will be treated as satisfying the
+      arm's-length standard for a set future period (and often a
+      look-back period as well). A unilateral APA binds only the IRS and
+      the taxpayer; a bilateral or multilateral APA also involves the
+      treaty partner's tax authority, protecting the taxpayer from double
+      taxation if both countries would otherwise reach different
+      arm's-length conclusions about the same transaction. An APA is a
+      significant undertaking — extensive documentation, user fees, and
+      typically a year or more to negotiate — so it's generally reserved
+      for taxpayers with large, recurring related-party transaction
+      volumes where the certainty is worth the cost, rather than a
+      one-off transaction of modest size.</p>
+
+      <h4>The Base Erosion and Anti-Abuse Tax (BEAT, Section 59A)</h4>
+      <p>A large corporation (average annual gross receipts of at least
+      $500 million over the prior three years) that makes substantial
+      deductible payments to foreign related parties — the same
+      related-party payments Form 5472 is built to disclose — can owe an
+      additional minimum tax under Section 59A, on top of its regular
+      corporate tax. BEAT recomputes taxable income by adding back most
+      deductible payments made to foreign related parties (a management
+      fee, an interest payment, a royalty), then applies a separate
+      minimum tax rate to that higher base; the corporation pays the
+      larger of its regular tax or the BEAT amount. The rule specifically
+      targets the same profit-shifting pattern Form 5472 and Section 482
+      are meant to surface — deducting a payment to a related foreign
+      party that erodes the U.S. tax base — but BEAT applies only above
+      the size threshold, so most small and mid-sized 5472 filers never
+      encounter it even though the underlying related-party payments they
+      disclose are conceptually the same kind of transaction.</p>
+
+      <h4>Section 163(j) and foreign-owned reporting corporations</h4>
+      <p>A U.S. corporation heavily capitalized with related-party debt
+      from its foreign parent — a common structure for a newly formed
+      U.S. subsidiary — faces the same Section 163(j) limitation on net
+      business interest expense described in the Form 1120 guide,
+      generally capping the deduction at 30% of adjusted taxable income.
+      For a foreign-owned reporting corporation, this limitation
+      interacts directly with the Section 482 arm's-length pricing rules
+      above: even interest priced correctly at a market rate for a
+      related-party loan can still be disallowed, in whole or in part, if
+      it exceeds the 163(j) cap — meaning a loan can pass the
+      arm's-length pricing test and still generate a nondeductible
+      interest expense once run through the separate 163(j)
+      limitation.</p>
 
       <h4>How the form is organized</h4>
       <p>Part I identifies the reporting corporation itself; Part II
@@ -2735,6 +2810,18 @@ const FORM_GUIDES = {
       as reportable transactions. Skipping this filing brings the same
       $25,000 penalty that would apply to an active operating corporation,
       even though the LLC itself may owe no U.S. income tax at all.</div>
+
+      <h4>The statute of limitations stays open until the form is filed</h4>
+      <p>Normally the IRS has three years from when a return is filed to
+      assess additional tax against it. A required Form 5472 that's never
+      filed at all (as opposed to filed late or with errors) keeps the
+      entire underlying income tax return's statute of limitations open
+      indefinitely — not just for the missing Form 5472 itself, but for
+      the whole return it was supposed to be attached to. This means a
+      corporation or foreign-owned disregarded entity that skipped Form
+      5472 years ago can still be audited and assessed additional tax on
+      that old return today, with no three-year cutoff protecting it,
+      until the missing form is actually filed.</p>
 
       <h4>Related forms</h4>
       <ul>
