@@ -996,6 +996,33 @@ const FORM_GUIDES = {
       other income, which is exactly why real estate deals are so often
       structured as partnerships rather than S-corps.</div>
 
+      <h4>The varying interests rule (Section 706(d))</h4>
+      <p>When a partner's ownership percentage changes during the year —
+      someone buys in, sells out, or the partnership issues new units — the
+      partnership can't simply apply the year-end percentages to the whole
+      year's income. Section 706(d) requires accounting for the shift:
+      either prorating income and loss by the number of days each
+      ownership percentage was in effect, or (with the partnership's
+      consent) closing the books at the actual transfer date so each
+      partner is allocated only the income actually earned while they held
+      their interest — the same choice a partnership can make on a
+      segment-by-segment basis for different items if it wants, more
+      flexibility than an S-corp has under the parallel Section 1377(a)(2)
+      election.</p>
+
+      <div class="guide-example"><strong>Example: proration vs. interim
+      closing.</strong> A partner sells half their 40% interest on July 1,
+      and the partnership earns $100,000 evenly throughout the year. Under
+      the default proration method, the departing share of ownership is
+      simply weighted by the number of days held — straightforward here
+      since income was earned evenly. If instead the partnership had
+      earned $80,000 in the first half and only $20,000 in the second half,
+      proration would still allocate based on ownership-weighted days
+      regardless of when the income was actually earned — which is exactly
+      when a partnership would instead elect to close the books at the
+      sale date, so the allocation tracks when the money was actually made
+      rather than an even daily average.</div>
+
       <h4>Disguised sales (Section 707(a)(2)(B))</h4>
       <p>A contribution of property to a partnership followed by a related
       distribution can be recharacterized as a taxable sale of that
@@ -1043,6 +1070,31 @@ const FORM_GUIDES = {
       ordinary income (subject to SE tax) <em>plus</em> their share of the
       $10,000 loss — the guaranteed payment and the distributive share are
       computed and taxed completely independently of each other.</div>
+
+      <h4>Family partnership rules (Section 704(e))</h4>
+      <p>When capital is a material income-producing factor for the
+      business (a real estate or investment partnership, as opposed to a
+      pure services partnership) and family members — including minor
+      children — hold partnership interests, the IRS requires that a
+      family member actually providing services first be paid reasonable
+      compensation for that work before any remaining profit is allocated
+      by ownership percentage. This exists specifically to stop a working
+      family member from shifting income to a lower-bracket spouse or
+      child by simply assigning them a partnership interest without
+      adjusting for who's actually doing the work.</p>
+
+      <div class="guide-example"><strong>Example: a family real estate
+      partnership.</strong> A parent actively manages a family-owned
+      rental property partnership and gives their two adult children 30%
+      interests each, keeping 40% for themselves, in a business where
+      capital (the real estate) is a material income-producing factor.
+      Before any 30/30/40 split of profit is applied, the parent must
+      first be allocated reasonable compensation for the management work
+      actually performed — say $50,000 of a $200,000 total profit — with
+      only the remaining $150,000 then split 30/30/40. Skipping the
+      compensation step and allocating the full $200,000 by ownership
+      percentage understates the parent's income and overstates the
+      children's.</div>
 
       <h4>Partner basis (outside basis)</h4>
       <p>Each partner tracks their own "outside basis" in the partnership —
@@ -1106,6 +1158,29 @@ const FORM_GUIDES = {
       to zero, reflecting that they paid full value and haven't seen any
       appreciation of their own yet.</div>
 
+      <h4>Section 751 "hot assets" — when interest-sale gain isn't all capital gain</h4>
+      <p>Selling or liquidating a partnership interest is normally a
+      capital transaction, but Section 751 carves out an exception for
+      "hot assets": unrealized receivables (income the partnership has
+      earned but not yet been paid or recognized, like accrued fees) and
+      substantially appreciated inventory. The portion of the selling
+      partner's gain attributable to their share of these hot assets is
+      recharacterized as ordinary income, regardless of how long the
+      partnership interest itself was held — a partner who's held their
+      interest for ten years can still owe ordinary-income tax on part of
+      the sale.</p>
+
+      <div class="guide-example"><strong>Example: a services partnership
+      with unbilled receivables.</strong> A consulting partnership has
+      $300,000 of unbilled, unrealized receivables for work already
+      performed but not yet invoiced. A partner sells their 25% interest
+      for a price that reflects a $75,000 share of those receivables (25%
+      × $300,000) as part of the total gain. That $75,000 portion of the
+      sale is taxed as ordinary income under Section 751, not the
+      long-term capital gain rate that would otherwise apply to the rest
+      of the sale proceeds — even though the partner held the interest for
+      years.</div>
+
       <h4>The three-step loss gate</h4>
       <p>Even once a loss clears the basis limitation above, two more tests
       apply before it can actually offset other income on the partner's
@@ -1132,6 +1207,19 @@ const FORM_GUIDES = {
       subject to SE tax regardless of whether the recipient is styled a
       general or limited partner.</p>
 
+      <h4>Publicly traded partnership (PTP) rules (Section 7704)</h4>
+      <p>A partnership whose interests are traded on an established
+      securities market (or readily tradable on a secondary market) is
+      generally taxed as a corporation instead of a partnership — losing
+      pass-through treatment entirely — unless at least 90% of its gross
+      income is "qualifying income" (mostly passive-type income: interest,
+      dividends, real property rents, and income from natural resources
+      activities). Most publicly traded energy and real estate partnerships
+      (MLPs) are specifically structured to meet the 90% qualifying-income
+      test and preserve pass-through status; a partnership that doesn't
+      plan around this test at all and drifts into public tradability can
+      find itself unexpectedly taxed as a corporation.</p>
+
       <h4>The centralized partnership audit regime (BBA)</h4>
       <p>Since 2018, most partnerships are audited under the "BBA" regime,
       which by default assesses and collects any additional tax at the
@@ -1144,6 +1232,18 @@ const FORM_GUIDES = {
       partner) in an audit — a significant departure from the old "Tax
       Matters Partner" role, and one that's easy to overlook when drafting or
       reviewing a partnership agreement.</p>
+
+      <h4>Partnership termination — only cessation counts now</h4>
+      <p>Before 2018, selling 50% or more of the total partnership
+      interests within a 12-month period forced a "technical termination"
+      — the partnership was treated as terminating and a new one
+      beginning, with its own new elections and depreciation restarts.
+      That rule was repealed for tax years after 2017. Today, a
+      partnership terminates for tax purposes only when no part of any
+      business, financial operation, or venture continues to be carried on
+      by any of its partners — a much narrower standard. A large ownership
+      turnover by itself, even a complete one, no longer forces a
+      technical termination the way it once did.</p>
 
       <h4>State pass-through entity tax (PTET) elections</h4>
       <p>Many states now let a partnership elect to pay state income tax at
