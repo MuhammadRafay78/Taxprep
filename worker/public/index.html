@@ -1475,6 +1475,22 @@ const FORM_GUIDES = {
       attractive for some businesses (mainly ones that retain earnings rather
       than distributing them) than it had been previously.</p>
 
+      <h4>The Corporate Alternative Minimum Tax (CAMT)</h4>
+      <p>Since 2023, a separate 15% minimum tax applies to the small number
+      of very large corporations whose average annual financial-statement
+      ("book") income exceeds $1 billion over a three-year period. The
+      corporation computes tax both ways — the regular 21% on taxable
+      income, and 15% on an adjusted book-income base — and pays whichever
+      is higher. Because it's based on book income rather than taxable
+      income, CAMT can pull in profit a corporation's regular tax return
+      doesn't reach at all (for instance, through accelerated tax
+      depreciation that reduces taxable income well below book income).
+      Given the $1 billion threshold, the overwhelming majority of C-corps
+      never encounter CAMT at all — it's aimed specifically at a small
+      number of the largest, most profitable corporations that had been
+      using ordinary tax preferences to report minimal regular tax despite
+      large book profits.</p>
+
       <h4>Double taxation — the defining feature of this form</h4>
       <p>A C-corp's income is taxed twice if it's ultimately paid out to
       shareholders: once at the entity level (21%), and again at the
@@ -1517,6 +1533,30 @@ const FORM_GUIDES = {
       taxable to Corporation A ($7,350 of tax) — still some layering, but far
       less than taxing the whole amount again.</div>
 
+      <h4>Consolidated returns for affiliated groups</h4>
+      <p>An affiliated group of corporations connected by at least 80%
+      common ownership can elect to file one consolidated Form 1120
+      covering the whole group, rather than each member filing its own
+      separate return. The biggest practical effect: intercompany
+      dividends between group members are entirely eliminated from income
+      (no DRD computation needed, since consolidation removes the
+      transaction altogether), and one member's loss can offset another
+      member's income in the same year — something entirely unavailable to
+      separate, non-consolidated corporations under common ownership. The
+      election, once made, is difficult to revoke and binds every member of
+      the group going forward, including entities that join the group
+      later.</p>
+
+      <div class="guide-example"><strong>Example: using a loss the same
+      year it happens.</strong> A parent corporation has $500,000 of
+      taxable income, and its 90%-owned subsidiary has a $300,000 loss in
+      the same year. Filed separately, the parent pays tax on the full
+      $500,000 while the subsidiary's loss simply carries forward, unused
+      this year. Filed as a consolidated group, the two net together to
+      $200,000 of consolidated taxable income, taxed once at 21% ($42,000)
+      — using the subsidiary's loss immediately instead of stranding it as
+      a carryforward.</div>
+
       <h4>Net operating losses (NOLs) post-2017</h4>
       <p>Current law lets a C-corp carry a net operating loss forward
       indefinitely, but generally not back to prior years (with narrow
@@ -1533,6 +1573,26 @@ const FORM_GUIDES = {
       $160,000 — not the full $200,000 — so $40,000 remains taxable at 21%
       ($8,400 of tax) even though $340,000 of NOL is still sitting unused on
       the books, carried forward again to next year.</div>
+
+      <h4>The Section 163(j) business interest expense limitation</h4>
+      <p>A corporation's deduction for net business interest expense is
+      capped at 30% of adjusted taxable income (the calculation tightened
+      after 2021 to exclude depreciation/amortization add-backs, making the
+      cap bite harder for capital-intensive corporations). Disallowed
+      interest isn't lost — it carries forward indefinitely to future
+      years, subject to the same 30% test each year — but a highly
+      leveraged corporation can find a meaningful chunk of its actual
+      interest expense deferred rather than deducted in the year paid.
+      Corporations with average annual gross receipts under a set threshold
+      (adjusted for inflation) are exempt from the limitation entirely.</p>
+
+      <div class="guide-example"><strong>Example: leverage outrunning the
+      cap.</strong> A corporation has $600,000 of adjusted taxable income
+      and pays $250,000 of interest on acquisition debt. The 163(j) limit
+      caps the deductible amount at 30% × $600,000 = $180,000; the
+      remaining $70,000 of interest isn't lost, but carries forward to be
+      tested against future years' 30% limit — which only helps if a
+      future year has room under its own cap.</div>
 
       <h4>Book-tax differences: Schedule M-1 and M-2</h4>
       <p>A corporation's financial-statement ("book") income and its taxable
@@ -1572,6 +1632,20 @@ const FORM_GUIDES = {
       is filed to pay can face an underpayment penalty even though no
       "withholding" concept exists for a corporation the way it does for an
       employee.</p>
+
+      <h4>State corporate income tax and apportionment</h4>
+      <p>Nothing about the federal Form 1120 addresses state tax at all,
+      but most states impose their own corporate income tax, generally
+      computed by starting from federal taxable income and applying
+      state-specific adjustments. A corporation operating in more than one
+      state doesn't just pick one state to pay in — a multi-state
+      corporation apportions its income among the states where it has
+      nexus (a taxable presence), typically using a formula weighted
+      toward the sales factor (the percentage of total sales sourced to
+      that state), sometimes blended with payroll and property factors. A
+      corporation with sales spread across many states can end up filing
+      dozens of state returns, each apportioning a different slice of the
+      same federal taxable income base.</p>
 
       <h4>Filing mechanics</h4>
       <p>Form 1120 is due the 15th day of the fourth month after year-end —
@@ -1616,6 +1690,15 @@ const FORM_GUIDES = {
         see the separate Form 5472 guide for who must file, the related-
         party and reportable-transaction definitions, and the penalty
         exposure.</li>
+        <li><strong>Form 5471</strong> — the mirror-image form to Form
+        5472's foreign-owner-of-a-U.S.-entity direction: a U.S. corporation
+        that itself owns a foreign subsidiary generally files this to
+        report its ownership and the subsidiary's finances, common for any
+        C-corp with international operations.</li>
+        <li><strong>Form 8990</strong> — computes the Section 163(j)
+        business interest expense limitation described above (generally
+        30% of adjusted taxable income); disallowed interest carried
+        forward is tracked here from year to year.</li>
       </ul>
 
       <h4>Common pitfalls</h4>
