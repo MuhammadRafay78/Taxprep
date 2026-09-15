@@ -1282,6 +1282,24 @@ const FORM_GUIDES = {
       (Rev. Proc. 2013-30) for a late filing with reasonable cause, so a
       missed deadline isn't automatically fatal.</p>
 
+      <h4>QSSTs and ESBTs — the trusts that can actually hold S-corp stock</h4>
+      <p>"Certain trusts" can be S-corp shareholders, but only if they fit
+      one of a few specific categories, and two are common enough to know
+      by name. A Qualified Subchapter S Trust (QSST) has only one income
+      beneficiary, must distribute all its income currently to that
+      beneficiary, and requires the beneficiary to file an election — the
+      trust is then treated as a pass-through to that one beneficiary for
+      S-corp income purposes, much like the beneficiary owned the stock
+      directly. An Electing Small Business Trust (ESBT) can have multiple
+      beneficiaries and doesn't have to distribute income currently, but in
+      exchange the S-corp income allocated to it is taxed at the trust's
+      own compressed rates (reaching the top bracket at a very low income
+      level) rather than passed through to a beneficiary's own bracket.
+      Neither election is automatic — missing the QSST or ESBT election
+      entirely (not just filing it late) is one of the more common ways an
+      S election is later found invalid because an ineligible trust was
+      technically holding stock.</p>
+
       <h4>Page 1: income and deductions</h4>
       <p>The front of the form computes ordinary business income much like a
       C-corporation would: gross receipts less cost of goods sold, plus other
@@ -1302,6 +1320,32 @@ const FORM_GUIDES = {
       less judgment involved here than on a partnership K-1 — the main
       complexity is making sure the allocation percentages and holding
       periods for shares that changed hands mid-year are actually correct.</p>
+
+      <h4>Interim closing of the books (Section 1377(a)(2))</h4>
+      <p>The default allocation method spreads each year's income and loss
+      ratably across every day of the year, then divides each day's amount
+      among whoever held stock that day (the "per-share-per-day" method) —
+      which is why exact holding periods matter for shares that changed
+      hands. When a shareholder's interest terminates entirely during the
+      year (a sale, or a shareholder's death), the corporation and all
+      affected shareholders can jointly elect to close the books on the
+      actual transfer date instead, allocating income based on when it was
+      actually earned rather than spread evenly across the whole year.
+      This matters most when income isn't earned evenly — a seasonal
+      business, or a large one-time gain shortly before or after a sale.</p>
+
+      <div class="guide-example"><strong>Example: a mid-year sale and a
+      lumpy year.</strong> A shareholder sells their 50% stake on July 1,
+      and the company earns $20,000 in the first half of the year but
+      $180,000 in the second half (a large contract closed in Q4). Under
+      the default per-share-per-day method, the departing shareholder is
+      allocated roughly half of the full $200,000 (about $100,000), even
+      though only $20,000 was actually earned while they were still a
+      shareholder. With a Section 1377(a)(2) election, the books close on
+      July 1 and the departing shareholder is allocated only their share of
+      the $20,000 actually earned before the sale — a substantial
+      difference if the seller and buyer haven't agreed on which method
+      applies.</div>
 
       <h4>Shareholder basis: stock basis and debt basis</h4>
       <p>Each shareholder separately tracks stock basis and debt basis.
@@ -1411,6 +1455,27 @@ const FORM_GUIDES = {
       deductible business expense, understates the shareholder's wages and
       overstates the corporation's payroll-related exclusions.</div>
 
+      <h4>Section 267 — accrued expenses owed to a majority shareholder</h4>
+      <p>An accrual-basis S-corp generally can't deduct an expense accrued
+      but not yet paid to a more-than-50% shareholder (a bonus declared at
+      year-end but paid the following January, for instance) until the
+      year the shareholder actually receives it — because the shareholder,
+      as an individual, reports on the cash method, and Section 267 blocks
+      the mismatch of an accrual-basis deduction against income the
+      recipient hasn't yet recognized. This is easy to miss because it
+      looks like an ordinary accrued-bonus deduction that would be
+      perfectly fine between unrelated parties.</p>
+
+      <div class="guide-example"><strong>Example: a bonus accrued in
+      December, paid in January.</strong> An S-corp's majority
+      shareholder-employee is owed a $40,000 year-end bonus, formally
+      approved and accrued on the books in December, but not actually paid
+      until January of the following year. The corporation can't deduct
+      the $40,000 in the December year — it has to wait and deduct it in
+      the year it's actually paid, matching the year the shareholder
+      reports it as income. An otherwise routine accrual gets pushed a
+      full year later than the bookkeeper might expect.</div>
+
       <h4>The exceptions where the entity itself does owe tax</h4>
       <p>An S-corp isn't always tax-free at the entity level. Three
       situations create entity-level tax, all specific to a corporation that
@@ -1468,6 +1533,33 @@ const FORM_GUIDES = {
       terminate the S election retroactively, which is a far bigger problem
       than the underlying distribution issue itself.</p>
 
+      <h4>Stock redemptions (Section 302) — sale or dividend?</h4>
+      <p>When the corporation itself buys back a departing shareholder's
+      stock (rather than another shareholder buying it directly), the tax
+      treatment isn't automatic. If the redemption meaningfully reduces the
+      shareholder's ownership percentage under one of several tests (a
+      complete termination of interest, a substantially disproportionate
+      redemption, or one that isn't essentially equivalent to a dividend),
+      it's treated as a sale: capital gain or loss on the difference
+      between what was received and the shareholder's stock basis. If it
+      fails all the tests, it's instead treated as a distribution — which
+      for an S-corp with no C-corp E&amp;P is usually still tax-free up to
+      stock basis, but for a corporation with leftover E&amp;P can produce
+      dividend treatment on the full amount received, with no basis offset
+      at all.</p>
+
+      <div class="guide-example"><strong>Example: same buyout, different
+      tax result.</strong> A departing 30% shareholder is bought out
+      entirely by the corporation for $200,000, with a $50,000 stock
+      basis. Because the shareholder's interest is completely terminated
+      (0% ownership afterward), the redemption qualifies for sale
+      treatment: a $150,000 capital gain. Had the same shareholder instead
+      only reduced their stake from 30% to 25% through a partial buyback
+      that didn't meet any of the disproportionate-redemption tests, the
+      same $200,000 payment could instead be treated as a distribution —
+      taxed very differently, and far less favorably if the corporation
+      has leftover C-corp E&amp;P.</div>
+
       <h4>Terminating the S election</h4>
       <p>An S election doesn't last forever automatically. It can end two
       ways:</p>
@@ -1513,6 +1605,18 @@ const FORM_GUIDES = {
       their own international tax reporting; a narrow filing exception
       exists only where no shareholder has foreign-reporting needs and none
       has requested the schedule.</p>
+
+      <h4>Shareholder-level estimated tax — there's no withholding on K-1 income</h4>
+      <p>Unlike wages, S-corp flow-through income has no withholding
+      mechanism at all — even the reasonable-compensation salary only has
+      withholding on the salary portion, not the additional profit that
+      passes through via K-1. Each shareholder is individually responsible
+      for making their own quarterly estimated tax payments covering that
+      flow-through income, using the same safe-harbor rules that apply to
+      any other individual. A shareholder used to a W-2 job's automatic
+      withholding can be caught off guard the first year they receive
+      meaningful K-1 income and simply don't owe any less tax just because
+      the corporation itself paid nothing.</p>
 
       <h4>Filing mechanics</h4>
       <p>Form 1120-S is due March 15 for a calendar-year corporation, with a
@@ -1575,6 +1679,11 @@ const FORM_GUIDES = {
         risk creating a disqualifying second class of stock.</li>
         <li>Missing the S-election deadline without pursuing available late-
         election relief.</li>
+        <li>Assuming a shareholder buyout automatically produces capital
+        gain treatment without checking the Section 302 redemption
+        tests.</li>
+        <li>Deducting a bonus or expense accrued to a majority shareholder
+        in the year it's booked rather than the year it's actually paid.</li>
       </ul>
 
       <div class="guide-example"><strong>Small example.</strong> A sole
