@@ -550,6 +550,21 @@ const FORM_GUIDES = {
       generally beats single status on both the standard deduction and
       bracket thresholds.</p>
 
+      <h4>Head of household: the qualifying-person requirement</h4>
+      <p>Head of household filing status offers a larger standard
+      deduction and wider tax brackets than single status, but requires
+      more than simply being unmarried — the taxpayer must also have paid
+      more than half the cost of keeping up a home for the year, and a
+      "qualifying person" must have lived with the taxpayer for more than
+      half the year (with a specific exception allowing a dependent parent
+      to qualify even if the parent lives elsewhere, as long as the
+      taxpayer pays more than half the cost of the parent's own home). A
+      taxpayer who is married but lived apart from their spouse for the
+      last six months of the year can sometimes qualify as "considered
+      unmarried" for head-of-household purposes even without a legal
+      divorce, provided they meet the other requirements including
+      maintaining a home for a qualifying child.</p>
+
       <h4>Standard deduction vs. itemizing</h4>
       <p>Every filer gets to subtract either the standard deduction (a fixed
       amount by filing status and year) or their itemized deductions from
@@ -608,6 +623,76 @@ const FORM_GUIDES = {
       credits and deductions. Two people with identical total income can end
       up with very different AGI (and very different downstream eligibility)
       depending on what adjustments they qualify for.</p>
+
+      <h4>Dependency tests: qualifying child vs. qualifying relative</h4>
+      <p>A dependent must fit one of two distinct sets of tests, and
+      confusing the two is a common filing error. A "qualifying child"
+      must meet a relationship test (son, daughter, stepchild, foster
+      child, sibling, or a descendant of any of these), an age test
+      (under 19, or under 24 if a full-time student, with no age limit if
+      permanently and totally disabled), a residency test (lived with the
+      taxpayer more than half the year, with exceptions for temporary
+      absences), and a support test (the child didn't provide more than
+      half of their own support) — notably, there's no income limit for a
+      qualifying child, unlike a qualifying relative. A "qualifying
+      relative" instead must meet a relationship-or-household test
+      (either a specified relative, or anyone who lived with the taxpayer
+      all year as a member of the household), a gross income test (the
+      person's own gross income must be under a set threshold), and a
+      support test (the taxpayer must have provided more than half of
+      that person's total support) — this is the category that lets an
+      elderly parent, a domestic partner, or an adult child who no longer
+      qualifies as a "child" still be claimed as a dependent.</p>
+
+      <div class="guide-example"><strong>Example: an adult child claimed
+      as a qualifying relative instead.</strong> A 25-year-old adult
+      child living at home earns $8,000 from a part-time job and doesn't
+      provide more than half their own support, with the parent covering
+      the rest. Because the child is over 24 (so fails the
+      qualifying-child age test even as a student) but their gross income
+      is under the qualifying-relative threshold and the parent provides
+      more than half their support, the child can still be claimed —
+      just as a qualifying relative rather than a qualifying child, which
+      also changes which credits are available (a qualifying relative
+      supports only the $500 Credit for Other Dependents, not the $2,000
+      Child Tax Credit).</div>
+
+      <h4>Tie-breaker rules when a child could be claimed by more than one taxpayer</h4>
+      <p>When a child meets the qualifying-child tests for more than one
+      taxpayer in the same year — most commonly separated or divorced
+      parents, or a child living with a parent and a grandparent in the
+      same household — the tax code applies tie-breaker rules rather than
+      letting both claim the child. If only one of the taxpayers is the
+      child's parent, the parent wins automatically. If both are parents
+      but the child lived with each for a different amount of time during
+      the year, the parent with whom the child lived longer during the
+      year gets the claim; if the time was exactly equal, the parent with
+      the higher AGI wins. A noncustodial parent can still claim the
+      child (and the associated Child Tax Credit) if the custodial parent
+      signs Form 8332 releasing the claim, but the custodial parent
+      generally keeps head-of-household filing status and any earned
+      income credit regardless of that release, since those benefits
+      aren't transferable the way the dependency claim and Child Tax
+      Credit are.</p>
+
+      <h4>Gift tax and Form 709 — a brief overview for individual filers</h4>
+      <p>Gift tax is entirely separate from income tax and is reported on
+      its own return, Form 709, not on Form 1040 — a taxpayer who makes
+      gifts during the year generally doesn't report anything about it on
+      their individual income tax return at all. Most gifts never trigger
+      any actual tax: an annual exclusion (a set dollar amount per
+      recipient per year) covers ordinary gifts entirely, and gifts above
+      that amount to any one recipient in a year simply use up part of
+      the giver's lifetime gift and estate tax exemption (a very large
+      amount under current law) rather than generating an immediate tax
+      bill — actual gift tax is owed only once a taxpayer's cumulative
+      lifetime gifts have exceeded that full exemption amount. Filing
+      Form 709 is nonetheless required whenever gifts to one recipient
+      exceed the annual exclusion in a year, even though no tax is likely
+      to be due, specifically to track the use of that lifetime exemption
+      over the giver's life. The recipient of a gift, notably, never owes
+      income tax on the value of a gift received, regardless of its size
+      — gift tax liability (if any) falls entirely on the giver.</p>
 
       <h4>Ordinary income vs. preferential-rate income</h4>
       <p>Not all income is taxed at the same rate. Wages, interest, and most
@@ -1501,6 +1586,38 @@ const FORM_GUIDES = {
       same structure used for a more-than-2% S-corp shareholder's health
       insurance, just routed through a guaranteed payment instead of W-2
       wages.</p>
+
+      <h4>Partnership organizational costs (Section 709) vs. syndication costs</h4>
+      <p>Costs a partnership incurs to actually form itself — legal fees
+      for drafting the partnership agreement, accounting fees related to
+      organization, and state filing fees — are organizational costs
+      under Section 709, eligible for the same up-to-$5,000 immediate
+      deduction (phased out once total organizational costs exceed
+      $50,000) with the remainder amortized over 15 years, the same
+      framework used for a corporation's organizational costs and a sole
+      proprietor's business start-up costs. Syndication costs, by
+      contrast — costs of marketing and selling partnership interests to
+      investors, such as brokerage fees, printing costs for offering
+      documents, and registration fees — get no such favorable treatment
+      at all: they can't be deducted or amortized under any provision,
+      and simply have no current tax benefit, which is a frequent source
+      of confusion since organizational costs and syndication costs are
+      so often incurred together when a partnership (particularly a real
+      estate or investment fund partnership) is formed and its interests
+      are marketed to investors in the same transaction.</p>
+
+      <div class="guide-example"><strong>Example: two costs, two very
+      different outcomes.</strong> A real estate syndication partnership
+      spends $30,000 forming the entity (legal and accounting fees for
+      the partnership agreement, a Section 709 organizational cost) and a
+      separate $200,000 marketing and selling interests to limited
+      partner investors (broker commissions and offering-document costs,
+      a syndication cost). The $30,000 organizational cost is eligible
+      for the $5,000 immediate deduction with the balance amortized over
+      15 years. The $200,000 of syndication costs get no deduction or
+      amortization at all under any provision — that cost simply has no
+      current or future tax benefit, a materially worse outcome than the
+      organizational costs incurred in the very same formation.</div>
 
       <h4>Guaranteed payments vs. distributive share</h4>
       <p>A partnership can agree to pay a partner a fixed amount for services
@@ -2534,6 +2651,24 @@ const FORM_GUIDES = {
       violation (like the one-class-of-stock issue above) goes unnoticed
       until it's found on audit.</p>
 
+      <h4>The post-termination transition period (PTTP) for distributions after an S election ends</h4>
+      <p>When an S election terminates, a former S-corp shareholder
+      doesn't immediately lose the ability to withdraw their remaining
+      stock basis tax-free — the post-termination transition period
+      (PTTP), generally the one-year period beginning the day after the S
+      election ends, lets shareholders receive cash distributions treated
+      as coming out of the corporation's Accumulated Adjustments Account
+      exactly as if the S election were still in effect, up to each
+      shareholder's remaining stock basis. This gives departing S-corp
+      shareholders a limited window to extract their built-up AAA balance
+      without it suddenly being recharacterized as a taxable C-corp
+      dividend the moment the election ends, which would otherwise be a
+      harsh result for a corporation that terminated its S status for
+      reasons unrelated to any attempt to avoid tax. Distributions made
+      after the PTTP closes are taxed under ordinary C-corp distribution
+      rules — first as a dividend to the extent of earnings and profits,
+      discussed in the Form 1120 guide.</p>
+
       <h4>Inadvertent termination relief (Section 1362(f))</h4>
       <p>Not every disqualifying event has to be fatal. If an S election
       (or a QSST/ESBT election) terminates because of an event the IRS
@@ -2857,6 +2992,49 @@ const FORM_GUIDES = {
       available to be deducted in one of the next five years to the
       extent the corporation has room under that future year's own 10%
       cap.</div>
+
+      <h4>Organizational expenditure amortization for a corporation (Section 248)</h4>
+      <p>A corporation's costs of actually forming itself — legal fees
+      for drafting the corporate charter and bylaws, fees for the initial
+      organizational meeting of directors and shareholders, and state
+      incorporation fees — are organizational expenditures under Section
+      248, following the same framework as a partnership's Section 709
+      costs and a sole proprietor's Section 195 start-up costs: up to
+      $5,000 deducted immediately (phased out once total organizational
+      costs exceed $50,000), with the remainder amortized over 15 years.
+      Costs of issuing or selling the corporation's own stock
+      (underwriting fees, printing costs for a stock prospectus) are
+      treated like a partnership's syndication costs — not deductible or
+      amortizable at all, simply reducing the net proceeds the
+      corporation is treated as having received for the stock.</p>
+
+      <h4>Controlled group rules (Section 1563) for shared brackets and thresholds</h4>
+      <p>Several corporate tax benefits that look like they apply
+      per-corporation are actually limited on a controlled-group basis
+      when multiple corporations share common ownership — a
+      parent-subsidiary group (one corporation owns 80%+ of another), a
+      brother-sister group (five or fewer individuals together own 80%+
+      of two or more corporations, with matching ownership overlap), or a
+      combined group of both. Members of a controlled group must share a
+      single Section 179 dollar limit, a single accumulated-earnings-tax
+      credit, and other thresholds that would otherwise multiply if a
+      business simply split itself into several separate corporations
+      under common control. This rule exists specifically to prevent a
+      single economic enterprise from artificially multiplying tax
+      benefits by incorporating multiple entities that would otherwise
+      each separately qualify for a benefit meant to apply once per
+      genuinely independent business.</p>
+
+      <div class="guide-example"><strong>Example: one Section 179 limit
+      shared across three corporations.</strong> An owner operates three
+      separate corporations, each 100%-owned individually, running three
+      related but legally distinct business lines. Because all three are
+      under common ownership by the same person, they form a
+      brother-sister controlled group and must share a single Section
+      179 expensing limit across all three corporations combined — the
+      owner can't claim the full Section 179 limit separately in each of
+      the three corporations to effectively triple the deduction
+      available to the same underlying ownership.</div>
 
       <h4>The dividends received deduction (DRD)</h4>
       <p>When one corporation owns stock in another and receives dividends
@@ -3667,6 +3845,24 @@ const FORM_GUIDES = {
       <p>This guide — and this app's sample return — covers the 990-EZ
       variant specifically, but the underlying tax concepts below apply
       across the whole family.</p>
+
+      <h4>Form 990-PF — what it is, and who files it</h4>
+      <p>Form 990-PF is the annual return every private foundation must
+      file, regardless of the foundation's size or income — there's no
+      small-organization exception the way there is for a public
+      charity's 990-N or 990-EZ, since private foundation status itself
+      already signals concentrated funding and closer required IRS
+      scrutiny. The return reports the foundation's revenue and expenses,
+      a detailed balance sheet, a calculation of the Section 4940 excise
+      tax on net investment income, and the minimum-distribution
+      computation under Section 4942 described later in this guide,
+      alongside a full list of grants made and to whom. Unlike a public
+      charity's Form 990, Form 990-PF is also the vehicle for reporting
+      the excise taxes on self-dealing, excess business holdings, and
+      jeopardizing investments if any of those situations arose during
+      the year — a private foundation's return is fundamentally more
+      compliance-and-excise-tax-focused than a public charity's
+      revenue-and-mission-focused Form 990.</p>
 
       <h4>Why the IRS requires it anyway</h4>
       <p>Exempt status is a privilege the organization has to keep earning,
