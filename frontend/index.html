@@ -126,15 +126,24 @@
   .guide-table th, .guide-table td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
   .guide-table th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
   .guide-table tr:last-child td { border-bottom: none; }
-  .planning-filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 18px 0 14px; }
-  .planning-filter-row label { font-size: 0.85rem; color: var(--muted); }
-  .planning-filter { padding: 7px 10px; font-size: 0.88rem; }
-  .planning-list { display: flex; flex-direction: column; gap: 8px; }
-  .planning-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px 14px; }
+  .planning-layout { display: flex; gap: 24px; align-items: flex-start; margin-top: 18px; }
+  .planning-sidebar { flex: 0 0 260px; min-width: 0; }
+  .planning-detail { flex: 1; min-width: 0; }
+  .planning-search { width: 100%; padding: 9px 12px; font-size: 0.88rem; margin-bottom: 12px; }
+  .planning-filter-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 0 0 14px; }
+  .planning-filter-row label { font-size: 0.78rem; color: var(--muted); }
+  .planning-filter { width: 100%; padding: 7px 10px; font-size: 0.88rem; }
+  .planning-list { display: flex; flex-direction: column; gap: 8px; max-height: 560px; overflow-y: auto; }
+  .planning-empty { font-size: 0.85rem; color: var(--muted); }
+  .planning-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px 14px;
+    flex-shrink: 0; height: auto; }
+  .planning-row.active { background: var(--accent-dim); border-color: var(--accent); }
   .planning-row-num { flex: 0 0 auto; font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
   .planning-row-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .planning-row-title { font-size: 0.92rem; line-height: 1.4; }
   .planning-row-cats { font-size: 0.75rem; color: var(--muted); }
+  .planning-placeholder { color: var(--muted); font-size: 0.92rem; padding: 20px 0; }
+  .planning-back-mobile { display: none; margin-bottom: 16px; }
   .cat-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 16px; }
   .planning-cat-tag { font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; background: var(--accent-dim);
     color: var(--accent); }
@@ -144,6 +153,17 @@
   .planning-related h4 { margin: 0 0 10px; }
   .planning-related-links { display: flex; flex-direction: column; gap: 8px; }
   .planning-related-link { display: block; width: 100%; text-align: left; padding: 9px 14px; font-size: 0.88rem; }
+  .planning-pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 30px;
+    padding-top: 16px; border-top: 1px solid var(--border); }
+  .planning-pager-count { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  @media (max-width: 760px) {
+    .planning-layout { flex-direction: column; }
+    .planning-sidebar { flex-basis: auto; width: 100%; }
+    .planning-list { max-height: none; }
+    .planning-layout.has-selection .planning-sidebar { display: none; }
+    .planning-layout:not(.has-selection) .planning-detail { display: none; }
+    .planning-back-mobile { display: block; }
+  }
   .numbers-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
   .line-row td { padding: 10px 0; border-bottom: 1px solid var(--divider); vertical-align: top; }
   .line-row:last-child td { border-bottom: none; }
@@ -5391,6 +5411,7 @@ let currentGuideKey = null;
 // the tab can reset to a clean list view.
 let currentPlanningId = null;
 let currentPlanningCategory = 'all';
+let currentPlanningSearch = '';
 
 function renderGuideTabs() {
   const tabsEl = document.getElementById('guides-tabs');
@@ -5404,6 +5425,7 @@ function renderGuideTabs() {
       const key = btn.dataset.guideKey;
       currentGuideKey = currentGuideKey === key ? null : key;
       currentPlanningId = null;
+      currentPlanningSearch = '';
       renderGuideTabs();
       renderGuideContent();
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -5473,18 +5495,18 @@ function renderGuideContent() {
 function backToReturnTypes() {
   currentGuideKey = null;
   currentPlanningId = null;
+  currentPlanningSearch = '';
   renderGuideTabs();
   renderGuideContent();
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
+// Mirrors the standalone Tax Planning app's own layout: a search box plus
+// category filter over the list, and — once a strategy is open — Previous/
+// Next paging through the full ordered set of 101, in addition to the
+// category-scoped list and the related-strategy cross-links.
 function renderPlanningContent(el) {
   const guide = FORM_GUIDES.planning;
-  if (currentPlanningId) {
-    renderPlanningDetail(el, guide);
-    return;
-  }
-
   const catCounts = {};
   PLANNING_STRATEGIES.forEach(s => s.cats.forEach(c => { catCounts[c] = (catCounts[c] || 0) + 1; }));
   const catOptions = Object.keys(PLANNING_CATEGORY_LABELS)
@@ -5497,14 +5519,20 @@ function renderPlanningContent(el) {
       <button type="button" class="secondary" id="guide-collapse-btn">← Back to return types</button>
       <h3>${guide.title}</h3>
       ${guide.html}
-      <div class="planning-filter-row">
-        <label for="planning-category-filter">Filter by category</label>
-        <select id="planning-category-filter" class="planning-filter">
-          <option value="all">All strategies (${PLANNING_STRATEGIES.length})</option>
-          ${catOptions}
-        </select>
+      <div class="planning-layout${currentPlanningId ? ' has-selection' : ''}" id="planning-layout">
+        <div class="planning-sidebar">
+          <input type="search" id="planning-search" class="planning-search" placeholder="Search strategies…">
+          <div class="planning-filter-row">
+            <label for="planning-category-filter">Filter by category</label>
+            <select id="planning-category-filter" class="planning-filter">
+              <option value="all">All strategies (${PLANNING_STRATEGIES.length})</option>
+              ${catOptions}
+            </select>
+          </div>
+          <div id="planning-list" class="planning-list"></div>
+        </div>
+        <div class="planning-detail" id="planning-detail-panel"></div>
       </div>
-      <div id="planning-list" class="planning-list"></div>
     </section>
   `;
   document.getElementById('guide-collapse-btn').addEventListener('click', backToReturnTypes);
@@ -5516,40 +5544,64 @@ function renderPlanningContent(el) {
     renderPlanningList();
   });
 
+  const searchInput = document.getElementById('planning-search');
+  searchInput.value = currentPlanningSearch;
+  searchInput.addEventListener('input', () => {
+    currentPlanningSearch = searchInput.value;
+    renderPlanningList();
+  });
+
   renderPlanningList();
+  renderPlanningDetailPanel();
 }
 
 function renderPlanningList() {
   const listEl = document.getElementById('planning-list');
   if (!listEl) return;
-  const filtered = PLANNING_STRATEGIES.filter(s =>
-    currentPlanningCategory === 'all' || s.cats.includes(currentPlanningCategory)
-  );
-  listEl.innerHTML = filtered.map(s => `
-    <button type="button" class="secondary planning-row" data-strategy-id="${s.id}">
+  const query = currentPlanningSearch.trim().toLowerCase();
+  const filtered = PLANNING_STRATEGIES.filter(s => {
+    const matchesCategory = currentPlanningCategory === 'all' || s.cats.includes(currentPlanningCategory);
+    const matchesSearch = !query || s.title.toLowerCase().includes(query);
+    return matchesCategory && matchesSearch;
+  });
+  listEl.innerHTML = filtered.length ? filtered.map(s => `
+    <button type="button" class="secondary planning-row${s.id === currentPlanningId ? ' active' : ''}" data-strategy-id="${s.id}">
       <span class="planning-row-num">${s.num}</span>
       <span class="planning-row-body">
         <span class="planning-row-title">${s.title}</span>
         <span class="planning-row-cats">${s.catLabels.join(' · ')}</span>
       </span>
     </button>
-  `).join('');
+  `).join('') : `<p class="planning-empty">No strategies match your search.</p>`;
   listEl.querySelectorAll('.planning-row').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentPlanningId = btn.dataset.strategyId;
-      renderGuideContent();
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    });
+    btn.addEventListener('click', () => selectPlanningStrategy(btn.dataset.strategyId));
   });
 }
 
-function renderPlanningDetail(el, guide) {
+function selectPlanningStrategy(id) {
+  currentPlanningId = id;
+  document.getElementById('planning-layout').classList.add('has-selection');
+  renderPlanningList();
+  renderPlanningDetailPanel();
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function renderPlanningDetailPanel() {
+  const panel = document.getElementById('planning-detail-panel');
+  if (!panel) return;
+  if (!currentPlanningId) {
+    panel.innerHTML = `<p class="planning-placeholder">Select a strategy from the list to read its full write-up.</p>`;
+    return;
+  }
   const strategy = PLANNING_STRATEGIES.find(s => s.id === currentPlanningId);
   if (!strategy) {
     currentPlanningId = null;
-    renderPlanningContent(el);
+    renderPlanningDetailPanel();
     return;
   }
+  const idx = PLANNING_STRATEGIES.findIndex(s => s.id === currentPlanningId);
+  const prev = idx > 0 ? PLANNING_STRATEGIES[idx - 1] : null;
+  const next = idx < PLANNING_STRATEGIES.length - 1 ? PLANNING_STRATEGIES[idx + 1] : null;
   const relatedHtml = (strategy.related && strategy.related.length)
     ? `
       <div class="planning-related">
@@ -5560,32 +5612,33 @@ function renderPlanningDetail(el, guide) {
       </div>
     `
     : '';
-  el.innerHTML = `
-    <section class="guide-section">
-      <button type="button" class="secondary" id="guide-collapse-btn">← Back to return types</button>
-      <button type="button" class="secondary" id="planning-back-btn">← Back to strategies</button>
-      <h3>${strategy.num}. ${strategy.title}</h3>
-      <div class="cat-tags">${strategy.catLabels.map(c => `<span class="planning-cat-tag">${c}</span>`).join('')}</div>
-      ${strategy.plain ? `<div class="planning-plain"><strong>In plain terms:</strong> ${strategy.plain}</div>` : ''}
-      <p>${strategy.lede}</p>
-      ${strategy.body}
-      ${relatedHtml}
-    </section>
+  panel.innerHTML = `
+    <button type="button" class="secondary planning-back-mobile" id="planning-back-btn">← Back to list</button>
+    <h3>${strategy.num}. ${strategy.title}</h3>
+    <div class="cat-tags">${strategy.catLabels.map(c => `<span class="planning-cat-tag">${c}</span>`).join('')}</div>
+    ${strategy.plain ? `<div class="planning-plain"><strong>In plain terms:</strong> ${strategy.plain}</div>` : ''}
+    <p>${strategy.lede}</p>
+    ${strategy.body}
+    ${relatedHtml}
+    <div class="planning-pager">
+      <button type="button" class="secondary" id="planning-prev-btn"${prev ? '' : ' disabled'}>← Previous</button>
+      <span class="planning-pager-count">${idx + 1} / ${PLANNING_STRATEGIES.length}</span>
+      <button type="button" class="secondary" id="planning-next-btn"${next ? '' : ' disabled'}>Next →</button>
+    </div>
   `;
-  enhanceGuideExamples(el);
-  document.getElementById('guide-collapse-btn').addEventListener('click', backToReturnTypes);
+  enhanceGuideExamples(panel);
   document.getElementById('planning-back-btn').addEventListener('click', () => {
     currentPlanningId = null;
-    renderGuideContent();
+    document.getElementById('planning-layout').classList.remove('has-selection');
+    renderPlanningList();
+    renderPlanningDetailPanel();
     window.scrollTo({ top: 0, behavior: 'instant' });
   });
-  el.querySelectorAll('.planning-related-link').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentPlanningId = btn.dataset.strategyId;
-      renderGuideContent();
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    });
+  panel.querySelectorAll('.planning-related-link').forEach(btn => {
+    btn.addEventListener('click', () => selectPlanningStrategy(btn.dataset.strategyId));
   });
+  if (prev) document.getElementById('planning-prev-btn').addEventListener('click', () => selectPlanningStrategy(prev.id));
+  if (next) document.getElementById('planning-next-btn').addEventListener('click', () => selectPlanningStrategy(next.id));
 }
 
 function renderGuides() {
