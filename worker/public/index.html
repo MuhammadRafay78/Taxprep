@@ -4,6 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Understand Your Tax Return</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f7f7f5; --panel: #ffffff; --border: #e3e1db; --text: #2b2a27;
@@ -126,36 +129,85 @@
   .guide-table th, .guide-table td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
   .guide-table th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
   .guide-table tr:last-child td { border-bottom: none; }
+  /* Tax Planning Strategies tab: styled to match the standalone Tax
+     Planning app's own visual system (serif headings, monospace labels/
+     numbers, warm gold accent) rather than Taxprep's default teal/sans
+     look — scoped entirely to .planning-themed so the other six guide
+     tabs are unaffected. Palette and fonts copied from the live app. */
+  .planning-themed {
+    --pt-bg: #F5F6F3; --pt-surface: #FFFFFF; --pt-ink: #16232C; --pt-ink-soft: #52616B; --pt-ink-faint: #7C8890;
+    --pt-line: #DCE2DD; --pt-line-strong: #C4CCC6; --pt-accent: #8A6A2F; --pt-accent-strong: #6E5424;
+    --pt-example-bg: #F3EEE3; --pt-example-line: #D8CBA8; --pt-note-bg: #EAF0EE; --pt-note-line: #C7D6D0;
+    --pt-chip-bg: #EDEFEA; --pt-focus: #3B6E63;
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    color: var(--pt-ink);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .planning-themed {
+      --pt-bg: #10171B; --pt-surface: #161F24; --pt-ink: #E7ECE9; --pt-ink-soft: #AEBAB5; --pt-ink-faint: #7C8B85;
+      --pt-line: #263136; --pt-line-strong: #344248; --pt-accent: #CBA55F; --pt-accent-strong: #E0BC7C;
+      --pt-example-bg: #221D14; --pt-example-line: #4A3D22; --pt-note-bg: #142320; --pt-note-line: #2A423C;
+      --pt-chip-bg: #1C2529; --pt-focus: #74B3A2;
+    }
+  }
+  :root[data-theme="dark"] .planning-themed {
+    --pt-bg: #10171B; --pt-surface: #161F24; --pt-ink: #E7ECE9; --pt-ink-soft: #AEBAB5; --pt-ink-faint: #7C8B85;
+    --pt-line: #263136; --pt-line-strong: #344248; --pt-accent: #CBA55F; --pt-accent-strong: #E0BC7C;
+    --pt-example-bg: #221D14; --pt-example-line: #4A3D22; --pt-note-bg: #142320; --pt-note-line: #2A423C;
+    --pt-chip-bg: #1C2529; --pt-focus: #74B3A2;
+  }
+  .planning-themed p, .planning-themed li { color: var(--pt-ink); }
+  .planning-themed h3, .planning-themed h4 {
+    font-family: "Source Serif 4", Georgia, serif; color: var(--pt-ink); border-color: var(--pt-line);
+  }
+  .planning-themed .guide-example {
+    background: var(--pt-example-bg); border-left-color: var(--pt-example-line);
+  }
   .planning-layout { display: flex; gap: 24px; align-items: flex-start; margin-top: 18px; }
   .planning-sidebar { flex: 0 0 260px; min-width: 0; }
   .planning-detail { flex: 1; min-width: 0; }
-  .planning-search { width: 100%; padding: 9px 12px; font-size: 0.88rem; margin-bottom: 12px; }
+  .planning-search { width: 100%; padding: 9px 12px; font-size: 0.88rem; margin-bottom: 12px;
+    background: var(--pt-surface); border: 1px solid var(--pt-line); color: var(--pt-ink); }
   .planning-filter-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 0 0 14px; }
-  .planning-filter-row label { font-size: 0.78rem; color: var(--muted); }
-  .planning-filter { width: 100%; padding: 7px 10px; font-size: 0.88rem; }
-  .planning-list { display: flex; flex-direction: column; gap: 8px; max-height: 560px; overflow-y: auto; }
-  .planning-empty { font-size: 0.85rem; color: var(--muted); }
-  .planning-row { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px 14px;
-    flex-shrink: 0; height: auto; }
-  .planning-row.active { background: var(--accent-dim); border-color: var(--accent); }
-  .planning-row-num { flex: 0 0 auto; font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .planning-filter-row label { font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--pt-ink-faint); }
+  .planning-filter { width: 100%; padding: 7px 10px; font-size: 0.88rem;
+    background: var(--pt-surface); border: 1px solid var(--pt-line); color: var(--pt-ink); }
+  .planning-list { display: flex; flex-direction: column; gap: 2px; max-height: 560px; overflow-y: auto; }
+  .planning-empty { font-size: 0.85rem; color: var(--pt-ink-faint); }
+  .planning-row { display: flex; align-items: baseline; gap: 12px; width: 100%; text-align: left; padding: 9px 10px;
+    flex-shrink: 0; height: auto; background: transparent; border: none; border-radius: 5px; color: var(--pt-ink-soft); }
+  .planning-row:hover:not(:disabled):not(.active) { background: var(--pt-chip-bg); color: var(--pt-ink); }
+  .planning-row.active { background: var(--pt-chip-bg); color: var(--pt-accent-strong); }
+  .planning-row.active:hover:not(:disabled) { background: var(--pt-chip-bg); }
+  .planning-row:focus-visible { outline: 2px solid var(--pt-focus); outline-offset: 2px; }
+  .planning-row-num { flex: 0 0 auto; font-family: "IBM Plex Mono", monospace; font-size: 0.72rem;
+    color: var(--pt-ink-faint); padding-top: 0.1rem; }
+  .planning-row.active .planning-row-num { color: var(--pt-accent-strong); }
   .planning-row-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .planning-row-title { font-size: 0.92rem; line-height: 1.4; }
-  .planning-row-cats { font-size: 0.75rem; color: var(--muted); }
-  .planning-placeholder { color: var(--muted); font-size: 0.92rem; padding: 20px 0; }
+  .planning-row-title { font-size: 0.88rem; line-height: 1.35; color: inherit; font-weight: 400; }
+  .planning-row-cats { font-size: 0.72rem; color: var(--pt-ink-faint); }
+  .planning-placeholder { color: var(--pt-ink-faint); font-size: 0.92rem; padding: 20px 0; }
   .planning-back-mobile { display: none; margin-bottom: 16px; }
-  .cat-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 16px; }
-  .planning-cat-tag { font-size: 0.72rem; padding: 3px 9px; border-radius: 999px; background: var(--accent-dim);
-    color: var(--accent); }
-  .planning-plain { background: var(--accent-dim); border-left: 3px solid var(--accent); border-radius: 8px;
-    padding: 12px 18px; margin: 0 0 18px; font-size: 0.9rem; line-height: 1.6; }
-  .planning-related { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .planning-themed .cat-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 6px 0 16px; }
+  .planning-cat-tag { font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; letter-spacing: 0.02em;
+    padding: 0.2rem 0.55rem; border-radius: 999px; background: var(--pt-example-bg);
+    border: 1px solid var(--pt-example-line); color: var(--pt-accent-strong); }
+  .planning-plain { background: var(--pt-chip-bg); border-left: 3px solid var(--pt-focus); border-radius: 8px;
+    padding: 0.9rem 1.15rem; margin: 0 0 18px; font-size: 0.9rem; line-height: 1.6; color: var(--pt-ink); }
+  .planning-related { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--pt-line); }
   .planning-related h4 { margin: 0 0 10px; }
-  .planning-related-links { display: flex; flex-direction: column; gap: 8px; }
-  .planning-related-link { display: block; width: 100%; text-align: left; padding: 9px 14px; font-size: 0.88rem; }
+  .planning-related-links { display: flex; flex-direction: column; gap: 6px; }
+  .planning-related-link { display: block; width: 100%; text-align: left; padding: 4px 0; font-size: 0.88rem;
+    background: transparent; border: none; color: var(--pt-accent-strong); text-decoration: none; min-height: 0; }
+  .planning-related-link:hover:not(:disabled) { background: transparent; text-decoration: underline; }
   .planning-pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 30px;
-    padding-top: 16px; border-top: 1px solid var(--border); }
-  .planning-pager-count { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    padding-top: 16px; border-top: 1px solid var(--pt-line); }
+  .planning-pager-count { font-family: "IBM Plex Mono", monospace; font-size: 0.8rem; color: var(--pt-ink-faint); }
+  .planning-pager button { font-family: "IBM Plex Sans", sans-serif; font-size: 0.88rem; font-weight: 500;
+    color: var(--pt-accent-strong); background: none; border: none; padding: 0.3rem 0; min-height: 0; }
+  .planning-pager button:hover:not(:disabled) { text-decoration: underline; background: none; }
+  .planning-pager button:disabled { color: var(--pt-ink-faint); opacity: 1; }
   @media (max-width: 760px) {
     .planning-layout { flex-direction: column; }
     .planning-sidebar { flex-basis: auto; width: 100%; }
@@ -5519,7 +5571,7 @@ function renderPlanningContent(el) {
     .join('');
 
   el.innerHTML = `
-    <section class="guide-section">
+    <section class="guide-section planning-themed">
       <button type="button" class="secondary" id="guide-collapse-btn">← Back to return types</button>
       <h3>${guide.title}</h3>
       ${guide.html}
@@ -5569,7 +5621,7 @@ function renderPlanningList() {
     return matchesCategory && matchesSearch;
   });
   listEl.innerHTML = filtered.length ? filtered.map(s => `
-    <button type="button" class="secondary planning-row${s.id === currentPlanningId ? ' active' : ''}" data-strategy-id="${s.id}">
+    <button type="button" class="planning-row${s.id === currentPlanningId ? ' active' : ''}" data-strategy-id="${s.id}">
       <span class="planning-row-num">${s.num}</span>
       <span class="planning-row-body">
         <span class="planning-row-title">${s.title}</span>
@@ -5611,7 +5663,7 @@ function renderPlanningDetailPanel() {
       <div class="planning-related">
         <h4>Related strategies</h4>
         <div class="planning-related-links">
-          ${strategy.related.map(r => `<button type="button" class="secondary planning-related-link" data-strategy-id="${r.id}">${r.title}</button>`).join('')}
+          ${strategy.related.map(r => `<button type="button" class="planning-related-link" data-strategy-id="${r.id}">${r.title}</button>`).join('')}
         </div>
       </div>
     `
