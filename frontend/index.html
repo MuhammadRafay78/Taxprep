@@ -160,6 +160,25 @@
   .planning-themed h3, .planning-themed h4 {
     font-family: "Source Serif 4", Georgia, serif; color: var(--pt-ink); border-color: var(--pt-line);
   }
+  /* The reference app has no surrounding "card" — its title, description,
+     search and filter all live together in one full-height sidebar next
+     to the reading pane, not as a header sitting above a boxed panel.
+     body.planning-open drops Taxprep's panel chrome and widens main only
+     while this tab is open, so the other six guide tabs (and the rest of
+     the page) are unaffected. */
+  body.planning-open main { max-width: 1180px; }
+  body.planning-open #guides-panel {
+    background: transparent; border: none; box-shadow: none; padding: 0;
+  }
+  .planning-fullbleed #guide-collapse-btn { margin-bottom: 16px; }
+  .planning-eyebrow {
+    font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--pt-ink-faint);
+  }
+  .planning-sidebar h3.planning-masthead-title {
+    font-size: 1.5rem; margin: 0.3rem 0 0.6rem; padding: 0; border: none;
+  }
+  .planning-sidebar > p { font-size: 0.88rem; line-height: 1.5; color: var(--pt-ink-soft); margin: 0 0 1.3rem; }
   .planning-themed .guide-example {
     background: var(--pt-example-bg); border-left-color: var(--pt-example-line);
   }
@@ -5513,6 +5532,7 @@ function enhanceGuideExamples(container) {
 
 function renderGuideContent() {
   const el = document.getElementById('guides-content');
+  document.body.classList.toggle('planning-open', currentGuideKey === 'planning');
   if (!currentGuideKey) {
     el.innerHTML = '';
     return;
@@ -5567,12 +5587,13 @@ function renderPlanningContent(el) {
     .join('');
 
   el.innerHTML = `
-    <section class="guide-section planning-themed">
+    <section class="guide-section planning-themed planning-fullbleed">
       <button type="button" class="secondary" id="guide-collapse-btn">← Back to return types</button>
-      <h3>${guide.title}</h3>
-      ${guide.html}
       <div class="planning-layout${currentPlanningId ? ' has-selection' : ''}" id="planning-layout">
         <div class="planning-sidebar">
+          <div class="planning-eyebrow">Reference guide</div>
+          <h3 class="planning-masthead-title">${guide.title}</h3>
+          ${guide.html}
           <input type="search" id="planning-search" class="planning-search" placeholder="Search strategies…">
           <div class="planning-filter-row">
             <label for="planning-category-filter">Filter by category</label>
