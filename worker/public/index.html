@@ -170,6 +170,7 @@
   body.planning-open #guides-panel {
     background: transparent; border: none; box-shadow: none; padding: 0;
   }
+  .planning-fullbleed { max-width: none; }
   .planning-fullbleed #guide-collapse-btn { margin-bottom: 16px; }
   .planning-eyebrow {
     font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
@@ -185,6 +186,14 @@
   .planning-layout { display: flex; gap: 24px; align-items: flex-start; margin-top: 18px; }
   .planning-sidebar { flex: 0 0 260px; min-width: 0; }
   .planning-detail { flex: 1; min-width: 0; }
+  /* The reference site caps its reading column at 660px even on wide
+     screens — narrower text at a readable size and generous line-height,
+     not maximum width — and sets body copy at 16px/1.6, not Taxprep's
+     smaller default (0.95rem/1.7) sized for its narrower 700px pages. */
+  .planning-themed .planning-detail { max-width: 660px; }
+  .planning-themed .planning-detail p, .planning-themed .planning-detail li {
+    font-size: 1rem; line-height: 1.6;
+  }
   .planning-search { width: 100%; padding: 9px 12px; font-size: 0.88rem; margin-bottom: 12px;
     background: var(--pt-surface); border: 1px solid var(--pt-line); color: var(--pt-ink); }
   .planning-filter-row { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 0 0 14px; }
